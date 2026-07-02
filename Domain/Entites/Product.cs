@@ -5,7 +5,7 @@ public class Product
     public Guid Id { get; private set; }
     public string Title { get; private set; }
     public string Description { get; private set; }
-    public decimal Price { get; private set; }
+    public long Price { get; private set; }
     public decimal? DiscountPercentage { get; private set; }
     public int Stock { get; private set; }
     
@@ -16,10 +16,11 @@ public class Product
     public ProductBrand Brand { get; private set; }
 
     public decimal Rating { get; private set; }
+
     public static Product Create(
         string title,
         string description,
-        decimal price,
+        long price,
         decimal? discountPercentage,
         int stock,
         Guid categoryId,
