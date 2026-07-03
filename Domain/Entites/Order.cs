@@ -21,4 +21,12 @@ public class Order
         Items.Add(item);
         TotalPrice += (long)(item.Price * item.Quantity);
     }
+    public void MarkAsSucceeded()
+    {
+        OrderStatus = OrderStatus.Paid;
+    }
+    public void MarkAsFailed()
+    {
+        OrderStatus = OrderStatus.Paid;
+    }
 }

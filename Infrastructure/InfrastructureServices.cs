@@ -1,3 +1,4 @@
+using Application.Features.Cart.Interfaces;
 using Application.Features.Order.Interfaces;
 using Application.Features.Payment.Interfaces;
 using Application.Features.Product.Interfaces;
@@ -26,6 +27,7 @@ public static class InfrastructureServices
         services.AddScoped<PaymentGatewayResolverContract,PaymentGatewayResolver>();
         services.AddScoped<PaymentGatewayProviderContract,ZarinPalPaymentGatewayProvider>();
         services.AddScoped<PaymentGatewayProviderContract,SamanPaymentGatewayProvider>();
+        services.AddScoped<CartRepositoryContract,CartRepository>();
         services.AddScoped<DatabaseSeeder>();
 
         return services;
