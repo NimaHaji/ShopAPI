@@ -1,4 +1,6 @@
 using System.ComponentModel.Design;
+using Application.Features.Cart.implementations;
+using Application.Features.Cart.Interfaces;
 using Application.Features.Order.implementations;
 using Application.Features.Order.Interfaces;
 using Application.Features.Payment.Interfaces;
@@ -16,6 +18,7 @@ public static class ApplicationServices
         services.AddScoped<PaymentServiceContract,PaymentService>();
         services.AddScoped<ProductServicesContract,ProductService>();
         services.AddScoped<OrderServicesContract,OrderService>();
+        services.AddScoped<CartServicesContract,CartService>();
         return services;
     }
 }

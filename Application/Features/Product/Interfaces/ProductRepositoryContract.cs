@@ -1,3 +1,5 @@
+using Domain.Entites;
+
 namespace Application.Features.Product.Interfaces;
 
 public interface ProductRepositoryContract
