@@ -1,5 +1,5 @@
 using Application.Features.Order.Interfaces;
-using Domain.Entites;
+using Domain.Entities;
 using Infrastructure.Persistence.Contexts;
 using Microsoft.EntityFrameworkCore;
 

@@ -11,12 +11,17 @@
     </ItemGroup>
 
     <ItemGroup>
+      <PackageReference Include="FluentValidation" Version="9.5.4" />
+      <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.3.9" />
       <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.17" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.17" />
     </ItemGroup>
 
     <ItemGroup>
+      <Folder Include="Features\Checkout\DTOs\" />
+      <Folder Include="Features\DummyData\" />
       <Folder Include="Features\Product\DTOs\" />
+      <Folder Include="Validator\" />
     </ItemGroup>
 
 </Project>

@@ -1,10 +1,8 @@
-using Domain.Entites;
-
 namespace Application.Features.Product.Interfaces;
 
 public interface ProductRepositoryContract
 {
-    Task<Domain.Entites.Product?> GetProductByIdAsync(Guid productId);
-    Task CreateProductAsync(Domain.Entites.Product product);
+    Task<Domain.Entities.Product?> GetProductByIdAsync(Guid productId);
+    Task CreateProductAsync(Domain.Entities.Product product);
     Task SaveAsync();
 }

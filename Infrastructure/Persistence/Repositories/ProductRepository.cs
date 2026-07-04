@@ -1,6 +1,6 @@
 using Application.Features.Order.Interfaces;
 using Application.Features.Product.Interfaces;
-using Domain.Entites;
+using Domain.Entities;
 using Infrastructure.Persistence.Contexts;
 using Microsoft.EntityFrameworkCore;
 

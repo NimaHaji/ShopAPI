@@ -1,6 +1,6 @@
 using Application.Features.Payment.DTOs;
 using Application.Features.Payment.Interfaces;
-using Domain.Entities;
+using Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ShopApi.Controllers;
