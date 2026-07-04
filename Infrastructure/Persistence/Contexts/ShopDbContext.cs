@@ -1,9 +1,8 @@
 using System.Reflection;
-using Domain.Entites;
 using Domain.Entities;
 using Infrastructure.Persistence.Mappings;
 using Microsoft.EntityFrameworkCore;
-using OrderItem = Domain.Entites.OrderItem;
+using OrderItem = Domain.Entities.OrderItem;
 
 namespace Infrastructure.Persistence.Contexts; 
 
@@ -19,6 +18,8 @@ public class ShopDbContext:DbContext
     public DbSet<OrderItem> OrderItems { get; set; }
     public DbSet<Cart> Carts { get; set; }
     public DbSet<CartItem> CartItems { get; set; }
+    public DbSet<User> Users { get; set; }
+    public DbSet<RefreshToken> RefreshTokens { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

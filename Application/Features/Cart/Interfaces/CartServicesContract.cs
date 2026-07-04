@@ -4,10 +4,10 @@ namespace Application.Features.Cart.Interfaces;
 
 public interface CartServicesContract
 {
-    Task<string> AddItemAsync(Guid userId,AddCartItemDto dto);
-    Task UpdateItemQuantityAsync(Guid userId,UpdateCartDto dto);
-    Task<ViewCartDto> GetCartByUserIdAsync(Guid userId);
-    Task DeleteItemAsync(Guid userId, Guid productId);
-    Task ClearCartAsync(Guid userId);
-    Task<int> GetCartItemsCountAsync(Guid userId);
+    Task<string> AddItemAsync(AddCartItemDto dto);
+    Task UpdateItemQuantityAsync(UpdateCartDto dto);
+    Task<ViewCartDto> GetCartByUserIdAsync();
+    Task DeleteItemAsync(Guid productId);
+    Task ClearCartAsync();
+    Task<int> GetCartItemsCountAsync();
 }

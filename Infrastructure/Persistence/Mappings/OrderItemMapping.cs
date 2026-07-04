@@ -1,4 +1,4 @@
-using Domain.Entites;
+using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -13,9 +13,20 @@ public class OrderItemMapping:IEntityTypeConfiguration<OrderItem>
         builder.HasKey(x => x.Id);
 
         builder.Property(x => x.Price)
-            .HasPrecision(18, 2);
+            .IsRequired();
 
         builder.Property(x => x.Quantity)
+            .IsRequired();
+
+        builder
+            .Property(x => x.OrderId)
+            .IsRequired();
+        
+        builder.Property(x => x.ProductTitle)
+            .HasMaxLength(200)
+            .IsRequired();
+
+        builder.Property(x => x.ProductId)
             .IsRequired();
     }
 }

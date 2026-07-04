@@ -1,7 +1,9 @@
+using Application.Common.Interfaces;
 using Application.Features.Cart.DTOs;
 using Application.Features.Cart.Interfaces;
 using Application.Features.Product.Interfaces;
-using Domain.Entites;
+using Domain.Entities;
+using Domain.Exceptions;
 
 namespace Application.Features.Cart.implementations;
 
@@ -9,14 +11,18 @@ public class CartService:CartServicesContract
 {
     private readonly CartRepositoryContract _cartRepository;
     private readonly ProductRepositoryContract _productRepository;
-    public CartService(CartRepositoryContract cartRepository, ProductRepositoryContract productRepository)
+    private readonly IUSerContext _userContext;
+    public CartService(CartRepositoryContract cartRepository, ProductRepositoryContract productRepository, IUSerContext userContext)
     {
         _cartRepository = cartRepository;
         _productRepository = productRepository;
+        _userContext = userContext;
     }
 
-    public async Task<string> AddItemAsync(Guid userId,AddCartItemDto dto)
+    public async Task<string> AddItemAsync(AddCartItemDto dto)
     {
+        var userId = _userContext.UserId ?? throw new UnauthorizedAccessException("کاربر احراز هویت نشده است.");
+                
         if (dto.Quantity <= 0)
         {
             throw new Exception("تعداد درخواستی باید بیشتر از صفر باشد.");
@@ -37,7 +43,7 @@ public class CartService:CartServicesContract
         var cart = await _cartRepository.GetCartByUserIdAsync(userId);
         if (cart is null)
         {
-            cart = new Domain.Entites.Cart
+            cart = new Domain.Entities.Cart
             {
                 UserId = userId
             };
@@ -70,8 +76,9 @@ public class CartService:CartServicesContract
         return "با موفقیت به سبد خرید اضافه شد";
     }
 
-    public async Task UpdateItemQuantityAsync(Guid userId, UpdateCartDto dto)
+    public async Task UpdateItemQuantityAsync(UpdateCartDto dto)
     {
+        var userId = _userContext.UserId ?? throw new UnauthorizedAccessException("کاربر احراز هویت نشده است.");
         if (dto.NewQuantity <= 0)
             throw new Exception("تعداد باید بیشتر از صفر باشد. برای حذف، از متد حذف استفاده کنید.");
 
@@ -94,8 +101,9 @@ public class CartService:CartServicesContract
         await _cartRepository.SaveAsync();
     }
 
-    public async Task<ViewCartDto> GetCartByUserIdAsync(Guid userId)
+    public async Task<ViewCartDto> GetCartByUserIdAsync()
     {
+        var userId = _userContext.UserId ?? throw new UnauthorizedAccessException("کاربر احراز هویت نشده است.");
         var cart=await _cartRepository.GetCartWithProductsByUserIdAsync(userId);
         if (cart is null)
         {
@@ -122,8 +130,9 @@ public class CartService:CartServicesContract
         return cartDto;
     }
 
-    public async Task DeleteItemAsync(Guid userId, Guid productId)
+    public async Task DeleteItemAsync(Guid productId)
     {
+        var userId = _userContext.UserId ?? throw new UnauthorizedAccessException("کاربر احراز هویت نشده است.");
         var cart=await _cartRepository.GetCartByUserIdAsync(userId);
         if (cart is null) throw new Exception("سبد خرید یافت نشد");
 
@@ -136,17 +145,19 @@ public class CartService:CartServicesContract
         await _cartRepository.SaveAsync();
     }
 
-    public async Task ClearCartAsync(Guid userId)
+    public async Task ClearCartAsync()
     {
+        var userId = _userContext.UserId ?? throw new UnauthorizedAccessException("کاربر احراز هویت نشده است.");
         var cart=await _cartRepository.GetCartByUserIdAsync(userId);
         if (cart is null) throw new Exception("سبد خرید یافت نشد");
         
-        cart.CartItems.Clear();
+        cart.ClearCart();
         await _cartRepository.SaveAsync();
     }
 
-    public async Task<int> GetCartItemsCountAsync(Guid userId)
+    public async Task<int> GetCartItemsCountAsync()
     {
+        var userId = _userContext.UserId ?? throw new UnauthorizedAccessException("کاربر احراز هویت نشده است.");
         var cart = await _cartRepository.GetCartByUserIdAsync(userId);
         if (cart is null) return 0;
         
