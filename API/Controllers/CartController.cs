@@ -1,0 +1,67 @@
+using Application.Features.Cart.DTOs;
+using Application.Features.Cart.implementations;
+using Application.Features.Cart.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace ShopApi.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public class CartController : ControllerBase
+{
+    private readonly CartServicesContract _cartService;
+
+    public CartController(CartServicesContract cartService)
+    {
+        _cartService = cartService;
+    }
+
+    [HttpGet("Cart")]
+    [Authorize]
+    public async Task<IActionResult> GetCartAsync()
+    {
+        var cartView = await _cartService.GetCartByUserIdAsync();
+        return Ok(cartView);
+    }
+    
+    [HttpPost("items")]
+    [Authorize]
+    public async Task<IActionResult> AddItem(AddCartItemDto item)
+    {
+        var result = await _cartService.AddItemAsync(item);
+        return Ok(result);
+    }
+    
+    [HttpPut("items")]
+    [Authorize]
+    public async Task<IActionResult> UpdateQuantity(UpdateCartDto dto)
+    {
+        await _cartService.UpdateItemQuantityAsync(dto);
+        return Ok(new { message = "تعداد با موفقیت بروزرسانی شد." });
+    }
+    
+    [HttpDelete("items/{productId:guid}")]
+    [Authorize]
+    public async Task<IActionResult> DeleteItem(Guid productId)
+    {
+        await _cartService.DeleteItemAsync(productId);
+        return Ok(new {message ="محصول با موفقیت حذف شد ."});
+    }
+
+    [HttpDelete("clear")]
+    [Authorize]
+    public async Task<IActionResult> ClearCart()
+    {
+        await _cartService.ClearCartAsync();
+        return Ok(new { message = "سبد خرید کاملاً خالی شد." });
+    }
+
+    [HttpGet("count")]
+    [Authorize]
+    public async Task<IActionResult> GetCount()
+    {
+        var count=await _cartService.GetCartItemsCountAsync();
+        return Ok(count);
+    }
+}

@@ -1,7 +1,7 @@
 using System.Net.Http.Json;
 using System.Text.Json;
-using Application.Dtos;
-using Domain.Entites;
+using Application.Features.DummyData.DTOs;
+using Domain.Entities;
 using Infrastructure.Persistence.Contexts;
 using Microsoft.EntityFrameworkCore;
 
@@ -20,6 +20,7 @@ public class DatabaseSeeder
 
     public async Task SeedAsync()
     {
+        const long DollarToToman = 172000;
         try
         {
             Console.WriteLine("Seeder: started");
@@ -91,7 +92,7 @@ public class DatabaseSeeder
                     g => g.Key,
                     g => g.First().Id,
                     StringComparer.OrdinalIgnoreCase);
-            
+
             Console.WriteLine("Seeder: creating product entities...");
             var entities = products.Select(p =>
             {
@@ -103,11 +104,12 @@ public class DatabaseSeeder
                 var brandTitle = (p.Brand ?? "").Trim();
                 if (!string.IsNullOrWhiteSpace(brandTitle) && brandMap.TryGetValue(brandTitle, out var bid))
                     brandId = bid;
-
+                
+                var tomanPrice = (long)(Math.Round(p.Price * DollarToToman / 1000m, MidpointRounding.AwayFromZero) * 1000m);
                 return Product.Create(
                     p.Title,
                     p.Description,
-                    p.Price,
+                    tomanPrice,
                     p.DiscountPercentage,
                     p.Stock,
                     categoryId,

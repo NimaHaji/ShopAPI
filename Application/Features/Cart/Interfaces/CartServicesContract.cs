@@ -1,0 +1,13 @@
+using Application.Features.Cart.DTOs;
+
+namespace Application.Features.Cart.Interfaces;
+
+public interface CartServicesContract
+{
+    Task<string> AddItemAsync(AddCartItemDto dto);
+    Task UpdateItemQuantityAsync(UpdateCartDto dto);
+    Task<ViewCartDto> GetCartByUserIdAsync();
+    Task DeleteItemAsync(Guid productId);
+    Task ClearCartAsync();
+    Task<int> GetCartItemsCountAsync();
+}
