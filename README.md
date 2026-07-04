@@ -48,7 +48,7 @@ ShopAPI/
 ### 1. دریافت پروژه
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/ShopAPI.git
+git clone https://github.com/NimaHaji/ShopAPI.git
 cd ShopAPI
 ```
 
