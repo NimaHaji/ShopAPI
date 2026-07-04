@@ -3,7 +3,7 @@ using System.Text.Json;
 using Application.Features.Payment.DTOs;
 using Application.Features.Payment.DTOs.Saman;
 using Application.Features.Payment.Interfaces;
-using Domain.Entities;
+using Domain.Enums;
 using Microsoft.Extensions.Configuration;
 
 namespace Infrastructure.Services.Payment.Implement;

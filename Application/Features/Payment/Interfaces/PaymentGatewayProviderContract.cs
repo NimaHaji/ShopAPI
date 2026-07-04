@@ -1,5 +1,6 @@
 using Application.Features.Payment.DTOs;
-using Domain.Entities;
+using Domain.Enums;
+using Microsoft.AspNetCore.Http;
 
 namespace Application.Features.Payment.Interfaces;
 

@@ -1,7 +1,7 @@
 using Application.Features.Order.DTOs;
 using Application.Features.Order.Interfaces;
 using Application.Features.Product.Interfaces;
-using Domain.Entites;
+using Domain.Entities;
 
 namespace Application.Features.Order.implementations;
 
@@ -17,7 +17,7 @@ public class OrderService:OrderServicesContract
 
     public async Task<Guid> CreateOrderAsync(CreateOrderDto orderDto)
     {
-        var order = new Domain.Entites.Order();
+        var order = new Domain.Entities.Order();
 
         foreach (var item in orderDto.Items)
         {
