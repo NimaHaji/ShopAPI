@@ -1,6 +1,7 @@
 using Application.Features.Payment.DTOs;
 using Application.Features.Payment.Interfaces;
 using Domain.Enums;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ShopApi.Controllers;
@@ -21,6 +22,7 @@ public class PaymentController : ControllerBase
         _paymentServiceContract = paymentServiceContract;
     }
     [HttpPost]
+    [Authorize]
     public async Task<IActionResult> GetPaymentUrl([FromBody] CreatePaymentDto dto)
     {
         var paymentUrl = await _paymentServiceContract.CreatePaymentAsync(dto);
@@ -43,6 +45,7 @@ public class PaymentController : ControllerBase
     }
     [HttpPost("{gateway}")]
     [HttpGet("{gateway}")]
+    [Authorize]
     public async Task<IActionResult> CallBack([FromRoute] PaymentGateway gateway)
     {
         var values = GetAllValues();

@@ -1,6 +1,7 @@
 using Application.Features.Order.DTOs;
 using Application.Features.Order.Interfaces;
 using Infrastructure.Persistence.Repositories;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ShopApi.Controllers;
@@ -16,6 +17,7 @@ public class OrderController:ControllerBase
     }
 
     [HttpPost]
+    [Authorize]
     public async Task<IActionResult> CreateOrder([FromBody]CreateOrderDto dto)
     {
         var result = await _orderServicesContract.CreateOrderAsync(dto);

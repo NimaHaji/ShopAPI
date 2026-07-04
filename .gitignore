@@ -28,7 +28,15 @@ Migrations/*.Designer.cs
 
 appsettings.Development.json
 appsettings.Local.json
+appsettings.Production.json
+appsettings.Staging.json
 secrets.json
+*.secrets.json
+*.pfx
+*.p12
+*.pem
+*.key
+*.crt
 
 **/Properties/launchSettings.json
 
@@ -38,9 +46,10 @@ dist/
 .next/
 .env
 .env.local
+.env.*
+!.env.example
 
 docker-compose.override.yml
-.env
 
 TestResults/
 coverage/
@@ -48,3 +57,4 @@ coverage/
 
 *.tmp
 *.cache
+*.bak
