@@ -1,5 +1,3 @@
-using Domain.Entites;
-
 namespace Application.Features.Order.DTOs;
 
 public class CreateOrderDto

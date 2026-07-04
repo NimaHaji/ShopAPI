@@ -1,7 +1,7 @@
 using Application.Features.Cart.DTOs;
 using Application.Features.Cart.implementations;
 using Application.Features.Cart.Interfaces;
-using Domain.Entites;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ShopApi.Controllers;
@@ -18,44 +18,50 @@ public class CartController : ControllerBase
     }
 
     [HttpGet("Cart")]
-    public async Task<IActionResult> GetCartAsync([FromQuery] Guid userId)
+    [Authorize]
+    public async Task<IActionResult> GetCartAsync()
     {
-        var cartView = await _cartService.GetCartByUserIdAsync(userId);
+        var cartView = await _cartService.GetCartByUserIdAsync();
         return Ok(cartView);
     }
-    // Todo : userId From User jwt
+    
     [HttpPost("items")]
-    public async Task<IActionResult> AddItem(Guid userId, AddCartItemDto item)
+    [Authorize]
+    public async Task<IActionResult> AddItem(AddCartItemDto item)
     {
-        var result = await _cartService.AddItemAsync(userId, item);
+        var result = await _cartService.AddItemAsync(item);
         return Ok(result);
     }
     
     [HttpPut("items")]
-    public async Task<IActionResult> UpdateQuantity([FromQuery]Guid userId,UpdateCartDto dto)
+    [Authorize]
+    public async Task<IActionResult> UpdateQuantity(UpdateCartDto dto)
     {
-        await _cartService.UpdateItemQuantityAsync(userId, dto);
+        await _cartService.UpdateItemQuantityAsync(dto);
         return Ok(new { message = "تعداد با موفقیت بروزرسانی شد." });
     }
-
+    
     [HttpDelete("items/{productId:guid}")]
-    public async Task<IActionResult> DeleteItem([FromQuery]Guid userId ,Guid productId)
+    [Authorize]
+    public async Task<IActionResult> DeleteItem(Guid productId)
     {
-        await _cartService.DeleteItemAsync(userId, productId);
+        await _cartService.DeleteItemAsync(productId);
         return Ok(new {message ="محصول با موفقیت حذف شد ."});
     }
 
     [HttpDelete("clear")]
-    public async Task<IActionResult> ClearCart([FromQuery] Guid userId)
+    [Authorize]
+    public async Task<IActionResult> ClearCart()
     {
-        await _cartService.ClearCartAsync(userId);
+        await _cartService.ClearCartAsync();
         return Ok(new { message = "سبد خرید کاملاً خالی شد." });
     }
 
     [HttpGet("count")]
-    public async Task<IActionResult> GetCount([FromQuery] Guid userId)
+    [Authorize]
+    public async Task<IActionResult> GetCount()
     {
-        var count=await _cartService.GetCartItemsCountAsync(userId);
+        var count=await _cartService.GetCartItemsCountAsync();
         return Ok(count);
     }
 }

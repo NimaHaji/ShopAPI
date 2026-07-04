@@ -1,7 +1,7 @@
 using Application.Features.Payment.Interfaces;
-using Domain.Entities;
+using Domain.Enums;
 
-namespace Infrastructure.Services.Implement;
+namespace Infrastructure.Services.Payment.Implement;
 
 public class PaymentGatewayResolver:PaymentGatewayResolverContract
 {
