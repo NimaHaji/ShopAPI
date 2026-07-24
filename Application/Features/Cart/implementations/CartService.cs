@@ -3,7 +3,6 @@ using Application.Features.Cart.DTOs;
 using Application.Features.Cart.Interfaces;
 using Application.Features.Product.Interfaces;
 using Domain.Entities;
-using Domain.Exceptions;
 
 namespace Application.Features.Cart.implementations;
 

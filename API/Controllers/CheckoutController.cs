@@ -18,7 +18,7 @@ public class CheckoutController:ControllerBase
     [Authorize]
     public async Task<IActionResult> Checkout()
     {
-        var orderId = await _checkoutServiceContract.CreateOrderFromCartAsync();
+        var orderId = await _checkoutServiceContract.CheckoutAsync();
         return Ok(orderId);
     }
 }
