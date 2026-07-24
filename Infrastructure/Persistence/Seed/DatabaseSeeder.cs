@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using System.Security.AccessControl;
 using System.Text.Json;
 using Application.Features.DummyData.DTOs;
 using Domain.Entities;
@@ -47,7 +48,7 @@ public class DatabaseSeeder
 
             var products = response.Products;
 
-            // Categories
+            #region Category
             var categoryTitles = products
                 .Select(x => (x.Category ?? "").Trim())
                 .Where(x => !string.IsNullOrWhiteSpace(x))
@@ -58,8 +59,9 @@ public class DatabaseSeeder
 
             var categoryEntities = categoryTitles.Select(ProductCategory.Create).ToList();
             await _context.ProductCategories.AddRangeAsync(categoryEntities);
+            #endregion
 
-            // Brands
+            #region Brands
             var brandTitles = products
                 .Select(x => (x.Brand ?? "").Trim())
                 .Where(x => !string.IsNullOrWhiteSpace(x))
@@ -73,8 +75,8 @@ public class DatabaseSeeder
 
             Console.WriteLine("Seeder: saving categories/brands...");
             await _context.SaveChangesAsync();
-
-            // Lookup (safe against duplicates)
+            #endregion
+            
             var categoryMap = (await _context.ProductCategories
                     .AsNoTracking()
                     .ToListAsync())
@@ -94,7 +96,13 @@ public class DatabaseSeeder
                     StringComparer.OrdinalIgnoreCase);
 
             Console.WriteLine("Seeder: creating product entities...");
-            var entities = products.Select(p =>
+
+            #region InventoryItem & Product
+            var productEntities = new List<Product>();
+            var inventoryItems = new List<InventoryItem>();
+            var inventoryTransactions = new List<InventoryTransaction>();
+
+            foreach (var p in products)
             {
                 var categoryTitle = (p.Category ?? "").Trim();
                 if (!categoryMap.TryGetValue(categoryTitle, out var categoryId))
@@ -106,7 +114,8 @@ public class DatabaseSeeder
                     brandId = bid;
                 
                 var tomanPrice = (long)(Math.Round(p.Price * DollarToToman / 1000m, MidpointRounding.AwayFromZero) * 1000m);
-                return Product.Create(
+                
+                var product = Product.Create(
                     p.Title,
                     p.Description,
                     tomanPrice,
@@ -116,10 +125,40 @@ public class DatabaseSeeder
                     brandId,
                     p.Rating
                 );
-            }).ToList();
+                
+                productEntities.Add(product);
+                var inventoryItem = new InventoryItem(
+                    productId: product.Id,
+                    stockQuantity: p.Stock,
+                    reservedQuantity: 0
+                );
+                inventoryItems.Add(inventoryItem);
+                var transaction = new InventoryTransaction
+                (
+                    inventoryItemId: inventoryItem.InventoryId,
+                    transactionType: TransactionType.StockIn,
+                    quantity: p.Stock,
+                    reference: "INITIAL_SEED",
+                    description: $"Initial stock from DummyJSON: {p.Stock} units"
+                );
+                
+                inventoryTransactions.Add(transaction);
+            }
 
-            Console.WriteLine($"Seeder: inserting products={entities.Count}...");
-            await _context.Products.AddRangeAsync(entities);
+            Console.WriteLine($"Seeder: inserting products={productEntities.Count}...");
+            await _context.Products.AddRangeAsync(productEntities);
+            
+            Console.WriteLine($"Seeder: inserting inventory items={inventoryItems.Count}...");
+            await _context.InventoryItems.AddRangeAsync(inventoryItems);
+            
+            Console.WriteLine($"Seeder: inserting inventory transactions={inventoryTransactions.Count}...");
+            await _context.InventoryTransactions.AddRangeAsync(inventoryTransactions);
+            #endregion
+            
+            
+            // ============================================
+            // 7. Save All Changes
+            // ============================================
             await _context.SaveChangesAsync();
 
             Console.WriteLine("Seeder: done");

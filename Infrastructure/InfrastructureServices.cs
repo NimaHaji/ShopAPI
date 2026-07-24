@@ -3,6 +3,8 @@ using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.Features.Auth.Interfaces;
 using Application.Features.Cart.Interfaces;
+using Application.Features.Inventory.Interfaces;
+using Application.Features.InventoryTransaction.Interfaces;
 using Application.Features.Order.Interfaces;
 using Application.Features.Payment.Interfaces;
 using Application.Features.Product.Interfaces;
@@ -41,6 +43,8 @@ public static class InfrastructureServices
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IUSerContext, UserContext>();
+        services.AddScoped<InventoryRepositoryContract,InventoryRepository>();
+        services.AddScoped<InventoryTransactionRepositoryContract, InventoryTransactionRepository>();
         services.AddScoped<DatabaseSeeder>();
 
         return services;
