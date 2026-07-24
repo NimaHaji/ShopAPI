@@ -27,6 +27,11 @@ public class OrderRepository:OrderRepositoryContract
         await context.AddAsync(order);
     }
 
+    public void UpdateOrder(Order order)
+    {
+        context.Update(order);
+    }
+
     public async Task SaveAsync()
     {
         await context.SaveChangesAsync();

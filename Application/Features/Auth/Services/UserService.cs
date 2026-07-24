@@ -5,7 +5,7 @@ using Application.Features.Auth.DTOs;
 using Application.Features.Auth.Interfaces;
 using Domain.Entities;
 using Domain.Enums;
-using Domain.Exceptions;
+using Shared.Exceptions;
 
 namespace Application.Features.Auth.Services;
 
