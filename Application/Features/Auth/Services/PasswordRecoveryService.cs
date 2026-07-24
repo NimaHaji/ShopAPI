@@ -1,7 +1,6 @@
 using Application.Common.Interfaces;
 using Application.Features.Auth.Interfaces;
 using Domain.Entities;
-using Domain.Exceptions;
 
 namespace Application.Features.Auth.Services;
 

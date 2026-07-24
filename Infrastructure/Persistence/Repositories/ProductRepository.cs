@@ -28,8 +28,11 @@ public class ProductRepository:ProductRepositoryContract
         await _context.Products.AddAsync(product);
     }
 
-    public async Task SaveAsync()
+    public async Task<List<Product>> GetProductsByIdsAsync(List<Guid> productIds)
     {
-        await _context.SaveChangesAsync();
+        return await _context
+            .Products
+            .Where(p => productIds.Contains(p.Id))
+            .ToListAsync();
     }
 }
