@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Identity;
 
 namespace Infrastructure.Security.Hashing;
 
-public class PasswordHasher:IPasswordHasher
+public class PasswordHasher : IPasswordHasher
 {
     private readonly PasswordHasher<object> _hasher = new();
 

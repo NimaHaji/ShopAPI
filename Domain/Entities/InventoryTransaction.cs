@@ -9,13 +9,15 @@ public class InventoryTransaction
     public string? Reference { get; set; }
     public string? Description { get; set; }
     public DateTime CreatedAt { get; set; }
-        
+
     public InventoryItem InventoryItem { get; set; }
+
     private InventoryTransaction()
     {
-        
     }
-    public InventoryTransaction(Guid inventoryItemId,TransactionType transactionType,int quantity, string? reference, string? description)
+
+    public InventoryTransaction(Guid inventoryItemId, TransactionType transactionType, int quantity, string? reference,
+        string? description)
     {
         InventoryTransactionId = Guid.NewGuid();
         InventoryItemId = inventoryItemId;

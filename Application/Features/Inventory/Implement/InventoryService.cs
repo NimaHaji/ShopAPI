@@ -12,13 +12,14 @@ namespace Application.Features.Inventory.Implement;
 public class InventoryService : InventoryServiceContract
 {
     private readonly InventoryRepositoryContract _inventoryRepositoryContract;
-    private readonly InventoryTransactionRepositoryContract  _inventoryTransactionRepositoryContract;
+    private readonly InventoryTransactionRepositoryContract _inventoryTransactionRepositoryContract;
     private readonly UnitOfWorkContract _unitOfWorkContract;
     private readonly InventoryTransactionRepositoryContract _repositoryTransactionContract;
 
     public InventoryService(
         InventoryRepositoryContract inventoryRepositoryContract,
-        UnitOfWorkContract unitOfWorkContract, InventoryTransactionRepositoryContract repositoryTransactionContract, InventoryTransactionRepositoryContract inventoryTransactionRepositoryContract)
+        UnitOfWorkContract unitOfWorkContract, InventoryTransactionRepositoryContract repositoryTransactionContract,
+        InventoryTransactionRepositoryContract inventoryTransactionRepositoryContract)
     {
         _inventoryRepositoryContract = inventoryRepositoryContract;
         _unitOfWorkContract = unitOfWorkContract;
@@ -44,7 +45,7 @@ public class InventoryService : InventoryServiceContract
         {
             try
             {
-                var inventory = await _inventoryRepositoryContract.GetByProductIdWithLockAsync(productId);
+                var inventory = await _inventoryRepositoryContract.GetByProductId(productId);
 
                 if (inventory == null)
                     throw new NotFoundException($"موجودی برای {productId} پیدا نشد");
@@ -59,10 +60,10 @@ public class InventoryService : InventoryServiceContract
                     reference: orderReference,
                     description: $"محصول {productId} با شماره سفارش {orderReference} رزرو شد"
                 );
-                
+
                 inventory.Reserve(quantity);
                 inventory.Transactions.Add(transaction);
-                
+
                 _repositoryTransactionContract.AddInventoryTransactionAsync(transaction);
 
                 await _unitOfWorkContract.SaveAsync();
@@ -83,21 +84,21 @@ public class InventoryService : InventoryServiceContract
 
     public async Task ReserveAllItemStockAsync(List<CartItem> items)
     {
-        var productIds=items.Select(i => i.ProductId).Distinct().ToList();
+        var productIds = items.Select(i => i.ProductId).Distinct().ToList();
         var inventories = await _inventoryRepositoryContract.GetByProductIdsAsync(productIds);
-        
+
         foreach (var item in items)
         {
-            var inventory=inventories?.SingleOrDefault(x=>x.ProductId == item.ProductId);
+            var inventory = inventories?.SingleOrDefault(x => x.ProductId == item.ProductId);
             if (inventory is null)
                 throw new NotFoundException("موجودی محصوب پیدا نشد");
-            
+
             var transaction = new Domain.Entities.InventoryTransaction(
                 inventoryItemId: inventory.InventoryId,
                 transactionType: TransactionType.Reservation,
                 quantity: item.Quantity,
                 reference: "رزرو",
-                description:$"محصول {item.ProductId} رزرو شد"
+                description: $"محصول {item.ProductId} رزرو شد"
             );
 
             inventory.Reserve(item.Quantity);
@@ -107,7 +108,7 @@ public class InventoryService : InventoryServiceContract
 
     public async Task<InventoryItemDto> ConfirmReservationAsync(Guid productId, int quantity, string orderReference)
     {
-        var inventory = await _inventoryRepositoryContract.GetByProductIdWithLockAsync(productId);
+        var inventory = await _inventoryRepositoryContract.GetByProductId(productId);
 
         if (inventory == null)
             throw new NotFoundException($"محصول {productId} یافت نشد ");
@@ -115,13 +116,13 @@ public class InventoryService : InventoryServiceContract
         if (inventory.ReservedQuantity < quantity)
             throw new InvalidOperationException(
                 $"تعداد درخواستی برای تأیید از تعداد رزروشده بیشتر است. ({quantity} > {inventory.ReservedQuantity})");
-        
+
         var transaction = new Domain.Entities.InventoryTransaction(
             inventoryItemId: inventory.InventoryId,
             transactionType: TransactionType.Confirmation,
             quantity: quantity,
             reference: orderReference,
-            description:$"محصول {productId} با شماره سفارش {orderReference} قبول شد"
+            description: $"محصول {productId} با شماره سفارش {orderReference} قبول شد"
         );
 
         inventory.CommitReserve(quantity);
@@ -134,7 +135,7 @@ public class InventoryService : InventoryServiceContract
 
     public async Task<InventoryItemDto> CancelReservationAsync(Guid productId, int quantity, string orderReference)
     {
-        var inventory = await _inventoryRepositoryContract.GetByProductIdWithLockAsync(productId);
+        var inventory = await _inventoryRepositoryContract.GetByProductId(productId);
 
         if (inventory == null)
             throw new NotFoundException($"محصول {productId} یافت نشد ");
@@ -142,7 +143,7 @@ public class InventoryService : InventoryServiceContract
         if (inventory.ReservedQuantity < quantity)
             throw new InvalidOperationException(
                 $"تعداد درخواستی برای تأیید از تعداد رزروشده بیشتر است. ({quantity} > {inventory.ReservedQuantity})");
-        
+
         var transaction = new Domain.Entities.InventoryTransaction(
             inventoryItemId: inventory.InventoryId,
             transactionType: TransactionType.Cancellation,
@@ -161,7 +162,7 @@ public class InventoryService : InventoryServiceContract
 
     public async Task<InventoryItemDto> AddStockAsync(Guid productId, int quantity, string description)
     {
-        var inventory = await _inventoryRepositoryContract.GetByProductIdWithLockAsync(productId);
+        var inventory = await _inventoryRepositoryContract.GetByProductId(productId);
 
         if (inventory == null)
         {
@@ -172,6 +173,7 @@ public class InventoryService : InventoryServiceContract
             );
             await _inventoryRepositoryContract.AddAsync(inventory);
         }
+
         var transaction = new Domain.Entities.InventoryTransaction(
             inventoryItemId: inventory.InventoryId,
             transactionType: TransactionType.StockIn,
@@ -182,8 +184,6 @@ public class InventoryService : InventoryServiceContract
 
         inventory.AddStockQuantity(quantity);
         inventory.Transactions.Add(transaction);
-
-        await _unitOfWorkContract.SaveAsync();
 
         return MapToDto(inventory);
     }

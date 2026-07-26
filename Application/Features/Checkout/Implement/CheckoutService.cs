@@ -82,7 +82,7 @@ public class CheckoutService : CheckoutServiceContract
                 //     throw new ConflictException("موجودی در حال تغییر است. لطفاً دوباره تلاش کنید.");
                 await _unitOfWork.RollbackTransactionAsync();
 
-                foreach(var entry in ex.Entries)
+                foreach (var entry in ex.Entries)
                 {
                     Console.WriteLine(entry.Entity.GetType().Name);
                 }
@@ -91,10 +91,10 @@ public class CheckoutService : CheckoutServiceContract
 
                 attempts++;
 
-                if(attempts == maxAttempts)
+                if (attempts == maxAttempts)
                     throw new ConflictException("موجودی در حال تغییر است");
             }
-            catch 
+            catch
             {
                 await _unitOfWork.RollbackTransactionAsync();
                 throw;

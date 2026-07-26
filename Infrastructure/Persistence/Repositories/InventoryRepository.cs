@@ -47,9 +47,9 @@ public class InventoryRepository : InventoryRepositoryContract
             .ToListAsync();
     }
 
-    public void UpdateAsync(InventoryItem  inventoryItem)
+    public void UpdateAsync(InventoryItem inventoryItem)
     {
-         _context.Update(inventoryItem);
+        _context.Update(inventoryItem);
     }
 
     public async Task AddAsync(InventoryItem inventory)
@@ -57,7 +57,7 @@ public class InventoryRepository : InventoryRepositoryContract
         await _context.InventoryItems.AddAsync(inventory);
     }
 
-    public async Task<InventoryItem?> GetByProductIdWithLockAsync(Guid productId)
+    public async Task<InventoryItem?> GetByProductId(Guid productId)
     {
         return await _context
             .InventoryItems

@@ -3,9 +3,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ShopApi.Controllers;
+
 [ApiController]
 [Route("api/[controller]")]
-public class CheckoutController:ControllerBase
+public class CheckoutController : ControllerBase
 {
     private readonly CheckoutServiceContract _checkoutServiceContract;
 
@@ -14,7 +15,7 @@ public class CheckoutController:ControllerBase
         _checkoutServiceContract = checkoutServiceContract;
     }
 
-    [HttpPost("checkout")]
+    [HttpPost]
     [Authorize]
     public async Task<IActionResult> Checkout()
     {

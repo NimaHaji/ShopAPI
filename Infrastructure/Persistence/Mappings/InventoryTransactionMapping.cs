@@ -9,9 +9,9 @@ public class InventoryTransactionMapping : IEntityTypeConfiguration<InventoryTra
     public void Configure(EntityTypeBuilder<InventoryTransaction> builder)
     {
         builder.ToTable("InventoryTransactions");
-        
+
         builder.HasKey(t => t.InventoryTransactionId);
-        
+
         builder.Property(t => t.InventoryTransactionId)
             .IsRequired();
 
@@ -41,7 +41,7 @@ public class InventoryTransactionMapping : IEntityTypeConfiguration<InventoryTra
         builder.HasIndex(t => new { t.InventoryItemId, t.CreatedAt });
 
         builder.HasIndex(t => t.Reference);
-        
+
         builder.HasOne(t => t.InventoryItem)
             .WithMany(i => i.Transactions)
             .HasForeignKey(t => t.InventoryItemId)

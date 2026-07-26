@@ -9,9 +9,9 @@ public class InventoryItemMapping : IEntityTypeConfiguration<InventoryItem>
     public void Configure(EntityTypeBuilder<InventoryItem> builder)
     {
         builder.ToTable("InventoryItems", "dbo");
-        
+
         builder.HasKey(i => i.InventoryId);
-        
+
         builder.Property(i => i.InventoryId)
             .HasColumnName("InventoryId")
             .IsRequired();
@@ -30,7 +30,7 @@ public class InventoryItemMapping : IEntityTypeConfiguration<InventoryItem>
 
         builder.Property(i => i.LastUpdated)
             .IsRequired();
-        
+
         builder.Property(i => i.RowVersion)
             .IsRequired()
             .IsRowVersion()
@@ -45,7 +45,7 @@ public class InventoryItemMapping : IEntityTypeConfiguration<InventoryItem>
             .WithOne()
             .HasForeignKey<InventoryItem>(i => i.ProductId)
             .OnDelete(DeleteBehavior.Restrict);
-        
+
         builder.HasMany(i => i.Transactions)
             .WithOne(t => t.InventoryItem)
             .HasForeignKey(t => t.InventoryItemId)

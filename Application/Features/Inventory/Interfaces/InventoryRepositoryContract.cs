@@ -10,5 +10,5 @@ public interface InventoryRepositoryContract
     Task<List<InventoryItem>?> GetAllAsync();
     void UpdateAsync(InventoryItem  inventoryItem);
     Task AddAsync(InventoryItem inventory);
-    Task<InventoryItem?> GetByProductIdWithLockAsync(Guid productId);
+    Task<InventoryItem?> GetByProductId(Guid productId);
 }

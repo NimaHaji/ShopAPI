@@ -25,34 +25,33 @@ public class UnitOfWork : UnitOfWorkContract
     {
         if (_transaction is not null)
             throw new InvalidOperationException("Transaction is already active.");
-        _transaction =  await _shopDbContext.Database.BeginTransactionAsync();
+        _transaction = await _shopDbContext.Database.BeginTransactionAsync();
     }
 
     public void ClearChangeTracker()
     {
-         _shopDbContext.ChangeTracker.Clear();
+        _shopDbContext.ChangeTracker.Clear();
     }
 
     public async Task CommitTransactionAsync()
     {
         if (_transaction is null)
             throw new InvalidOperationException("Transaction has not been started");
-        
+
         await _transaction.CommitAsync();
         await _transaction.DisposeAsync();
-        
-        _transaction=null;
+
+        _transaction = null;
     }
 
     public async Task RollbackTransactionAsync()
     {
         if (_transaction is null)
             return;
-        
+
         await _transaction.RollbackAsync();
         await _transaction.DisposeAsync();
-        
-        _transaction=null;
-    }
 
+        _transaction = null;
+    }
 }

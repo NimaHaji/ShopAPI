@@ -8,14 +8,12 @@ public class Product
     public long Price { get; private set; }
     public decimal? DiscountPercentage { get; private set; }
     public int Stock { get; private set; }
-    
+
     public Guid CategoryId { get; private set; }
     public ProductCategory Category { get; private set; }
 
     public Guid? BrandId { get; private set; }
     public ProductBrand Brand { get; private set; }
-
-    public decimal Rating { get; private set; }
 
     public static Product Create(
         string title,
@@ -24,8 +22,7 @@ public class Product
         decimal? discountPercentage,
         int stock,
         Guid categoryId,
-        Guid? brandId,
-        decimal rating)
+        Guid? brandId)
     {
         return new Product
         {
@@ -36,8 +33,8 @@ public class Product
             DiscountPercentage = discountPercentage,
             Stock = stock,
             CategoryId = categoryId,
-            BrandId = brandId,
-            Rating = rating
+            BrandId = brandId
         };
     }
+
 }
