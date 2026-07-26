@@ -7,45 +7,50 @@ namespace ShopApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class UserController:ControllerBase
+public class UserController : ControllerBase
 {
     private readonly IUserService _service;
+
     public UserController(IUserService service)
     {
         _service = service;
     }
 
     [HttpPost("Register")]
-    public async Task<IActionResult> Register([FromBody]RegisterUserRequestDto registerUserRequestDto)
+    public async Task<IActionResult> Register([FromBody] RegisterUserRequestDto registerUserRequestDto)
     {
-        var res=await _service.RegisterUserAsync(registerUserRequestDto);
+        var res = await _service.RegisterUserAsync(registerUserRequestDto);
         return Ok(res);
     }
-    
+
     [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody]LoginUserRequestDto requestDto)
+    public async Task<IActionResult> Login([FromBody] LoginUserRequestDto requestDto)
     {
         return Ok(await _service.LoginUserAsync(requestDto));
     }
+
     [HttpPost("refresh")]
-    public async Task<IActionResult> Refresh([FromBody]RefreshTokenRequest dto)
+    public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest dto)
     {
         return Ok(await _service.RefreshTokenAsync(dto.RefreshToken));
     }
+
     [HttpGet("ViewUsers")]
-    [Authorize(Roles =  "SuperAdmin")]
+    [Authorize(Roles = "SuperAdmin")]
     public async Task<IActionResult> ViewUsers()
     {
-        var res= await _service.GetAllUsersAsync();
+        var res = await _service.GetAllUsersAsync();
         return Ok(res);
     }
+
     [HttpPost("Logout")]
     [Authorize]
     public async Task<IActionResult> Logout()
     {
-        var res=await _service.LogoutUserAsync();
+        var res = await _service.LogoutUserAsync();
         return Ok(res);
     }
+
     [HttpGet("Profile")]
     [Authorize]
     public async Task<IActionResult> Profile()

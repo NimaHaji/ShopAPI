@@ -19,16 +19,16 @@ public class InventoryItem
     public InventoryItem(Guid productId, int stockQuantity, int reservedQuantity)
     {
         InventoryId = Guid.NewGuid();
-        LastUpdated= DateTime.UtcNow;
+        LastUpdated = DateTime.UtcNow;
         ProductId = productId;
         StockQuantity = stockQuantity;
-        ReservedQuantity= reservedQuantity;
+        ReservedQuantity = reservedQuantity;
     }
 
     public void Reserve(int quantity)
     {
         if (quantity <= 0)
-            throw new InvalidOperationException();
+            throw new BusinessException("تعداد باید بیشتر از صفر باشد");
 
         if (StockQuantity < quantity)
             throw new InsufficientStockException("موجودی محصول کافی نیست .");
@@ -36,14 +36,15 @@ public class InventoryItem
         ReservedQuantity += quantity;
         LastUpdated = DateTime.UtcNow;
     }
+
     public void CommitReserve(int quantity)
     {
         if (quantity <= 0)
-            throw new InvalidOperationException();
+            throw new BusinessException("تعداد باید بیشتر از صفر باشد");
 
         if (StockQuantity < quantity)
             throw new InsufficientStockException("موجودی محصول کافی نیست .");
-        
+
         StockQuantity -= quantity;
         ReservedQuantity -= quantity;
         LastUpdated = DateTime.UtcNow;
@@ -52,20 +53,20 @@ public class InventoryItem
     public void CancelReserve(int quantity)
     {
         if (quantity <= 0)
-            throw new InvalidOperationException();
+            throw new BusinessException("تعداد باید بیشتر از صفر باشد");
 
         if (StockQuantity < quantity)
             throw new InsufficientStockException("موجودی محصول کافی نیست .");
-        
+
         ReservedQuantity -= quantity;
-        LastUpdated=DateTime.UtcNow;
+        LastUpdated = DateTime.UtcNow;
     }
 
     public void AddStockQuantity(int quantity)
     {
         if (quantity <= 0)
-            throw new InvalidOperationException();
-        
+            throw new BusinessException("تعداد باید بیشتر از صفر باشد");
+
         StockQuantity += quantity;
         LastUpdated = DateTime.UtcNow;
     }

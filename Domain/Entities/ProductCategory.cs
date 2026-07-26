@@ -6,7 +6,11 @@ public class ProductCategory
     public string Title { get; private set; }
     private readonly List<Product> _products = new();
     public IReadOnlyCollection<Product> Products => _products;
-    private ProductCategory(){}
+
+    private ProductCategory()
+    {
+    }
+
     public static ProductCategory Create(string title)
     {
         return new ProductCategory

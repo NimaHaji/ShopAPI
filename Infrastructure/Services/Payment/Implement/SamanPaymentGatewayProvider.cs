@@ -14,7 +14,8 @@ public class SamanPaymentGatewayProvider : PaymentGatewayProviderContract
     private readonly IConfiguration _configuration;
     private readonly PaymentRepositoryContract _paymentRepositoryContract;
 
-    public SamanPaymentGatewayProvider(HttpClient httpClient, IConfiguration configuration, PaymentRepositoryContract paymentRepositoryContract)
+    public SamanPaymentGatewayProvider(HttpClient httpClient, IConfiguration configuration,
+        PaymentRepositoryContract paymentRepositoryContract)
     {
         _httpClient = httpClient;
         _configuration = configuration;
@@ -23,7 +24,8 @@ public class SamanPaymentGatewayProvider : PaymentGatewayProviderContract
 
     public PaymentGateway Gateway => PaymentGateway.Saman;
 
-    public async Task<PaymentGatewayRequestResult> RequestPaymentAsync(Domain.Entities.Payment payment, CreatePaymentDto dto)
+    public async Task<PaymentGatewayRequestResult> RequestPaymentAsync(Domain.Entities.Payment payment,
+        CreatePaymentDto dto)
     {
         var paymentPageUrl = "https://sandbox.banktest.ir/saman/sep.shaparak.ir/OnlinePG/SendToken";
         payment.GenerateOrderNumber();
@@ -70,21 +72,21 @@ public class SamanPaymentGatewayProvider : PaymentGatewayProviderContract
 
     public async Task<VerifyPaymentResult> HandleCallBackAsync(SandBoxCallBackDto dto)
     {
-        var payment=await _paymentRepositoryContract.GetPaymentByResNumAsync(dto.ResNum);
+        var payment = await _paymentRepositoryContract.GetPaymentByResNumAsync(dto.ResNum);
         var request = new
         {
             RefNum = dto.RefNum,
             TerminalNumber = _configuration["Payment:TerminalId"]
         };
         var verifyUrl = _configuration["Payment:VerifyTransactionUrl"];
-        
+
         var response = await _httpClient.PostAsJsonAsync(verifyUrl, request);
-            
-        var result=await response.Content.ReadFromJsonAsync<VerifySamanPayment>();
-        
+
+        var result = await response.Content.ReadFromJsonAsync<VerifySamanPayment>();
+
         if (!response.IsSuccessStatusCode)
             return VerifyPaymentResult.Failed("تراکنش ناموفق بود");
-        
+
         return VerifyPaymentResult.Success(result.ResultDescription);
     }
 

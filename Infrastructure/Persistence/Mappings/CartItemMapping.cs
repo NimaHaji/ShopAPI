@@ -11,7 +11,7 @@ public class CartItemMapping : IEntityTypeConfiguration<CartItem>
         builder.ToTable("CartItems", "dbo");
 
         builder.HasKey(x => x.Id);
-        
+
         builder.Property(x => x.Id)
             .IsRequired();
 

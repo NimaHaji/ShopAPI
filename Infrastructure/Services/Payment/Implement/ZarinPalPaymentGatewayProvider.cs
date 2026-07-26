@@ -25,7 +25,8 @@ public class ZarinPalPaymentGatewayProvider : PaymentGatewayProviderContract
 
     public PaymentGateway Gateway => PaymentGateway.ZarinPal;
 
-    public async Task<PaymentGatewayRequestResult> RequestPaymentAsync(Domain.Entities.Payment payment, CreatePaymentDto dto)
+    public async Task<PaymentGatewayRequestResult> RequestPaymentAsync(Domain.Entities.Payment payment,
+        CreatePaymentDto dto)
     {
         payment.GenerateOrderNumber();
         var requestDto = new CreateZarinPalPaymentDto
@@ -98,7 +99,6 @@ public class ZarinPalPaymentGatewayProvider : PaymentGatewayProviderContract
 
         return await VerifyPaymentAsync(dto.Authority);
     }
-
 
 
     public async Task<VerifyPaymentResult> VerifyPaymentAsync(string authority)

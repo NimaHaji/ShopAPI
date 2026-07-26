@@ -5,9 +5,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ShopApi.Controllers;
+
 [ApiController]
 [Route("api/[controller]")]
-public class OrderController:ControllerBase
+public class OrderController : ControllerBase
 {
     private readonly OrderServicesContract _orderServicesContract;
 
@@ -18,7 +19,7 @@ public class OrderController:ControllerBase
 
     [HttpPost]
     [Authorize]
-    public async Task<IActionResult> CreateOrder([FromBody]CreateOrderDto dto)
+    public async Task<IActionResult> CreateOrder([FromBody] CreateOrderDto dto)
     {
         var result = await _orderServicesContract.CreateOrderAsync(dto);
         return Ok(result);

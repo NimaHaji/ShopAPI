@@ -24,7 +24,7 @@ public class CartController : ControllerBase
         var cartView = await _cartService.GetCartByUserIdAsync();
         return Ok(cartView);
     }
-    
+
     [HttpPost("items")]
     [Authorize]
     public async Task<IActionResult> AddItem(AddCartItemDto item)
@@ -32,7 +32,7 @@ public class CartController : ControllerBase
         var result = await _cartService.AddItemAsync(item);
         return Ok(result);
     }
-    
+
     [HttpPut("items")]
     [Authorize]
     public async Task<IActionResult> UpdateQuantity(UpdateCartDto dto)
@@ -40,13 +40,13 @@ public class CartController : ControllerBase
         await _cartService.UpdateItemQuantityAsync(dto);
         return Ok(new { message = "تعداد با موفقیت بروزرسانی شد." });
     }
-    
+
     [HttpDelete("items/{productId:guid}")]
     [Authorize]
     public async Task<IActionResult> DeleteItem(Guid productId)
     {
         await _cartService.DeleteItemAsync(productId);
-        return Ok(new {message ="محصول با موفقیت حذف شد ."});
+        return Ok(new { message = "محصول با موفقیت حذف شد ." });
     }
 
     [HttpDelete("clear")]
@@ -61,7 +61,7 @@ public class CartController : ControllerBase
     [Authorize]
     public async Task<IActionResult> GetCount()
     {
-        var count=await _cartService.GetCartItemsCountAsync();
+        var count = await _cartService.GetCartItemsCountAsync();
         return Ok(count);
     }
 }
