@@ -37,15 +37,15 @@ public class InventoryController : ControllerBase
         try
         {
             var result = await _inventoryServiceContract.ReserveStockAsync(
-                request.ProductId, 
-                request.Quantity, 
+                request.ProductId,
+                request.Quantity,
                 request.OrderReference);
-            
+
             return Ok(result);
         }
         catch (ConflictException e)
         {
-           return Conflict(new { message = e.Message });
+            return Conflict(new { message = e.Message });
         }
     }
 
@@ -53,10 +53,10 @@ public class InventoryController : ControllerBase
     public async Task<ActionResult<InventoryItemDto>> ConfirmReservation([FromBody] StockReserveRequestDto request)
     {
         var result = await _inventoryServiceContract.ConfirmReservationAsync(
-            request.ProductId, 
-            request.Quantity, 
+            request.ProductId,
+            request.Quantity,
             request.OrderReference);
-            
+
         return Ok(result);
     }
 
@@ -64,10 +64,10 @@ public class InventoryController : ControllerBase
     public async Task<ActionResult<InventoryItemDto>> CancelReservation([FromBody] StockReserveRequestDto request)
     {
         var result = await _inventoryServiceContract.CancelReservationAsync(
-            request.ProductId, 
-            request.Quantity, 
+            request.ProductId,
+            request.Quantity,
             request.OrderReference);
-            
+
         return Ok(result);
     }
 
@@ -75,10 +75,10 @@ public class InventoryController : ControllerBase
     public async Task<ActionResult<InventoryItemDto>> AddStock([FromBody] StockAddRequestDto request)
     {
         var result = await _inventoryServiceContract.AddStockAsync(
-            request.ProductId, 
-            request.Quantity, 
+            request.ProductId,
+            request.Quantity,
             request.Description);
-            
+
         return Ok(result);
     }
 }

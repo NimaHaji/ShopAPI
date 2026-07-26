@@ -78,7 +78,7 @@ public class UserService : IUserService
         }
 
         //Todo: challenge token
-        
+
         return new LoginUserResponseDto(null, null);
     }
 
@@ -88,7 +88,7 @@ public class UserService : IUserService
         var user = await _userRepository.GetUserByIdAsync(userId);
         user?.ChangeRoleTo(role);
     }
-    
+
     public async Task<string> LogoutUserAsync()
     {
         var userId = _userContext.UserId ?? throw new UnauthorizedAccessException("کاربر احراز هویت نشده است.");

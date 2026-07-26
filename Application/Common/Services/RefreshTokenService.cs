@@ -10,6 +10,7 @@ public class RefreshTokenService
     {
         _hasher = hasher;
     }
+
     public string HashToken(string token)
         => _hasher.Hash(token);
 }

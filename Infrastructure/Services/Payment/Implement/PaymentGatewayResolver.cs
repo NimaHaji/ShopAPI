@@ -3,7 +3,7 @@ using Domain.Enums;
 
 namespace Infrastructure.Services.Payment.Implement;
 
-public class PaymentGatewayResolver:PaymentGatewayResolverContract
+public class PaymentGatewayResolver : PaymentGatewayResolverContract
 {
     private readonly IEnumerable<PaymentGatewayProviderContract> _providers;
 
@@ -18,7 +18,7 @@ public class PaymentGatewayResolver:PaymentGatewayResolverContract
 
         if (provider is null)
             throw new InvalidOperationException($"no provider found for gateway : {gateway}");
-        
+
         return provider;
     }
 }

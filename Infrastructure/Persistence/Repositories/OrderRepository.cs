@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence.Repositories;
 
-public class OrderRepository:OrderRepositoryContract
+public class OrderRepository : OrderRepositoryContract
 {
     private readonly ShopDbContext context;
 

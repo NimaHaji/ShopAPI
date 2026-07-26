@@ -4,7 +4,7 @@ using Infrastructure.Persistence.Contexts;
 
 namespace Infrastructure.Persistence.Repositories;
 
-public class InventoryTransactionRepository:InventoryTransactionRepositoryContract
+public class InventoryTransactionRepository : InventoryTransactionRepositoryContract
 {
     private readonly ShopDbContext _context;
 
