@@ -2,7 +2,6 @@ using Domain.Entities;
 
 namespace Application.Common;
 
-public interface IPasswordHasher:IHasher
+public interface IPasswordHasher : IHasher
 {
-    
 }

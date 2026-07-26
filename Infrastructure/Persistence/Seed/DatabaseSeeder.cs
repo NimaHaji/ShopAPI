@@ -49,6 +49,7 @@ public class DatabaseSeeder
             var products = response.Products;
 
             #region Category
+
             var categoryTitles = products
                 .Select(x => (x.Category ?? "").Trim())
                 .Where(x => !string.IsNullOrWhiteSpace(x))
@@ -59,9 +60,11 @@ public class DatabaseSeeder
 
             var categoryEntities = categoryTitles.Select(ProductCategory.Create).ToList();
             await _context.ProductCategories.AddRangeAsync(categoryEntities);
+
             #endregion
 
             #region Brands
+
             var brandTitles = products
                 .Select(x => (x.Brand ?? "").Trim())
                 .Where(x => !string.IsNullOrWhiteSpace(x))
@@ -75,8 +78,9 @@ public class DatabaseSeeder
 
             Console.WriteLine("Seeder: saving categories/brands...");
             await _context.SaveChangesAsync();
+
             #endregion
-            
+
             var categoryMap = (await _context.ProductCategories
                     .AsNoTracking()
                     .ToListAsync())
@@ -98,6 +102,7 @@ public class DatabaseSeeder
             Console.WriteLine("Seeder: creating product entities...");
 
             #region InventoryItem & Product
+
             var productEntities = new List<Product>();
             var inventoryItems = new List<InventoryItem>();
             var inventoryTransactions = new List<InventoryTransaction>();
@@ -112,9 +117,10 @@ public class DatabaseSeeder
                 var brandTitle = (p.Brand ?? "").Trim();
                 if (!string.IsNullOrWhiteSpace(brandTitle) && brandMap.TryGetValue(brandTitle, out var bid))
                     brandId = bid;
-                
-                var tomanPrice = (long)(Math.Round(p.Price * DollarToToman / 1000m, MidpointRounding.AwayFromZero) * 1000m);
-                
+
+                var tomanPrice = (long)(Math.Round(p.Price * DollarToToman / 1000m, MidpointRounding.AwayFromZero) *
+                                        1000m);
+
                 var product = Product.Create(
                     p.Title,
                     p.Description,
@@ -122,10 +128,8 @@ public class DatabaseSeeder
                     p.DiscountPercentage,
                     p.Stock,
                     categoryId,
-                    brandId,
-                    p.Rating
+                    brandId
                 );
-                
                 productEntities.Add(product);
                 var inventoryItem = new InventoryItem(
                     productId: product.Id,
@@ -141,21 +145,22 @@ public class DatabaseSeeder
                     reference: "INITIAL_SEED",
                     description: $"Initial stock from DummyJSON: {p.Stock} units"
                 );
-                
+
                 inventoryTransactions.Add(transaction);
             }
 
             Console.WriteLine($"Seeder: inserting products={productEntities.Count}...");
             await _context.Products.AddRangeAsync(productEntities);
-            
+
             Console.WriteLine($"Seeder: inserting inventory items={inventoryItems.Count}...");
             await _context.InventoryItems.AddRangeAsync(inventoryItems);
-            
+
             Console.WriteLine($"Seeder: inserting inventory transactions={inventoryTransactions.Count}...");
             await _context.InventoryTransactions.AddRangeAsync(inventoryTransactions);
+
             #endregion
-            
-            
+
+
             // ============================================
             // 7. Save All Changes
             // ============================================

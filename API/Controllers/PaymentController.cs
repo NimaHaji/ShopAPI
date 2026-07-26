@@ -21,6 +21,7 @@ public class PaymentController : ControllerBase
         _config = config;
         _paymentServiceContract = paymentServiceContract;
     }
+
     [HttpPost]
     [Authorize]
     public async Task<IActionResult> GetPaymentUrl([FromBody] CreatePaymentDto dto)
@@ -28,6 +29,7 @@ public class PaymentController : ControllerBase
         var paymentUrl = await _paymentServiceContract.CreatePaymentAsync(dto);
         return Ok(paymentUrl);
     }
+
     private Dictionary<string, string?> GetAllValues()
     {
         var dict = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
@@ -43,6 +45,7 @@ public class PaymentController : ControllerBase
 
         return dict;
     }
+
     [HttpPost("{gateway}")]
     [HttpGet("{gateway}")]
     [Authorize]

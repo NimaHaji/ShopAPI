@@ -19,7 +19,7 @@ public class Payment
     public string? CardNumber { get; set; }
     public string? Authority { get; set; }
 
-    public PaymentStatus PaymentStatus{ get; set; }
+    public PaymentStatus PaymentStatus { get; set; }
     public string? PaymentGatewayStatus { get; set; }
     public PaymentGateway Gateway { get; set; }
     public string? SecurePan { get; set; }
@@ -28,55 +28,60 @@ public class Payment
 
     public DateTime? PaidAt { get; set; }
 
-    public Payment( long amount,string description, PaymentGateway gateway)
+    public Payment(long amount, string description, PaymentGateway gateway)
     {
         Id = Guid.NewGuid();
         Amount = amount;
-        Gateway=gateway;
+        Gateway = gateway;
         PaymentStatus = PaymentStatus.pending;
-        Description=description;
+        Description = description;
         CreatedAt = DateTime.UtcNow;
     }
 
-    public void Edit(string? paymentGatewayStatus, string? state, string? _RRN, string? refNum, string? resNum, string? traceNo, string? wage)
+    public void Edit(string? paymentGatewayStatus, string? state, string? _RRN, string? refNum, string? resNum,
+        string? traceNo, string? wage)
     {
-        PaymentGatewayStatus= paymentGatewayStatus;
-        State=state;
-        RRN=_RRN;
-        RefNum=refNum;
-        ResNum=resNum;
-        TraceNo=traceNo;
-        Wage=wage;
+        PaymentGatewayStatus = paymentGatewayStatus;
+        State = state;
+        RRN = _RRN;
+        RefNum = refNum;
+        ResNum = resNum;
+        TraceNo = traceNo;
+        Wage = wage;
     }
+
     public void Edit(string? paymentGatewayStatus, int? refNum, string? securePan, int? fee)
     {
-        PaymentGatewayStatus= paymentGatewayStatus;
-        RefNum= refNum.ToString();
-        SecurePan=securePan;
-        Wage=fee.ToString();
+        PaymentGatewayStatus = paymentGatewayStatus;
+        RefNum = refNum.ToString();
+        SecurePan = securePan;
+        Wage = fee.ToString();
     }
+
     void SetPaidAt()
     {
         PaidAt = DateTime.UtcNow;
     }
+
     public void MarkAsFailed()
     {
         PaymentStatus = PaymentStatus.Failed;
     }
+
     public void MarkAsSuccess()
     {
         if (PaymentStatus == PaymentStatus.Success)
             return;
 
         PaymentStatus = PaymentStatus.Success;
-        PaidAt??=DateTime.UtcNow;
+        PaidAt ??= DateTime.UtcNow;
     }
-    
+
     public void GenerateOrderNumber()
     {
         string timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
         string shortGuid = Guid.NewGuid().ToString("N").Substring(0, 8);
-        ResNum= $"{timestamp}{shortGuid}";
+        ResNum = $"{timestamp}{shortGuid}";
     }
 }
 

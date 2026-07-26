@@ -6,12 +6,14 @@ using Domain.Entities;
 
 namespace Application.Features.Cart.implementations;
 
-public class CartService:CartServicesContract
+public class CartService : CartServicesContract
 {
     private readonly CartRepositoryContract _cartRepository;
     private readonly ProductRepositoryContract _productRepository;
     private readonly IUSerContext _userContext;
-    public CartService(CartRepositoryContract cartRepository, ProductRepositoryContract productRepository, IUSerContext userContext)
+
+    public CartService(CartRepositoryContract cartRepository, ProductRepositoryContract productRepository,
+        IUSerContext userContext)
     {
         _cartRepository = cartRepository;
         _productRepository = productRepository;
@@ -21,24 +23,24 @@ public class CartService:CartServicesContract
     public async Task<string> AddItemAsync(AddCartItemDto dto)
     {
         var userId = _userContext.UserId ?? throw new UnauthorizedAccessException("کاربر احراز هویت نشده است.");
-                
+
         if (dto.Quantity <= 0)
         {
             throw new Exception("تعداد درخواستی باید بیشتر از صفر باشد.");
         }
-        
+
         var product = await _productRepository.GetProductByIdAsync(dto.ProductId);
-        
+
         if (product is null)
         {
             throw new Exception("محصول مورد نظر یافت نشد.");
         }
-        
+
         if (product.Stock < dto.Quantity)
         {
             throw new Exception($"موجودی انبار این محصول کافی نیست. موجودی فعلی: {product.Stock}");
         }
-        
+
         var cart = await _cartRepository.GetCartByUserIdAsync(userId);
         if (cart is null)
         {
@@ -46,10 +48,10 @@ public class CartService:CartServicesContract
             {
                 UserId = userId
             };
-            
+
             await _cartRepository.CreateCartAsync(cart);
         }
-        
+
         var existingItem = await _cartRepository.GetCartItemByProductIdAsync(product.Id);
 
         if (existingItem is not null)
@@ -71,7 +73,7 @@ public class CartService:CartServicesContract
         }
 
         await _cartRepository.SaveAsync();
-        
+
         return "با موفقیت به سبد خرید اضافه شد";
     }
 
@@ -103,7 +105,7 @@ public class CartService:CartServicesContract
     public async Task<ViewCartDto> GetCartByUserIdAsync()
     {
         var userId = _userContext.UserId ?? throw new UnauthorizedAccessException("کاربر احراز هویت نشده است.");
-        var cart=await _cartRepository.GetCartWithProductsByUserIdAsync(userId);
+        var cart = await _cartRepository.GetCartWithProductsByUserIdAsync(userId);
         if (cart is null)
         {
             return new ViewCartDto
@@ -132,12 +134,12 @@ public class CartService:CartServicesContract
     public async Task DeleteItemAsync(Guid productId)
     {
         var userId = _userContext.UserId ?? throw new UnauthorizedAccessException("کاربر احراز هویت نشده است.");
-        var cart=await _cartRepository.GetCartByUserIdAsync(userId);
+        var cart = await _cartRepository.GetCartByUserIdAsync(userId);
         if (cart is null) throw new Exception("سبد خرید یافت نشد");
 
         var item = cart.CartItems.FirstOrDefault(x => x.ProductId == productId);
         if (item is null) throw new Exception("محصول در سبد خرید یافت نشد");
-        
+
         cart.CartItems.Remove(item);
         // Todo: Update Timespan
         // cart.UpdateTimestamp();
@@ -147,9 +149,9 @@ public class CartService:CartServicesContract
     public async Task ClearCartAsync()
     {
         var userId = _userContext.UserId ?? throw new UnauthorizedAccessException("کاربر احراز هویت نشده است.");
-        var cart=await _cartRepository.GetCartByUserIdAsync(userId);
+        var cart = await _cartRepository.GetCartByUserIdAsync(userId);
         if (cart is null) throw new Exception("سبد خرید یافت نشد");
-        
+
         cart.ClearCart();
         await _cartRepository.SaveAsync();
     }
@@ -159,7 +161,7 @@ public class CartService:CartServicesContract
         var userId = _userContext.UserId ?? throw new UnauthorizedAccessException("کاربر احراز هویت نشده است.");
         var cart = await _cartRepository.GetCartByUserIdAsync(userId);
         if (cart is null) return 0;
-        
+
         return cart.CartItems.Sum(x => x.Quantity);
     }
 }

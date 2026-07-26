@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence.Repositories;
 
-public class ProductRepository:ProductRepositoryContract
+public class ProductRepository : ProductRepositoryContract
 {
     private readonly ShopDbContext _context;
 
@@ -14,7 +14,17 @@ public class ProductRepository:ProductRepositoryContract
     {
         this._context = context;
     }
-    
+
+    public async Task<List<Product>?> GetAllProducts()
+    {
+        return await _context.Products.ToListAsync();
+    }
+
+    public async Task<bool> IsExistingProduct(string productName)
+    {
+        return await _context.Products.Where(p => p.Title == productName).AnyAsync();
+    }
+
     public async Task<Product?> GetProductByIdAsync(Guid productId)
     {
         return await _context
@@ -34,5 +44,23 @@ public class ProductRepository:ProductRepositoryContract
             .Products
             .Where(p => productIds.Contains(p.Id))
             .ToListAsync();
+    }
+
+    public async Task<List<ProductCategory>> GetAllProductCategories()
+    {
+        return await _context
+            .ProductCategories
+            .OrderByDescending(x => x.Title)
+            .ToListAsync();
+    }
+
+    public async Task<bool> IsExistingProductCategory(string dtoTitle)
+    {
+        return await _context.ProductCategories.Where(c => c.Title == dtoTitle).AnyAsync();
+    }
+
+    public async Task AddProductCategory(ProductCategory category)
+    {
+        await _context.ProductCategories.AddAsync(category);
     }
 }

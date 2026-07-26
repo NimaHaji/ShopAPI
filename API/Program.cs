@@ -14,14 +14,16 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using ShopApi.ExceptionHandlers;
 
 ;
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers().AddFluentValidation(x=>x.AutomaticValidationEnabled = true);
+builder.Services.AddControllers().AddFluentValidation(x => x.AutomaticValidationEnabled = true);
 
 builder.Services.AddEndpointsApiExplorer();
-
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
 builder.Services.AddSwaggerGen(option =>
 {
     option.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -121,7 +123,7 @@ using (var scope = app.Services.CreateScope())
 
 app.UseHttpsRedirection();
 
-app.UseAuthentication();  
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence.Repositories;
 
-public class RefreshTokenRepository:IRefreshTokenRepository
+public class RefreshTokenRepository : IRefreshTokenRepository
 {
     private readonly ShopDbContext _context;
 
@@ -36,7 +36,7 @@ public class RefreshTokenRepository:IRefreshTokenRepository
     {
         return await _context
             .RefreshTokens
-            .Where(x=>x.UserId == userId && !x.IsRevoked)
+            .Where(x => x.UserId == userId && !x.IsRevoked)
             .ToListAsync();
     }
 }

@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Infrastructure.Persistence.Mappings;
 
-public class OrderItemMapping:IEntityTypeConfiguration<OrderItem>
+public class OrderItemMapping : IEntityTypeConfiguration<OrderItem>
 {
     public void Configure(EntityTypeBuilder<OrderItem> builder)
     {
@@ -21,7 +21,7 @@ public class OrderItemMapping:IEntityTypeConfiguration<OrderItem>
         builder
             .Property(x => x.OrderId)
             .IsRequired();
-        
+
         builder.Property(x => x.ProductTitle)
             .HasMaxLength(200)
             .IsRequired();

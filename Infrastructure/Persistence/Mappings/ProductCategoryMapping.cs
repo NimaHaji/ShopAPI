@@ -4,12 +4,12 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Infrastructure.Persistence.Mappings;
 
-public class ProductCategoryMapping:IEntityTypeConfiguration<ProductCategory>
+public class ProductCategoryMapping : IEntityTypeConfiguration<ProductCategory>
 {
     public void Configure(EntityTypeBuilder<ProductCategory> builder)
     {
         builder.ToTable("ProductCategories");
-        
+
         builder.HasKey(pc => pc.Id);
 
         builder

@@ -1,12 +1,16 @@
 namespace Domain.Entities;
 
-public class ProductBrand   
+public class ProductBrand
 {
     public Guid Id { get; private set; }
     public string Title { get; private set; }
     private readonly List<Product> _products = new();
     public IReadOnlyCollection<Product> Products => _products;
-    private ProductBrand(){}
+
+    private ProductBrand()
+    {
+    }
+
     public static ProductBrand Create(string title)
     {
         return new ProductBrand
@@ -15,5 +19,4 @@ public class ProductBrand
             Title = title
         };
     }
-
 }
