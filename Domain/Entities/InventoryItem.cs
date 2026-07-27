@@ -15,6 +15,8 @@ public class InventoryItem
 
     public Product Product { get; private set; }
     public List<InventoryTransaction> Transactions { get; private set; } = new List<InventoryTransaction>();
+    
+    public int AvailableQuantity => ReservedQuantity - StockQuantity;
 
     public InventoryItem(Guid productId, int stockQuantity, int reservedQuantity)
     {

@@ -6,8 +6,9 @@ namespace Application.Features.Product.Interfaces;
 
 public interface ProductServicesContract
 {
-    Task<List<Domain.Entities.Product>?> GetAllProducts();
+    Task<ViewProductDto> GetAllProducts(ProductQueryDto query);
     Task<string> AddProductAsync(CreateProductDto dto);
-    Task<List<ProductCategory>> GetAllCategories();
+    Task<ViewProductCategoryDto> GetAllCategories();
     Task<string> CreateProductCategory(CreateProductCategoryDto dto);
+    Task<SearchProductResultDto> SearchProductByTitle(string query);
 }

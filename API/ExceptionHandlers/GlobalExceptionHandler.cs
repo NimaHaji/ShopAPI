@@ -18,7 +18,27 @@ public class GlobalExceptionHandler : IExceptionHandler
             case BusinessException:
                 httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
                 break;
-
+            
+            case InsufficientStockException:
+                httpContext.Response.StatusCode = StatusCodes.Status409Conflict;
+                break;
+            
+            case ForbiddenAccessException:
+                httpContext.Response.StatusCode = StatusCodes.Status403Forbidden;
+                break;
+            
+            case NotFoundException:
+                httpContext.Response.StatusCode = StatusCodes.Status404NotFound;
+                break;
+            
+            case CartEmptyException:
+                httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
+                break;
+            
+            case InvalidQuantityException:
+                httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
+                break;
+            
             default:
                 httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
                 break;
