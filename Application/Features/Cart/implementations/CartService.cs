@@ -1,8 +1,10 @@
 using Application.Common.Interfaces;
 using Application.Features.Cart.DTOs;
 using Application.Features.Cart.Interfaces;
+using Application.Features.Inventory.Interfaces;
 using Application.Features.Product.Interfaces;
 using Domain.Entities;
+using Shared.Exceptions;
 
 namespace Application.Features.Cart.implementations;
 
@@ -10,14 +12,16 @@ public class CartService : CartServicesContract
 {
     private readonly CartRepositoryContract _cartRepository;
     private readonly ProductRepositoryContract _productRepository;
+    private readonly InventoryRepositoryContract _inventoryRepositoryContract;
     private readonly IUSerContext _userContext;
 
     public CartService(CartRepositoryContract cartRepository, ProductRepositoryContract productRepository,
-        IUSerContext userContext)
+        IUSerContext userContext, InventoryRepositoryContract inventoryRepositoryContract)
     {
         _cartRepository = cartRepository;
         _productRepository = productRepository;
         _userContext = userContext;
+        _inventoryRepositoryContract = inventoryRepositoryContract;
     }
 
     public async Task<string> AddItemAsync(AddCartItemDto dto)
@@ -29,16 +33,11 @@ public class CartService : CartServicesContract
             throw new Exception("تعداد درخواستی باید بیشتر از صفر باشد.");
         }
 
-        var product = await _productRepository.GetProductByIdAsync(dto.ProductId);
+        var inventory = await _inventoryRepositoryContract.GetByProductId(dto.ProductId);
 
-        if (product is null)
+        if (inventory is null)
         {
             throw new Exception("محصول مورد نظر یافت نشد.");
-        }
-
-        if (product.Stock < dto.Quantity)
-        {
-            throw new Exception($"موجودی انبار این محصول کافی نیست. موجودی فعلی: {product.Stock}");
         }
 
         var cart = await _cartRepository.GetCartByUserIdAsync(userId);
@@ -52,13 +51,18 @@ public class CartService : CartServicesContract
             await _cartRepository.CreateCartAsync(cart);
         }
 
-        var existingItem = await _cartRepository.GetCartItemByProductIdAsync(product.Id);
-
+        var existingItem = await _cartRepository.GetCartItemByProductIdAsync(cart.Id,inventory.ProductId);
+        
+        var requestedQuantity =
+            existingItem == null
+                ? dto.Quantity
+                : existingItem.Quantity + dto.Quantity;
+        
         if (existingItem is not null)
         {
-            if (product.Stock < (existingItem.Quantity + dto.Quantity))
+            if (inventory.AvailableQuantity < requestedQuantity)
             {
-                throw new Exception("مجموع تعداد درخواستی در سبد خرید، از موجودی انبار بیشتر است.");
+                throw new InsufficientExecutionStackException("مجموع تعداد درخواستی در سبد خرید، از موجودی انبار بیشتر است.");
             }
 
             existingItem.Quantity += dto.Quantity;
@@ -80,22 +84,26 @@ public class CartService : CartServicesContract
     public async Task UpdateItemQuantityAsync(UpdateCartDto dto)
     {
         var userId = _userContext.UserId ?? throw new UnauthorizedAccessException("کاربر احراز هویت نشده است.");
+        
         if (dto.NewQuantity <= 0)
-            throw new Exception("تعداد باید بیشتر از صفر باشد. برای حذف، از متد حذف استفاده کنید.");
+            throw new InvalidQuantityException("تعداد باید بیشتر از صفر باشد. برای حذف، از متد حذف استفاده کنید.");
 
         var cart = await _cartRepository.GetCartByUserIdAsync(userId);
-        if (cart is null) throw new Exception("سبد خرید یافت نشد.");
+        if (cart is null) throw new NotFoundException("سبد خرید یافت نشد.");
 
         var item = cart.CartItems.FirstOrDefault(x => x.ProductId == dto.ProductId);
-        if (item is null) throw new Exception("این محصول در سبد خرید شما وجود ندارد.");
+        if (item is null) throw new NotFoundException("این محصول در سبد خرید شما وجود ندارد.");
 
-        // Todo : Warehousing repo for check stock
-        var product = await _productRepository.GetProductByIdAsync(dto.ProductId);
-        if (product is null) throw new Exception("محصول یافت نشد.");
-        if (product.Stock < dto.NewQuantity)
-            throw new Exception($"موجودی انبار کافی نیست. حداکثر موجودی: {product.Stock}");
+        
+        var inventory = await _inventoryRepositoryContract.GetByProductIdAsync(dto.ProductId);
+        
+        if (inventory is null) throw new NotFoundException("محصول یافت نشد.");
+        
+        if (inventory.AvailableQuantity < dto.NewQuantity)
+            throw new InsufficientStockException($"موجودی انبار کافی نیست. حداکثر موجودی: {inventory.AvailableQuantity}");
 
         item.Quantity = dto.NewQuantity;
+        
         // Todo: Update Timespan
         // cart.UpdateTimestamp();
 
