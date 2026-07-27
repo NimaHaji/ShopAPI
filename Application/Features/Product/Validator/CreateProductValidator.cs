@@ -25,10 +25,6 @@ public class CreateProductValidator:AbstractValidator<CreateProductDto>
             .GreaterThan(0)
             .WithMessage("قیمت محصول باید بزرگ‌تر از صفر باشد.");
 
-        RuleFor(p => p.Stock)
-            .GreaterThanOrEqualTo(0)
-            .WithMessage("موجودی نمی‌تواند منفی باشد.");
-
         RuleFor(p => p.CategoryId)
             .NotEmpty()
             .WithMessage("دسته‌بندی الزامی است.");

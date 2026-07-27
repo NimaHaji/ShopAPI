@@ -33,11 +33,11 @@ public class CartRepository : CartRepositoryContract
             .FirstOrDefaultAsync(c => c.UserId == userId);
     }
 
-    public async Task<CartItem?> GetCartItemByProductIdAsync(Guid productId)
+    public async Task<CartItem?> GetCartItemByProductIdAsync(Guid cartId, Guid productId)
     {
         return await _context
             .CartItems
-            .Where(ci => ci.ProductId == productId)
+            .Where(ci => ci.ProductId == productId && ci.CartId == cartId)
             .FirstOrDefaultAsync();
     }
 

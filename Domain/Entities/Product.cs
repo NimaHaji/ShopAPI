@@ -7,7 +7,7 @@ public class Product
     public string Description { get; private set; }
     public long Price { get; private set; }
     public decimal? DiscountPercentage { get; private set; }
-    public int Stock { get; private set; }
+    public DateTime AddedAt { get; private set; }
 
     public Guid CategoryId { get; private set; }
     public ProductCategory Category { get; private set; }
@@ -20,7 +20,6 @@ public class Product
         string description,
         long price,
         decimal? discountPercentage,
-        int stock,
         Guid categoryId,
         Guid? brandId)
     {
@@ -31,9 +30,9 @@ public class Product
             Description = description,
             Price = price,
             DiscountPercentage = discountPercentage,
-            Stock = stock,
             CategoryId = categoryId,
-            BrandId = brandId
+            BrandId = brandId,
+            AddedAt = DateTime.UtcNow
         };
     }
 
