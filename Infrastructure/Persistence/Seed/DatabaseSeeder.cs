@@ -126,7 +126,6 @@ public class DatabaseSeeder
                     p.Description,
                     tomanPrice,
                     p.DiscountPercentage,
-                    p.Stock,
                     categoryId,
                     brandId
                 );

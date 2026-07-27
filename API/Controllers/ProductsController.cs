@@ -19,9 +19,10 @@ public class ProductsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetProducts()
+    public async Task<IActionResult> GetProducts([FromQuery]ProductQueryDto query)
     {
-        var product = await _productServicesContract.GetAllProducts();
+        // Todo : fluent for query
+        var product = await _productServicesContract.GetAllProducts(query);
         return Ok(product);
     }
 
@@ -43,6 +44,7 @@ public class ProductsController : ControllerBase
         var categories = await _productServicesContract.GetAllCategories();
         return Ok(categories);
     }
+
     [Authorize(Roles = "SuperAdmin")]
     [HttpPost("Category")]
     public async Task<IActionResult> CreateProductCategory(CreateProductCategoryDto dto)
@@ -52,5 +54,13 @@ public class ProductsController : ControllerBase
         {
             message = res
         });
+    }
+
+    [HttpGet]
+    [Route("Search")]
+    public async Task<IActionResult> SearchProduct([FromQuery] string query)
+    {
+        var product = await _productServicesContract.SearchProductByTitle(query);
+        return Ok(product);
     }
 }

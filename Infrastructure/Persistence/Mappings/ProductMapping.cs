@@ -28,7 +28,7 @@ public class ProductMapping : IEntityTypeConfiguration<Product>
             .Property(p => p.DiscountPercentage);
 
         builder
-            .Property(p => p.Stock)
+            .Property(p=>p.AddedAt)
             .IsRequired();
 
         builder
