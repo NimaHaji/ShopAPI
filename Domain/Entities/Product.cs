@@ -1,3 +1,6 @@
+using System.ComponentModel.DataAnnotations;
+using System.Security.AccessControl;
+
 namespace Domain.Entities;
 
 public class Product
@@ -14,6 +17,9 @@ public class Product
 
     public Guid? BrandId { get; private set; }
     public ProductBrand Brand { get; private set; }
+
+    public InventoryItem InventoryItem { get; set; }
+    [Timestamp] public byte[] RowVersion { get; set; }
 
     public static Product Create(
         string title,
@@ -36,4 +42,11 @@ public class Product
         };
     }
 
+    public void Edit(string? title, string? description, long? price, decimal? discountPercentage)
+    {
+        if (title is not null) Title = title;
+        if (description is not null) Description = description;
+        if (price is not null) Price = price.Value;
+        DiscountPercentage = discountPercentage;
+    }
 }
