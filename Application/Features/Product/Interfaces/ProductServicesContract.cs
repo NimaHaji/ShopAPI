@@ -11,4 +11,6 @@ public interface ProductServicesContract
     Task<ViewProductCategoryDto> GetAllCategories();
     Task<string> CreateProductCategory(CreateProductCategoryDto dto);
     Task<SearchProductResultDto> SearchProductByTitle(string query);
+    Task<ViewProductItemDto> GetProductById(Guid productId);
+    Task<string> EditProductAsync(EditProductDto dto);
 }

@@ -14,10 +14,12 @@ public class ProductMapping : IEntityTypeConfiguration<Product>
 
         builder
             .Property(p => p.Title)
+            .HasMaxLength(200)
             .IsRequired();
 
         builder
             .Property(p => p.Description)
+            .HasMaxLength(2000)
             .IsRequired();
 
         builder
@@ -30,7 +32,12 @@ public class ProductMapping : IEntityTypeConfiguration<Product>
         builder
             .Property(p=>p.AddedAt)
             .IsRequired();
-
+        
+        builder
+            .Property(p=>p.RowVersion)
+            .IsRowVersion()
+            .IsConcurrencyToken();
+        
         builder
             .HasOne(p => p.Category)
             .WithMany(p => p.Products)
@@ -41,5 +48,8 @@ public class ProductMapping : IEntityTypeConfiguration<Product>
             .WithMany(b => b.Products)
             .HasForeignKey(f => f.BrandId);
 
+        builder.HasOne(x => x.InventoryItem)
+            .WithOne(x => x.Product)
+            .HasForeignKey<InventoryItem>(x => x.ProductId);
     }
 }

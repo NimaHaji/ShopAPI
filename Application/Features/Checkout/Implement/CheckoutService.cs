@@ -75,24 +75,11 @@ public class CheckoutService : CheckoutServiceContract
             }
             catch (DbUpdateConcurrencyException ex)
             {
-                // attempts++;
-                // await _unitOfWork.RollbackTransactionAsync();
-                // _unitOfWork.ClearChangeTracker();
-                // if (attempts == maxAttempts)
-                //     throw new ConflictException("موجودی در حال تغییر است. لطفاً دوباره تلاش کنید.");
-                await _unitOfWork.RollbackTransactionAsync();
-
-                foreach (var entry in ex.Entries)
-                {
-                    Console.WriteLine(entry.Entity.GetType().Name);
-                }
-
-                _unitOfWork.ClearChangeTracker();
-
                 attempts++;
-
+                await _unitOfWork.RollbackTransactionAsync();
+                _unitOfWork.ClearChangeTracker();
                 if (attempts == maxAttempts)
-                    throw new ConflictException("موجودی در حال تغییر است");
+                    throw new ConflictException("موجودی در حال تغییر است. لطفاً دوباره تلاش کنید.");
             }
             catch
             {
