@@ -39,6 +39,7 @@ public class InventoryService : InventoryServiceContract
 
     public async Task<InventoryItemDto> ReserveStockAsync(Guid productId, int quantity, string orderReference)
     {
+        // Todo : Concurrency fix 
         const int maxRetries = 3;
 
         for (int retry = 0; retry < maxRetries; retry++)

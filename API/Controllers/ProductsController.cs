@@ -19,10 +19,17 @@ public class ProductsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetProducts([FromQuery]ProductQueryDto query)
+    public async Task<IActionResult> GetProducts([FromQuery] ProductQueryDto query)
     {
         // Todo : fluent for query
         var product = await _productServicesContract.GetAllProducts(query);
+        return Ok(product);
+    }
+
+    [HttpGet("{productId}")]
+    public async Task<IActionResult> GetProduct(Guid productId)
+    {
+        var product = await _productServicesContract.GetProductById(productId);
         return Ok(product);
     }
 
@@ -35,6 +42,18 @@ public class ProductsController : ControllerBase
         {
             message = result
         });
+    }
+
+    [Authorize(Roles = "SuperAdmin")]
+    [HttpPatch]
+    public async Task<IActionResult> EditProduct([FromBody] EditProductDto dto)
+    {
+        var result = await _productServicesContract.EditProductAsync(dto);
+        return Ok(new
+            {
+                message = result
+            }
+        );
     }
 
     [HttpGet("Category")]
