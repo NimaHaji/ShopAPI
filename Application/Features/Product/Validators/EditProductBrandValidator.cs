@@ -1,7 +1,7 @@
 using Application.Features.Product.DTOs;
 using FluentValidation;
 
-namespace Application.Features.Product.Validator;
+namespace Application.Features.Product.Validators;
 
 public class EditProductBrandValidator:AbstractValidator<EditProductBrandDto>
 {

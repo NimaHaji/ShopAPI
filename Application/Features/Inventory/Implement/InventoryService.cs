@@ -27,7 +27,7 @@ public class InventoryService : InventoryServiceContract
         _inventoryTransactionRepositoryContract = inventoryTransactionRepositoryContract;
     }
 
-    public async Task<InventoryItemDto> GetInventoryByProductIdAsync(Guid productId)
+    public async Task<ViewInventoryItemDto> GetInventoryByProductIdAsync(Guid productId)
     {
         var inventory = await _inventoryRepositoryContract.GetByProductIdAsync(productId);
 
@@ -37,7 +37,7 @@ public class InventoryService : InventoryServiceContract
         return MapToDto(inventory);
     }
 
-    public async Task<InventoryItemDto> ReserveStockAsync(Guid productId, int quantity, string orderReference)
+    public async Task<ViewInventoryItemDto> ReserveStockAsync(Guid productId, int quantity, string orderReference)
     {
         // Todo : Concurrency fix 
         const int maxRetries = 3;
@@ -107,7 +107,7 @@ public class InventoryService : InventoryServiceContract
         }
     }
 
-    public async Task<InventoryItemDto> ConfirmReservationAsync(Guid productId, int quantity, string orderReference)
+    public async Task<ViewInventoryItemDto> ConfirmReservationAsync(Guid productId, int quantity, string orderReference)
     {
         var inventory = await _inventoryRepositoryContract.GetByProductId(productId);
 
@@ -134,7 +134,7 @@ public class InventoryService : InventoryServiceContract
         return MapToDto(inventory);
     }
 
-    public async Task<InventoryItemDto> CancelReservationAsync(Guid productId, int quantity, string orderReference)
+    public async Task<ViewInventoryItemDto> CancelReservationAsync(Guid productId, int quantity, string orderReference)
     {
         var inventory = await _inventoryRepositoryContract.GetByProductId(productId);
 
@@ -161,7 +161,7 @@ public class InventoryService : InventoryServiceContract
         return MapToDto(inventory);
     }
 
-    public async Task<InventoryItemDto> AddStockAsync(Guid productId, int quantity, string description)
+    public async Task<ViewInventoryItemDto> AddStockAsync(Guid productId, int quantity, string description)
     {
         var inventory = await _inventoryRepositoryContract.GetByProductId(productId);
 
@@ -189,15 +189,15 @@ public class InventoryService : InventoryServiceContract
         return MapToDto(inventory);
     }
 
-    public async Task<List<InventoryItemDto>> GetAllInventoryAsync()
+    public async Task<List<ViewInventoryItemDto>> GetAllInventoryAsync()
     {
         var items = await _inventoryRepositoryContract.GetAllAsync();
-        return items?.Select(MapToDto).ToList() ?? new List<InventoryItemDto>();
+        return items?.Select(MapToDto).ToList() ?? new List<ViewInventoryItemDto>();
     }
 
-    private InventoryItemDto MapToDto(InventoryItem item)
+    private ViewInventoryItemDto MapToDto(InventoryItem item)
     {
-        return new InventoryItemDto
+        return new ViewInventoryItemDto
         {
             InventoryId = item.InventoryId,
             ProductId = item.ProductId,
@@ -206,7 +206,7 @@ public class InventoryService : InventoryServiceContract
             ReservedQuantity = item.ReservedQuantity,
             AvailableQuantity = item.StockQuantity - item.ReservedQuantity,
             LastUpdated = item.LastUpdated,
-            RecentTransactions = item.Transactions?.Take(10).Select(t => new TransactionDto
+            RecentTransactions = item.Transactions?.Take(10).Select(t => new ViewTransactionDto
             {
                 Id = t.InventoryTransactionId,
                 Type = t.Type.ToString(),

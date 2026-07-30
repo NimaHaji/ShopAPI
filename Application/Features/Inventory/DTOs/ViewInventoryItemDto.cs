@@ -1,6 +1,6 @@
 namespace Application.Features.Inventory.DTOs;
 
-public class InventoryItemDto
+public class ViewInventoryItemDto
 {
     public Guid InventoryId { get; set; }
     public Guid ProductId { get; set; }
@@ -9,5 +9,5 @@ public class InventoryItemDto
     public int ReservedQuantity { get; set; }
     public int AvailableQuantity { get; set; }
     public DateTime LastUpdated { get; set; }
-    public List<TransactionDto> RecentTransactions { get; set; }
+    public List<ViewTransactionDto> RecentTransactions { get; set; }
 }
