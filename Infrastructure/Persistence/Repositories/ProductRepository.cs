@@ -17,15 +17,18 @@ public class ProductRepository : ProductRepositoryContract
         this._context = context;
     }
 
+    #region product
+
     public async Task<List<Product>> GetProductList(ProductQueryDto query)
     {
         var products = _context
             .Products
-            .Include(x=>x.Category)
-            .Include(x=>x.Brand)
-            .Include(x=>x.InventoryItem)
+            .Include(x => x.Category)
+            .Include(x => x.Brand)
+            .Include(x => x.InventoryItem)
+            .Where(p => !p.IsDeleted)
             .AsQueryable();
-        
+
         if (!string.IsNullOrWhiteSpace(query.Q))
         {
             products = products.Where(c => c.Title.Contains(query.Q));
@@ -82,46 +85,33 @@ public class ProductRepository : ProductRepositoryContract
 
     public async Task<bool> IsExistingProduct(string productName)
     {
-        return await _context.Products.Where(p => p.Title == productName).AnyAsync();
+        return await _context
+            .Products
+            .Where(p => !p.IsDeleted && p.Title == productName)
+            .AnyAsync();
     }
 
     public async Task<Product?> GetProductByIdAsync(Guid productId)
     {
         return await _context
             .Products
-            .Where(p => p.Id == productId)
+            .Where(p => !p.IsDeleted && p.Id == productId)
             .FirstOrDefaultAsync();
     }
 
     public async Task CreateProductAsync(Product product)
     {
-        await _context.Products.AddAsync(product);
+        await _context
+            .Products
+            .AddAsync(product);
     }
 
     public async Task<List<Product>> GetProductsByIdsAsync(List<Guid> productIds)
     {
         return await _context
             .Products
-            .Where(p => productIds.Contains(p.Id))
+            .Where(p => !p.IsDeleted && productIds.Contains(p.Id))
             .ToListAsync();
-    }
-
-    public async Task<List<ProductCategory>> GetAllProductCategories()
-    {
-        return await _context
-            .ProductCategories
-            .OrderByDescending(x => x.Title)
-            .ToListAsync();
-    }
-
-    public async Task<bool> IsExistingProductCategory(string dtoTitle)
-    {
-        return await _context.ProductCategories.Where(c => c.Title == dtoTitle).AnyAsync();
-    }
-
-    public async Task AddProductCategory(ProductCategory category)
-    {
-        await _context.ProductCategories.AddAsync(category);
     }
 
     public async Task<List<Product>?> SearchProductWithTitle(string query)
@@ -129,6 +119,91 @@ public class ProductRepository : ProductRepositoryContract
         return await _context
             .Products
             .Include(x => x.Category)
-            .Where(p => p.Title.Contains(query)).ToListAsync();
+            .Where(p => !p.IsDeleted && p.Title.Contains(query)).ToListAsync();
     }
+
+    #endregion
+
+    #region Category
+
+    public async Task<List<ProductCategory>> GetAllProductCategories()
+    {
+        return await _context
+            .ProductCategories
+            .Where(c => !c.IsDeleted)
+            .OrderByDescending(x => x.Title)
+            .ToListAsync();
+    }
+
+    public async Task<bool> IsExistingProductCategory(string dtoTitle)
+    {
+        return await _context
+            .ProductCategories
+            .Where(c => !c.IsDeleted && c.Title == dtoTitle)
+            .AnyAsync();
+    }
+
+    public async Task AddProductCategory(ProductCategory category)
+    {
+        await _context
+            .ProductCategories
+            .AddAsync(category);
+    }
+
+    public async Task<ProductCategory?> GetProductCategoryById(Guid productCategoryId)
+    {
+        return await _context
+            .ProductCategories
+            .Where(c => !c.IsDeleted && c.Id == productCategoryId)
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<List<ProductCategory>?> SearchProductCategoriesWithTitle(string dtoTitle)
+    {
+        return await _context
+            .ProductCategories
+            .Where(c => !c.IsDeleted && c.Title.Contains(dtoTitle))
+            .ToListAsync();
+    }
+
+    public async Task<List<ProductBrand>> GetAllBrandAsync()
+    {
+        return await _context
+            .ProductBrands
+            .Where(b=>!b.IsDeleted)
+            .ToListAsync();
+    }
+
+    public async Task<bool> IsExistingBrand(string dtoTitle)
+    {
+        return await _context
+            .ProductBrands
+            .Where(b => !b.IsDeleted && b.Title == dtoTitle)
+            .AnyAsync();
+    }
+
+    public async Task AddBrandAsync(ProductBrand brand)
+    {
+        await _context
+            .ProductBrands
+            .AddAsync(brand);
+    }
+
+    public async Task<ProductBrand?> GetProductBrandById(Guid productBrandId)
+    {
+        return await _context
+            .ProductBrands
+            .Where(b => !b.IsDeleted && b.Id == productBrandId)
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<List<ProductBrand>?> SearchProductBrandsWithTitle(string dtoTitle)
+    {
+        return await _context
+            .ProductBrands
+            .Where(b => !b.IsDeleted && b.Title.Contains(dtoTitle))
+            .ToListAsync();
+    }
+
+    #endregion
 }
