@@ -48,7 +48,7 @@ ShopAPI/
 ### 1. دریافت پروژه
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/ShopAPI.git
+git clone https://github.com/NimaHaji/ShopAPI.git
 cd ShopAPI
 ```
 
@@ -126,7 +126,6 @@ Bearer YOUR_ACCESS_TOKEN
 
 در مراحل بعدی قرار است این بخش‌ها اضافه یا کامل‌تر شوند:
 
-- اضافه شدن ماژول انبارداری برای کم و زیاد شدن تعداد محصولات و مدیریت دقیق‌تر موجودی
 - اضافه شدن Docker و Docker Compose تا بقیه بتوانند پروژه را راحت‌تر برای تمرین بالا بیاورند
 - بهبود تست‌ها و سناریوهای خطا
 - کامل‌تر شدن مستندات endpointها
