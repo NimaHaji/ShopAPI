@@ -10,10 +10,11 @@ namespace ShopApi.Controllers;
 public class UserController : ControllerBase
 {
     private readonly IUserService _service;
-
-    public UserController(IUserService service)
+    private readonly IPasswordRecoveryService _passwordRecoveryService;
+    public UserController(IUserService service, IPasswordRecoveryService passwordRecoveryService)
     {
         _service = service;
+        _passwordRecoveryService = passwordRecoveryService;
     }
 
     [HttpPost("Register")]
@@ -65,4 +66,28 @@ public class UserController : ControllerBase
     {
         return await _service.UpdateProfileAsync(updateProfileRequestDto);
     }
+    
+    [HttpPost("ForgetPassword")]
+    public async Task<IActionResult> ForgetPassword(ForgetPasswordRequestDto dto)
+    {
+        var result= await _passwordRecoveryService.ForgetPasswordAsync(dto.Email);
+        return Ok(new
+        {
+            message=result
+        });
+    }
+
+    [HttpPost("ResetPassword")]
+    public async Task<IActionResult> ResetPassword(ResetPasswordRequestDto dto)
+    {
+        var result= await _passwordRecoveryService.ResetPasswordAsync(
+            dto.Email,
+            dto.Code,
+            dto.NewPassword);
+        return Ok(new
+        {
+            message = result
+        });
+    }
+    
 }

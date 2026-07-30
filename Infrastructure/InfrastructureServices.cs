@@ -8,12 +8,14 @@ using Application.Features.InventoryTransaction.Interfaces;
 using Application.Features.Order.Interfaces;
 using Application.Features.Payment.Interfaces;
 using Application.Features.Product.Interfaces;
+using Infrastructure.Email;
 using Infrastructure.Persistence;
 using Infrastructure.Persistence.Contexts;
 using Infrastructure.Persistence.Repositories;
 using Infrastructure.Persistence.Seed;
 using Infrastructure.Security.Hashing;
 using Infrastructure.Security.Jwt;
+using Infrastructure.Security.Verification;
 using Infrastructure.Services.Payment.Implement;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -46,6 +48,9 @@ public static class InfrastructureServices
         services.AddScoped<IUSerContext, UserContext>();
         services.AddScoped<InventoryRepositoryContract, InventoryRepository>();
         services.AddScoped<InventoryTransactionRepositoryContract, InventoryTransactionRepository>();
+        services.Configure<SmtpSettings>(configuration.GetSection("SmtpSettings"));
+        services.AddScoped<IEmailSender, EmailSender>();
+        services.AddScoped<IVerificationCodeGenerator, VerificationCodeGenerator>();
         services.AddScoped<DatabaseSeeder>();
 
         return services;

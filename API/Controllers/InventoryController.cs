@@ -18,21 +18,21 @@ public class InventoryController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<InventoryItemDto>>> GetAll()
+    public async Task<ActionResult<List<ViewInventoryItemDto>>> GetAll()
     {
         var result = await _inventoryServiceContract.GetAllInventoryAsync();
         return Ok(result);
     }
 
     [HttpGet("{productId}")]
-    public async Task<ActionResult<InventoryItemDto>> GetByProductId(Guid productId)
+    public async Task<ActionResult<ViewInventoryItemDto>> GetByProductId(Guid productId)
     {
         var result = await _inventoryServiceContract.GetInventoryByProductIdAsync(productId);
         return Ok(result);
     }
 
     [HttpPost("reserve")]
-    public async Task<ActionResult<InventoryItemDto>> ReserveStock([FromBody] StockReserveRequestDto request)
+    public async Task<ActionResult<ViewInventoryItemDto>> ReserveStock([FromBody] StockReserveRequestDto request)
     {
         try
         {
@@ -50,7 +50,7 @@ public class InventoryController : ControllerBase
     }
 
     [HttpPost("confirm")]
-    public async Task<ActionResult<InventoryItemDto>> ConfirmReservation([FromBody] StockReserveRequestDto request)
+    public async Task<ActionResult<ViewInventoryItemDto>> ConfirmReservation([FromBody] StockReserveRequestDto request)
     {
         var result = await _inventoryServiceContract.ConfirmReservationAsync(
             request.ProductId,
@@ -61,7 +61,7 @@ public class InventoryController : ControllerBase
     }
 
     [HttpPost("cancel")]
-    public async Task<ActionResult<InventoryItemDto>> CancelReservation([FromBody] StockReserveRequestDto request)
+    public async Task<ActionResult<ViewInventoryItemDto>> CancelReservation([FromBody] StockReserveRequestDto request)
     {
         var result = await _inventoryServiceContract.CancelReservationAsync(
             request.ProductId,
@@ -72,7 +72,7 @@ public class InventoryController : ControllerBase
     }
 
     [HttpPost("add-stock")]
-    public async Task<ActionResult<InventoryItemDto>> AddStock([FromBody] StockAddRequestDto request)
+    public async Task<ActionResult<ViewInventoryItemDto>> AddStock([FromBody] StockAddRequestDto request)
     {
         var result = await _inventoryServiceContract.AddStockAsync(
             request.ProductId,

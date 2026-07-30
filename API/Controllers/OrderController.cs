@@ -17,11 +17,4 @@ public class OrderController : ControllerBase
         _orderServicesContract = orderServicesContract;
     }
 
-    [HttpPost]
-    [Authorize]
-    public async Task<IActionResult> CreateOrder([FromBody] CreateOrderDto dto)
-    {
-        var result = await _orderServicesContract.CreateOrderAsync(dto);
-        return Ok(result);
-    }
 }
