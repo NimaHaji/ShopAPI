@@ -34,6 +34,14 @@ public class ProductMapping : IEntityTypeConfiguration<Product>
             .IsRequired();
         
         builder
+            .Property(p=>p.IsDeleted)
+            .IsRequired();
+        
+        builder
+            .Property(p => p.DeletedAt)
+            .IsRequired();
+        
+        builder
             .Property(p=>p.RowVersion)
             .IsRowVersion()
             .IsConcurrencyToken();

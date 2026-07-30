@@ -11,7 +11,8 @@ public class Product
     public long Price { get; private set; }
     public decimal? DiscountPercentage { get; private set; }
     public DateTime AddedAt { get; private set; }
-
+    public bool IsDeleted { get; private set; }
+    public DateTime DeletedAt { get; private set; }
     public Guid CategoryId { get; private set; }
     public ProductCategory Category { get; private set; }
 
@@ -38,7 +39,8 @@ public class Product
             DiscountPercentage = discountPercentage,
             CategoryId = categoryId,
             BrandId = brandId,
-            AddedAt = DateTime.UtcNow
+            AddedAt = DateTime.UtcNow,
+            IsDeleted = false
         };
     }
 
@@ -48,5 +50,11 @@ public class Product
         if (description is not null) Description = description;
         if (price is not null) Price = price.Value;
         DiscountPercentage = discountPercentage;
+    }
+
+    public void Delete()
+    {
+        IsDeleted = true;
+        DeletedAt = DateTime.UtcNow;
     }
 }

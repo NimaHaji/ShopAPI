@@ -15,18 +15,17 @@ public class ProductService : ProductServicesContract
 {
     private readonly ProductRepositoryContract _productRepositoryContract;
     private readonly InventoryServiceContract _inventoryServiceContract;
-    private readonly InventoryRepositoryContract _inventoryRepositoryContract;
     private readonly UnitOfWorkContract _unitOfWorkContract;
 
     public ProductService(ProductRepositoryContract productRepositoryContract,
-        InventoryServiceContract inventoryServiceContract, UnitOfWorkContract unitOfWorkContract,
-        InventoryRepositoryContract inventoryRepositoryContract)
+        InventoryServiceContract inventoryServiceContract, UnitOfWorkContract unitOfWorkContract)
     {
         _productRepositoryContract = productRepositoryContract;
         _inventoryServiceContract = inventoryServiceContract;
         _unitOfWorkContract = unitOfWorkContract;
-        _inventoryRepositoryContract = inventoryRepositoryContract;
     }
+
+    #region product
 
     public async Task<ViewProductDto> GetAllProducts(ProductQueryDto query)
     {
@@ -79,35 +78,6 @@ public class ProductService : ProductServicesContract
         await _unitOfWorkContract.SaveAsync();
 
         return $"محصول {product.Title} ساخته شد";
-    }
-
-    public async Task<ViewProductCategoryDto> GetAllCategories()
-    {
-        var categories = await _productRepositoryContract.GetAllProductCategories();
-
-        var dto = categories.Select(x => new ViewProductCategoryItemDto
-        {
-            Title = x.Title
-        }).ToList();
-
-        return new ViewProductCategoryDto
-        {
-            Items = dto
-        };
-    }
-
-    public async Task<string> CreateProductCategory(CreateProductCategoryDto dto)
-    {
-        var isExist = await _productRepositoryContract.IsExistingProductCategory(dto.Title);
-        if (isExist)
-            throw new DuplicateNameException("دسته بندی محصول وجود دارد");
-
-        var category = ProductCategory.Create(dto.Title);
-
-        await _productRepositoryContract.AddProductCategory(category);
-        await _unitOfWorkContract.SaveAsync();
-
-        return $"دسته بندی {category.Title} ساخته شد .";
     }
 
     public async Task<SearchProductResultDto> SearchProductByTitle(string query)
@@ -170,44 +140,303 @@ public class ProductService : ProductServicesContract
             dto.DiscountPercentage is null &&
             dto.DiscountPercentage is null)
             throw new BusinessException("برای ویرایش محصول، حداقل یک فیلد را تغییر دهید .");
-        
+
         int attempt = 0;
         const int maxAttempts = 5;
 
-        while (maxAttempts >= attempt)
+        while (maxAttempts > attempt)
         {
             var product = await _productRepositoryContract.GetProductByIdAsync(dto.Id);
 
             if (product is null)
                 throw new NotFoundException("محصولی یافت نشد !");
-            
+
             try
             {
-                await _unitOfWorkContract.BeginTransactionAsync();
-
                 product.Edit(dto.Title, dto.Description, dto.Price, dto.DiscountPercentage);
 
                 await _unitOfWorkContract.SaveAsync();
-                await _unitOfWorkContract.CommitTransactionAsync();
                 return "محصول با موفقیت تغییر کرد";
             }
             catch (DbUpdateConcurrencyException)
             {
                 attempt++;
 
-                await _unitOfWorkContract.RollbackTransactionAsync();
                 _unitOfWorkContract.ClearChangeTracker();
 
                 if (attempt == maxAttempts)
                     throw new ConflictException("محصول در حال تغییر است . لطفا دوباره تلاش کنید");
             }
-            catch
+        }
+
+        throw new InvalidOperationException("خطای ناشناخته");
+    }
+
+    public async Task<string> DeleteProductAsync(Guid productId)
+    {
+        int attempt = 0;
+        const int maxAttempts = 5;
+
+        while (maxAttempts > attempt)
+        {
+            var product = await _productRepositoryContract.GetProductByIdAsync(productId);
+
+            if (product is null)
+                throw new NotFoundException("محصولی یافت نشد !");
+
+            try
             {
-                await _unitOfWorkContract.RollbackTransactionAsync();
-                throw;
+                product.Delete();
+
+                await _unitOfWorkContract.SaveAsync();
+                return "محصول با موفقیت حذف شد";
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                attempt++;
+
+                _unitOfWorkContract.ClearChangeTracker();
+
+                if (attempt == maxAttempts)
+                    throw new ConflictException("محصول در حال تغییر است . لطفا دوباره تلاش کنید");
             }
         }
 
         throw new InvalidOperationException("خطای ناشناخته");
     }
+
+
+    #endregion
+
+    #region category
+
+    public async Task<string> DeleteProductCategoryAsync(Guid productCategoryId)
+    {
+        int attempt = 0;
+        const int maxAttempts = 5;
+
+        while (maxAttempts > attempt)
+        {
+            var productCategory = await _productRepositoryContract.GetProductCategoryById(productCategoryId);
+
+            if (productCategory is null)
+                throw new NotFoundException("دسته بندی محصولی یافت نشد !");
+
+            try
+            {
+                productCategory.Delete();
+
+                await _unitOfWorkContract.SaveAsync();
+                return "دسته بندی محصول با موفقیت حذف شد";
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                attempt++;
+
+                _unitOfWorkContract.ClearChangeTracker();
+
+                if (attempt == maxAttempts)
+                    throw new ConflictException("دسته بندی محصول در حال تغییر است . لطفا دوباره تلاش کنید");
+            }
+        }
+
+        throw new InvalidOperationException("خطای ناشناخته");
+    }
+    public async Task<ViewProductCategoryDto> GetAllCategories()
+    {
+        var categories = await _productRepositoryContract.GetAllProductCategories();
+
+        var dto = categories.Select(x => new ViewProductCategoryItemDto
+        {
+            Title = x.Title
+        }).ToList();
+
+        return new ViewProductCategoryDto
+        {
+            Items = dto
+        };
+    }
+
+    public async Task<ViewProductCategoryDto> SearchProductCategoryByTitle(SearchProductCategoryDto dto)
+    {
+        var categories = await _productRepositoryContract.SearchProductCategoriesWithTitle(dto.Title);
+
+        if (categories is null)
+            return new ViewProductCategoryDto()
+            {
+                Items = []
+            };
+
+        return new ViewProductCategoryDto
+        {
+            Items = categories.Select(x => new ViewProductCategoryItemDto
+                {
+                    Title = x.Title
+                })
+                .ToList()
+        };
+    }
+
+    public async Task<ViewProductCategoryItemDto> GetProductCategoryById(Guid productCategoryId)
+    {
+        var category = await _productRepositoryContract.GetProductCategoryById(productCategoryId);
+
+        if (category is null)
+            throw new NotFoundException("دسته بندی محصول یافت نشد");
+
+        var dto = new ViewProductCategoryItemDto
+        {
+            Title = category.Title
+        };
+
+        return dto;
+    }
+
+    public async Task<string> EditProductCategoryAsync(EditProductCategoryDto dto)
+    {
+        var category = await _productRepositoryContract.GetProductCategoryById(dto.Id);
+
+        if (category is null)
+            throw new NotFoundException("دسته بندی محصول یافت نشد .");
+
+        category.Edit(dto.Title);
+
+        await _unitOfWorkContract.SaveAsync();
+        return "دسته بندی محصول یا موفقیت تغییر کرد .";
+    }
+
+    public async Task<string> CreateProductCategoryAsync(CreateProductCategoryDto dto)
+    {
+        var isExist = await _productRepositoryContract.IsExistingProductCategory(dto.Title);
+        if (isExist)
+            throw new DuplicateNameException("دسته بندی محصول وجود دارد");
+
+        var category = ProductCategory.Create(dto.Title);
+
+        await _productRepositoryContract.AddProductCategory(category);
+        await _unitOfWorkContract.SaveAsync();
+
+        return $"دسته بندی {category.Title} ساخته شد .";
+    }
+
+    #endregion
+
+    #region Brand
+
+    public async Task<ViewProductBrandDto> GetAllProductBrands()
+    {
+        var brands = await _productRepositoryContract.GetAllBrandAsync();
+
+        if (brands is null)
+            return new ViewProductBrandDto()
+            {
+                Items = []
+            };
+
+        return new ViewProductBrandDto()
+        {
+            Items = brands.Select(x => new ViewProductBrandItemDto()
+                {
+                    Title = x.Title
+                })
+                .ToList()
+        };
+    }
+
+    public async Task<string> CreateProductBrandAsync(CreateProductBrandDto dto)
+    {
+        var isExist = await _productRepositoryContract.IsExistingBrand(dto.Title);
+        if (isExist)
+            throw new DuplicateNameException("برند محصول وجود دارد");
+
+        var brand = ProductBrand.Create(dto.Title);
+
+        await _productRepositoryContract.AddBrandAsync(brand);
+        await _unitOfWorkContract.SaveAsync();
+
+        return $"برند  {brand.Title} ساخته شد .";
+    }
+
+    public async Task<string> DeleteProductBrandAsync(Guid productBrandId)
+    {
+        int attempt = 0;
+        const int maxAttempts = 5;
+
+        while (maxAttempts > attempt)
+        {
+            var productCategory = await _productRepositoryContract.GetProductBrandById(productBrandId);
+
+            if (productCategory is null)
+                throw new NotFoundException("دسته بندی محصولی یافت نشد !");
+
+            try
+            {
+                productCategory.Delete();
+
+                await _unitOfWorkContract.SaveAsync();
+                return "دسته بندی محصول با موفقیت حذف شد";
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                attempt++;
+
+                _unitOfWorkContract.ClearChangeTracker();
+
+                if (attempt == maxAttempts)
+                    throw new ConflictException("دسته بندی محصول در حال تغییر است . لطفا دوباره تلاش کنید");
+            }
+        }
+
+        throw new InvalidOperationException("خطای ناشناخته");
+    }
+
+    public async Task<string> EditProductBrandAsync(EditProductBrandDto dto)
+    {
+        var brand = await _productRepositoryContract.GetProductBrandById(dto.Id);
+
+        if (brand is null)
+            throw new NotFoundException("برند محصول یافت نشد .");
+
+        brand.Edit(dto.Title);
+
+        await _unitOfWorkContract.SaveAsync();
+        return "برند محصول یا موفقیت تغییر کرد .";
+    }
+
+    public async Task<ViewProductBrandDto> SearchProductBrandByTitle(SearchProductBrandDto dto)
+    {
+        var brands = await _productRepositoryContract.SearchProductBrandsWithTitle(dto.Title);
+
+        if (brands is null)
+            return new ViewProductBrandDto()
+            {
+                Items = []
+            };
+
+        return new ViewProductBrandDto()
+        {
+            Items = brands.Select(x => new ViewProductBrandItemDto()
+                {
+                    Title = x.Title
+                })
+                .ToList()
+        };
+    }
+
+    public async Task<ViewProductBrandItemDto> GetProductBrandById(Guid productBrandId)
+    {
+        var brand = await _productRepositoryContract.GetProductBrandById(`productBrandId);
+
+        if (brand is null)
+            throw new NotFoundException("دسته بندی محصول یافت نشد");
+
+        var dto = new ViewProductBrandItemDto()
+        {
+            Title = brand.Title
+        };
+
+        return dto;
+    }
+
+    #endregion
 }

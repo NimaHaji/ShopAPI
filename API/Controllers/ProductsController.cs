@@ -55,26 +55,16 @@ public class ProductsController : ControllerBase
             }
         );
     }
-
-    [HttpGet("Category")]
-    public async Task<IActionResult> GetProductCategories()
-    {
-        // Todo : Get product
-        var categories = await _productServicesContract.GetAllCategories();
-        return Ok(categories);
-    }
-
     [Authorize(Roles = "SuperAdmin")]
-    [HttpPost("Category")]
-    public async Task<IActionResult> CreateProductCategory(CreateProductCategoryDto dto)
+    [HttpDelete("{productId:guid}")]
+    public async Task<IActionResult> DeleteProduct([FromRoute] Guid productId)
     {
-        var res = await _productServicesContract.CreateProductCategory(dto);
+        var result = await _productServicesContract.DeleteProductAsync(productId);
         return Ok(new
         {
-            message = res
+            message = result
         });
-    }
-
+}
     [HttpGet]
     [Route("Search")]
     public async Task<IActionResult> SearchProduct([FromQuery] string query)

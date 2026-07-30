@@ -14,6 +14,19 @@ public class ProductBrandMapping : IEntityTypeConfiguration<ProductBrand>
 
         builder
             .Property(p => p.Title)
+            .HasMaxLength(200)
+            .IsRequired();
+        
+        builder
+            .Property(b=>b.IsDeleted)
+            .IsRequired();
+        
+        builder
+            .Property(b=>b.CreatedAt)
+            .IsRequired();
+        
+        builder
+            .Property(b=>b.DeletedAt)
             .IsRequired();
     }
 }
