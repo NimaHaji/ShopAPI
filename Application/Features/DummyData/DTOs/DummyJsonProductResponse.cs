@@ -4,6 +4,7 @@ public class DummyJsonProductResponse
 {
     public List<DummyJsonProductDto> Products { get; set; }
 }
+
 public class DummyJsonProductDto
 {
     public string Title { get; set; }

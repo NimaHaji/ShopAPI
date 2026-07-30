@@ -1,3 +1,6 @@
+using System.ComponentModel.DataAnnotations;
+using System.Security.AccessControl;
+
 namespace Domain.Entities;
 
 public class Product
@@ -7,25 +10,25 @@ public class Product
     public string Description { get; private set; }
     public long Price { get; private set; }
     public decimal? DiscountPercentage { get; private set; }
-    public int Stock { get; private set; }
-    
+    public DateTime AddedAt { get; private set; }
+    public bool IsDeleted { get; private set; }
+    public DateTime DeletedAt { get; private set; }
     public Guid CategoryId { get; private set; }
     public ProductCategory Category { get; private set; }
 
     public Guid? BrandId { get; private set; }
     public ProductBrand Brand { get; private set; }
 
-    public decimal Rating { get; private set; }
+    public InventoryItem InventoryItem { get; set; }
+    [Timestamp] public byte[] RowVersion { get; set; }
 
     public static Product Create(
         string title,
         string description,
         long price,
         decimal? discountPercentage,
-        int stock,
         Guid categoryId,
-        Guid? brandId,
-        decimal rating)
+        Guid? brandId)
     {
         return new Product
         {
@@ -34,10 +37,24 @@ public class Product
             Description = description,
             Price = price,
             DiscountPercentage = discountPercentage,
-            Stock = stock,
             CategoryId = categoryId,
             BrandId = brandId,
-            Rating = rating
+            AddedAt = DateTime.UtcNow,
+            IsDeleted = false
         };
+    }
+
+    public void Edit(string? title, string? description, long? price, decimal? discountPercentage)
+    {
+        if (title is not null) Title = title;
+        if (description is not null) Description = description;
+        if (price is not null) Price = price.Value;
+        DiscountPercentage = discountPercentage;
+    }
+
+    public void Delete()
+    {
+        IsDeleted = true;
+        DeletedAt = DateTime.UtcNow;
     }
 }

@@ -5,7 +5,7 @@ using Application.Features.Auth.DTOs;
 using Application.Features.Auth.Interfaces;
 using Domain.Entities;
 using Domain.Enums;
-using Domain.Exceptions;
+using Shared.Exceptions;
 
 namespace Application.Features.Auth.Services;
 
@@ -78,7 +78,7 @@ public class UserService : IUserService
         }
 
         //Todo: challenge token
-        
+
         return new LoginUserResponseDto(null, null);
     }
 
@@ -88,7 +88,7 @@ public class UserService : IUserService
         var user = await _userRepository.GetUserByIdAsync(userId);
         user?.ChangeRoleTo(role);
     }
-    
+
     public async Task<string> LogoutUserAsync()
     {
         var userId = _userContext.UserId ?? throw new UnauthorizedAccessException("کاربر احراز هویت نشده است.");

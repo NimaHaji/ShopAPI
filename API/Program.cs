@@ -14,14 +14,17 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using ShopApi.ExceptionHandlers;
+using AssemblyReference = Application.Validator.AssemblyReference;
 
 ;
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers().AddFluentValidation(x=>x.AutomaticValidationEnabled = true);
+builder.Services.AddControllers().AddFluentValidation(x => x.AutomaticValidationEnabled = true);
 
 builder.Services.AddEndpointsApiExplorer();
-
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
 builder.Services.AddSwaggerGen(option =>
 {
     option.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -87,18 +90,15 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 {
     options.InvalidModelStateResponseFactory = context =>
     {
-        var errors = context.ModelState
-            .Where(x => x.Value.Errors.Count > 0)
-            .ToDictionary(
-                x => x.Key,
-                x => x.Value.Errors
-                    .Select(e => e.ErrorMessage)
-                    .ToArray()
-            );
+        var messages = context.ModelState
+            .Where(x => x.Value?.Errors.Count > 0)
+            .SelectMany(x => x.Value!.Errors)
+            .Select(e => e.ErrorMessage)
+            .ToArray();
 
         return new BadRequestObjectResult(new
         {
-            errors
+            messages
         });
     };
 });
@@ -120,8 +120,8 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.UseHttpsRedirection();
-
-app.UseAuthentication();  
+app.UseExceptionHandler();
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

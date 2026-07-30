@@ -1,61 +1,93 @@
+using System.Data;
 using Application.Common.Interfaces;
+using Application.Features.Cart.DTOs;
 using Application.Features.Cart.Interfaces;
 using Application.Features.Checkout.Interfaces;
+using Application.Features.Inventory.Interfaces;
+using Application.Features.Order.DTOs;
 using Application.Features.Order.Interfaces;
+using Application.Features.Payment.DTOs;
 using Domain.Entities;
+using Microsoft.EntityFrameworkCore;
+using Shared.Exceptions;
 
 namespace Application.Features.Checkout.Implement;
 
-public class CheckoutService:CheckoutServiceContract
+public class CheckoutService : CheckoutServiceContract
 {
     private readonly CartRepositoryContract _cartRepositoryContract;
     private readonly OrderRepositoryContract _orderRepositoryContract;
+    private readonly OrderServicesContract _orderServicesContract;
+    private readonly InventoryServiceContract _inventoryServiceContract;
     private readonly UnitOfWorkContract _unitOfWork;
     private readonly IUSerContext _userContext;
 
-    public CheckoutService(CartRepositoryContract cartRepositoryContract, OrderRepositoryContract orderRepositoryContract, UnitOfWorkContract unitOfWork, IUSerContext userContext)
+    public CheckoutService(CartRepositoryContract cartRepositoryContract,
+        OrderRepositoryContract orderRepositoryContract, UnitOfWorkContract unitOfWork, IUSerContext userContext,
+        InventoryServiceContract inventoryServiceContract, OrderServicesContract orderServicesContract)
     {
         _cartRepositoryContract = cartRepositoryContract;
         _orderRepositoryContract = orderRepositoryContract;
         _unitOfWork = unitOfWork;
         _userContext = userContext;
+        _inventoryServiceContract = inventoryServiceContract;
+        _orderServicesContract = orderServicesContract;
     }
 
-    public async Task<Guid> CreateOrderFromCartAsync()
+    public async Task<Guid> CheckoutAsync()
     {
+        int attempts = 0;
+        const int maxAttempts = 4;
+
         var userId = _userContext.UserId ?? throw new UnauthorizedAccessException("کاربر احراز هویت نشده است.");
-        var cart = await _cartRepositoryContract.GetCartWithProductsByUserIdAsync(userId);
 
-        if (cart is null)
-            throw new Exception("سبد خرید پیدا نشد");
-
-        if (cart.CartItems is null || !cart.CartItems.Any())
-            throw new Exception("سبد خرید خالی است");
-
-        var order = new Domain.Entities.Order
+        while (attempts < maxAttempts)
         {
-            UserId = userId
-        };
+            var cart = await _cartRepositoryContract.GetCartWithProductsByUserIdAsync(userId);
 
-        foreach (var cartItem in cart.CartItems)
-        {
-            var orderItem = new OrderItem
+            if (cart is null)
+                throw new NotFoundException("سبد خرید پیدا نشد");
+
+            if (cart.CartItems is null || !cart.CartItems.Any())
+                throw new CartEmptyException("سبد خرید خالی است");
+
+            try
             {
-                Id = Guid.NewGuid(),
-                ProductId = cartItem.ProductId,
-                ProductTitle = cartItem.Product.Title,
-                Price = cartItem.Product.Price,
-                Quantity = cartItem.Quantity
-            };
+                await _unitOfWork.BeginTransactionAsync();
 
-            order.AddItem(orderItem);
+                await _inventoryServiceContract.ReserveAllItemStockAsync(cart.CartItems);
+
+                var createOrderDto = new CreateOrderDto
+                {
+                    Items = cart.CartItems.Select(x => new OrderItemDto
+                    {
+                        ProductId = x.ProductId,
+                        Quantity = x.Quantity
+                    }).ToList()
+                };
+                var orderId = await _orderServicesContract.CreateOrderAsync(createOrderDto);
+
+
+                cart.ClearCart();
+                await _unitOfWork.SaveAsync();
+                await _unitOfWork.CommitTransactionAsync();
+                return orderId;
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                attempts++;
+                await _unitOfWork.RollbackTransactionAsync();
+                _unitOfWork.ClearChangeTracker();
+                if (attempts == maxAttempts)
+                    throw new ConflictException("موجودی در حال تغییر است. لطفاً دوباره تلاش کنید.");
+            }
+            catch
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                throw;
+            }
         }
 
-        await _orderRepositoryContract.CreateOrderAsync(order);
-
-        cart.ClearCart();
-        await _unitOfWork.SaveAsync();
-
-        return order.Id;
+        throw new InvalidOperationException("خطای ناشناخه");
     }
 }

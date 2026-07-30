@@ -4,45 +4,60 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Infrastructure.Persistence.Mappings;
 
-public class ProductMapping:IEntityTypeConfiguration<Product>
+public class ProductMapping : IEntityTypeConfiguration<Product>
 {
     public void Configure(EntityTypeBuilder<Product> builder)
     {
         builder.ToTable("Products");
-        
+
         builder.HasKey(p => p.Id);
 
         builder
             .Property(p => p.Title)
+            .HasMaxLength(200)
             .IsRequired();
-        
+
         builder
             .Property(p => p.Description)
+            .HasMaxLength(2000)
             .IsRequired();
-        
+
         builder
             .Property(p => p.Price)
             .IsRequired();
 
         builder
             .Property(p => p.DiscountPercentage);
-        
-        builder
-            .Property(p => p.Stock)
-            .IsRequired();
 
         builder
-            .HasOne(p => p.Category)
-            .WithMany(p=>p.Products)
-            .HasForeignKey(f => f.CategoryId);
+            .Property(p=>p.AddedAt)
+            .IsRequired();
         
+        builder
+            .Property(p=>p.IsDeleted)
+            .IsRequired();
+        
+        builder
+            .Property(p => p.DeletedAt)
+            .IsRequired();
+        
+        builder
+            .Property(p=>p.RowVersion)
+            .IsRowVersion()
+            .IsConcurrencyToken();
+        
+        builder
+            .HasOne(p => p.Category)
+            .WithMany(p => p.Products)
+            .HasForeignKey(f => f.CategoryId);
+
         builder
             .HasOne(p => p.Brand)
-            .WithMany(b=>b.Products)
+            .WithMany(b => b.Products)
             .HasForeignKey(f => f.BrandId);
-        
-        builder
-            .Property(p => p.Rating)
-            .IsRequired();
+
+        builder.HasOne(x => x.InventoryItem)
+            .WithOne(x => x.Product)
+            .HasForeignKey<InventoryItem>(x => x.ProductId);
     }
 }
