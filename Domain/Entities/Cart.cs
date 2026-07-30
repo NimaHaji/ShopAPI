@@ -11,7 +11,6 @@ public class Cart
     {
         CreateAt = DateTime.UtcNow;
     }
-
     public void ClearCart()
     {
         CartItems.Clear();

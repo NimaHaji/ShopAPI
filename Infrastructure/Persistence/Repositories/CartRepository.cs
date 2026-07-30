@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence.Repositories;
 
-public class CartRepository:CartRepositoryContract
+public class CartRepository : CartRepositoryContract
 {
     private readonly ShopDbContext _context;
 
@@ -30,14 +30,14 @@ public class CartRepository:CartRepositoryContract
             .Carts
             .Include(c => c.CartItems)
             .ThenInclude(c => c.Product)
-            .FirstOrDefaultAsync(c=>c.UserId == userId);
+            .FirstOrDefaultAsync(c => c.UserId == userId);
     }
 
-    public async Task<CartItem?> GetCartItemByProductIdAsync(Guid productId)
+    public async Task<CartItem?> GetCartItemByProductIdAsync(Guid cartId, Guid productId)
     {
         return await _context
             .CartItems
-            .Where(ci => ci.ProductId == productId)
+            .Where(ci => ci.ProductId == productId && ci.CartId == cartId)
             .FirstOrDefaultAsync();
     }
 

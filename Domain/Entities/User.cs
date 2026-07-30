@@ -13,7 +13,7 @@ public class User
     public string? PasswordResetCodeHash { get; private set; }
     public DateTime? PasswordResetCodeExpireAt { get; private set; }
     public int PasswordResetAttemptsCount { get; private set; }
-    
+
     public ICollection<RefreshToken> RefreshTokens { get; private set; } = new List<RefreshToken>();
 
     public User()
@@ -44,6 +44,7 @@ public class User
     {
         Role = role;
     }
+
     public void UpdateProfile(string fullName, string phoneNumber)
     {
         FullName = fullName;
@@ -64,7 +65,8 @@ public class User
 
         return PasswordResetCodeHash == codeHash;
     }
-    public void IncreasePasswordResetAttemptCount()=>PasswordResetAttemptsCount++;
+
+    public void IncreasePasswordResetAttemptCount() => PasswordResetAttemptsCount++;
 
     public void ClearPasswordResetCode()
     {

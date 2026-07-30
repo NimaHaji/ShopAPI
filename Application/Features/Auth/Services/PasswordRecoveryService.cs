@@ -1,20 +1,20 @@
 using Application.Common.Interfaces;
 using Application.Features.Auth.Interfaces;
 using Domain.Entities;
-using Domain.Exceptions;
 
 namespace Application.Features.Auth.Services;
 
-public class PasswordRecoveryService:IPasswordRecoveryService
+public class PasswordRecoveryService : IPasswordRecoveryService
 {
     private readonly IHasher _hasher;
     private readonly IUserRepository _userRepository;
+
     public PasswordRecoveryService(IHasher hasher, IUserRepository userRepository)
     {
         _hasher = hasher;
         _userRepository = userRepository;
     }
-    
+
     // public async Task ResetPasswordAsync(string email,string code,string newPassword)
     // {
     //     var user=await _userRepository.GetUserByEmailAsync(email);
@@ -36,7 +36,7 @@ public class PasswordRecoveryService:IPasswordRecoveryService
     //     
     //     await _userRepository.SaveChangesAsync();
     // }
-    
+
     // public async Task ForgetPasswordAsync(string email)
     // {
     //     var user = await _userRepository.GetUserByEmailAsync(email);

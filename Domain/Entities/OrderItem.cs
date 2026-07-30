@@ -9,16 +9,18 @@ public class OrderItem
     public decimal Price { get; set; }
     public Guid OrderId { get; set; }
     public Order Order { get; set; }
-    public OrderItem(Guid productId, int quantity,decimal price)
+
+    public OrderItem(Guid productId, Guid orderId, int quantity, decimal price, string productTitle)
     {
         Id = Guid.NewGuid();
+        OrderId = orderId;
         Quantity = quantity;
         ProductId = productId;
         Price = price;
+        ProductTitle = productTitle;
     }
 
     public OrderItem()
     {
-        
     }
 }

@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence.Repositories;
 
-public class PaymentRepository:PaymentRepositoryContract
+public class PaymentRepository : PaymentRepositoryContract
 {
     private readonly ShopDbContext _dbContext;
 

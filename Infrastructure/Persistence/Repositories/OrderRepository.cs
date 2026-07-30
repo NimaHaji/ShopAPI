@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence.Repositories;
 
-public class OrderRepository:OrderRepositoryContract
+public class OrderRepository : OrderRepositoryContract
 {
     private readonly ShopDbContext context;
 
@@ -25,6 +25,11 @@ public class OrderRepository:OrderRepositoryContract
     public async Task CreateOrderAsync(Order order)
     {
         await context.AddAsync(order);
+    }
+
+    public void UpdateOrder(Order order)
+    {
+        context.Update(order);
     }
 
     public async Task SaveAsync()

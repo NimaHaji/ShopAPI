@@ -28,7 +28,7 @@ public class UserRepository : IUserRepository
             .Where(x => email == x.Email)
             .ToListAsync();
     }
-    
+
     public async Task<bool> IsUserExistsByIdAsync(Guid userId)
     {
         return await _context.Users.AnyAsync(x => x.Id == userId);
@@ -66,5 +66,4 @@ public class UserRepository : IUserRepository
             .Where(x => x.Id == userId)
             .FirstOrDefaultAsync();
     }
-
 }

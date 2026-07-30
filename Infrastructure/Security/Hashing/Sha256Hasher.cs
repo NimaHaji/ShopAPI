@@ -4,7 +4,7 @@ using Domain.Entities;
 
 namespace Infrastructure.Security.Hashing;
 
-public class Sha256Hasher:IHasher
+public class Sha256Hasher : IHasher
 {
     public string Hash(string input)
     {
