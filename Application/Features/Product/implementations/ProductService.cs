@@ -425,7 +425,7 @@ public class ProductService : ProductServicesContract
 
     public async Task<ViewProductBrandItemDto> GetProductBrandById(Guid productBrandId)
     {
-        var brand = await _productRepositoryContract.GetProductBrandById(`productBrandId);
+        var brand = await _productRepositoryContract.GetProductBrandById(productBrandId);
 
         if (brand is null)
             throw new NotFoundException("دسته بندی محصول یافت نشد");
