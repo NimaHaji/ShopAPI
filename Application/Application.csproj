@@ -22,7 +22,6 @@
     <ItemGroup>
       <Folder Include="Features\Checkout\DTOs\" />
       <Folder Include="Features\DummyData\" />
-      <Folder Include="Validator\" />
     </ItemGroup>
 
 </Project>
