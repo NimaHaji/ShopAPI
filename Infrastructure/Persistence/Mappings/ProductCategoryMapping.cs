@@ -14,6 +14,19 @@ public class ProductCategoryMapping : IEntityTypeConfiguration<ProductCategory>
 
         builder
             .Property(p => p.Title)
+            .HasMaxLength(200)
+            .IsRequired();
+
+        builder
+            .Property(p => p.IsDeleted)
+            .IsRequired();
+
+        builder
+            .Property(pc => pc.CreatedAt)
+            .IsRequired();
+        
+        builder
+            .Property(pc=>pc.DeletedAt)
             .IsRequired();
     }
 }
