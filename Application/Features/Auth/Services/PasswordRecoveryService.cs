@@ -1,3 +1,4 @@
+using Application.Common;
 using Application.Common.Interfaces;
 using Application.Features.Auth.Interfaces;
 using Domain.Entities;
@@ -12,38 +13,64 @@ public class PasswordRecoveryService : IPasswordRecoveryService
     private readonly IUserRepository _userRepository;
     private readonly IEmailSender _emailSenderContract;
     private readonly IVerificationCodeGenerator _codeGenerator;
-    private readonly IUSerContext _userContext;
-    public PasswordRecoveryService(IHasher hasher, IUserRepository userRepository, IEmailSender emailSenderContract, IVerificationCodeGenerator codeGenerator, IUSerContext userContext)
+    private readonly IPasswordHasher _passwordHasher;
+    public PasswordRecoveryService(IHasher hasher, IUserRepository userRepository, IEmailSender emailSenderContract, IVerificationCodeGenerator codeGenerator, IPasswordHasher passwordHasher)
     {
         _hasher = hasher;
         _userRepository = userRepository;
         _emailSenderContract = emailSenderContract;
         _codeGenerator = codeGenerator;
-        _userContext = userContext;
+        _passwordHasher = passwordHasher;
     }
 
     public async Task<string> ResetPasswordAsync(string email,string code,string newPassword)
     {
-        var user=await _userRepository.GetUserByEmailAsync(email);
-        
-        if (user == null)
-            throw new NotFoundException("کاربر یافت نشد .");
-        
-        var codeHash=_hasher.Hash(code);
-    
-        if (!user.CanUseResetPassword(codeHash, DateTime.UtcNow))
+        var user = await _userRepository.GetUserByEmailAsync(email);
+
+        if (user is null)
+            throw new NotFoundException("کاربر یافت نشد.");
+
+        if (user.PasswordResetCodeHash is null ||
+            user.PasswordResetCodeExpireAt is null)
+        {
+            throw new InvalidOperationException(
+                "کد بازیابی معتبر نیست.");
+        }
+
+        if (user.HasExceededPasswordResetAttempts())
+        {
+            throw new InvalidOperationException(
+                "تعداد تلاش‌های مجاز به پایان رسیده است.");
+        }
+
+        if (DateTime.UtcNow > user.PasswordResetCodeExpireAt)
+        {
+            throw new InvalidOperationException(
+                "کد بازیابی منقضی شده است.");
+        }
+
+        var isValidCode = _hasher.Verify(
+            code,
+            user.PasswordResetCodeHash);
+
+        if (!isValidCode)
         {
             user.IncreasePasswordResetAttemptCount();
+
             await _userRepository.SaveChangesAsync();
-            throw new InvalidOperationException("کد منقضی شده یا اشتباه است .");
+
+            throw new InvalidOperationException(
+                "کد بازیابی اشتباه است.");
         }
-        
-        var hashedPassword = _hasher.Hash(newPassword);
-        user.ResetPassword(hashedPassword, DateTime.UtcNow);
+
+        var hashedPassword = _passwordHasher.Hash(newPassword);
+
+        user.ChangePassword(hashedPassword);
         user.ClearPasswordResetCode();
-        
+
         await _userRepository.SaveChangesAsync();
-        return "رمز عبور با موفقیت تغییر کرد .";
+
+        return "رمز عبور با موفقیت تغییر کرد.";
     }
 
     public async Task<string> ForgetPasswordAsync(string email)
@@ -59,7 +86,7 @@ public class PasswordRecoveryService : IPasswordRecoveryService
         var code = _codeGenerator.Generate6DigitCode();
         var codeHash = _hasher.Hash(code);
         
-        claimingUser.ResetPassword(
+        claimingUser.SetPasswordResetCode(
             codeHash,
             DateTime.UtcNow.AddMinutes(5)
         );
