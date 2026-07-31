@@ -17,6 +17,7 @@ using Infrastructure.Security.Hashing;
 using Infrastructure.Security.Jwt;
 using Infrastructure.Security.Verification;
 using Infrastructure.Services.Payment.Implement;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -44,7 +45,7 @@ public static class InfrastructureServices
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
-        services.AddScoped<IPasswordHasher, PasswordHasher>();
+        services.AddScoped<IPasswordHasher, IdentityPasswordHasher>();
         services.AddScoped<IUSerContext, UserContext>();
         services.AddScoped<InventoryRepositoryContract, InventoryRepository>();
         services.AddScoped<InventoryTransactionRepositoryContract, InventoryTransactionRepository>();
