@@ -21,7 +21,7 @@ public class OrderMapping : IEntityTypeConfiguration<Order>
         builder.Property(o => o.CreateAt).IsRequired();
 
         builder
-            .HasMany(o => o.Items)
+            .HasMany(o => o.OrderItems)
             .WithOne(o => o.Order)
             .HasForeignKey(o => o.OrderId);
     }

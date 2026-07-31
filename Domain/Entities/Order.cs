@@ -10,7 +10,7 @@ public class Order
     public long TotalPrice { get; set; }
     public OrderStatus OrderStatus { get; set; }
     public DateTime CreateAt { get; set; }
-    public List<OrderItem> Items { get; set; } = new();
+    public List<OrderItem> OrderItems { get; set; } = new();
 
     public Order(Guid userId)
     {
@@ -28,17 +28,17 @@ public class Order
         if (item.Quantity <= 0)
             throw new InvalidQuantityException("تعداد نمیتواند منفی باشد .");
 
-        Items.Add(item);
+        OrderItems.Add(item);
         TotalPrice += (long)(item.Price * item.Quantity);
     }
 
-    public void MarkAsSucceeded()
+    public void ChangeOrderStatusTo(OrderStatus status)
     {
-        OrderStatus = OrderStatus.Paid;
+        OrderStatus = status;
     }
 
-    public void MarkAsFailed()
+    public void Cancel()
     {
-        OrderStatus = OrderStatus.Paid;
+        OrderStatus = OrderStatus.Cancelled;
     }
 }

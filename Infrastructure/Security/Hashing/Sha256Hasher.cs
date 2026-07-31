@@ -17,9 +17,10 @@ public class Sha256Hasher : IHasher
     public bool Verify(string input, string hash)
     {
         var computed = Hash(input);
+
         return CryptographicOperations.FixedTimeEquals(
             Convert.FromHexString(computed),
-            Convert.FromHexString(input)
+            Convert.FromHexString(hash)
         );
     }
 }
