@@ -6,11 +6,11 @@ public class OrderItem
     public Guid ProductId { get; set; }
     public string ProductTitle { get; set; }
     public int Quantity { get; set; }
-    public decimal Price { get; set; }
+    public long Price { get; set; }
     public Guid OrderId { get; set; }
     public Order Order { get; set; }
 
-    public OrderItem(Guid productId, Guid orderId, int quantity, decimal price, string productTitle)
+    public OrderItem(Guid productId, Guid orderId, int quantity, long price, string productTitle)
     {
         Id = Guid.NewGuid();
         OrderId = orderId;

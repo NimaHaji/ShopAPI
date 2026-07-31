@@ -51,7 +51,7 @@ public class User
         PhoneNumber = phoneNumber;
     }
 
-    public void ResetPassword(string codeHash, DateTime expiresAt)
+    public void SetPasswordResetCode(string codeHash, DateTime expiresAt)
     {
         PasswordResetCodeHash = codeHash;
         PasswordResetCodeExpireAt = expiresAt;
@@ -66,7 +66,20 @@ public class User
         return PasswordResetCodeHash == codeHash;
     }
 
-    public void IncreasePasswordResetAttemptCount() => PasswordResetAttemptsCount++;
+    public void ChangePassword(string hashedPassword)
+    {
+        Password = hashedPassword;
+    }
+
+    public void IncreasePasswordResetAttemptCount()
+    {
+        PasswordResetAttemptsCount++;
+    }
+
+    public bool HasExceededPasswordResetAttempts()
+    {
+        return PasswordResetAttemptsCount >= 5;
+    }
 
     public void ClearPasswordResetCode()
     {

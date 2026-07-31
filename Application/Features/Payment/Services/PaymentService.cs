@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using System.Security.Cryptography;
+using Application.Common.Interfaces;
 using Application.Features.Order.Interfaces;
 using Application.Features.Payment.DTOs;
 using Application.Features.Payment.DTOs.ZarinPal;
@@ -7,6 +8,7 @@ using Application.Features.Payment.Interfaces;
 using Domain.Entities;
 using Domain.Enums;
 using Microsoft.Extensions.Configuration;
+using Shared.Exceptions;
 
 namespace Application.Features.Payment.Services;
 
@@ -15,23 +17,22 @@ public class PaymentService : PaymentServiceContract
     private readonly PaymentRepositoryContract _paymentRepository;
     private readonly PaymentGatewayResolverContract _gatewayResolver;
     private readonly OrderRepositoryContract _orderRepository;
-    private readonly IConfiguration _configuration;
-    private readonly HttpClient _httpClient;
+    private readonly IUSerContext _userContext;
 
-    public PaymentService(PaymentRepositoryContract paymentRepository, IConfiguration configuration,
-        HttpClient httpClient, PaymentGatewayResolverContract gatewayResolver, OrderRepositoryContract orderRepository)
+    public PaymentService(PaymentRepositoryContract paymentRepository, PaymentGatewayResolverContract gatewayResolver, OrderRepositoryContract orderRepository, IUSerContext userContext)
     {
         _paymentRepository = paymentRepository;
-        _configuration = configuration;
-        _httpClient = httpClient;
         _gatewayResolver = gatewayResolver;
         _orderRepository = orderRepository;
+        _userContext = userContext;
     }
     public async Task<string?> CreatePaymentAsync(CreatePaymentDto dto)
     {
-        var order = await _orderRepository.GetOrderByIdAsync(dto.OrderId);
+        var userId = _userContext.UserId ?? throw new UnauthorizedAccessException("کاربر احراز هویت نشده است.");
+        
+        var order = await _orderRepository.GetOrderByIdAsync(dto.OrderId,userId);
         if (order is null)
-            return "سفارشی یافت نشد";
+            throw new NotFoundException("سفارشی یافت نشد"); 
         
         var payment = new Domain.Entities.Payment(order.TotalPrice,dto.Description, dto.Gateway);
 
