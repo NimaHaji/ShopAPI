@@ -10,6 +10,7 @@ public class Order
     public long TotalPrice { get; set; }
     public OrderStatus OrderStatus { get; set; }
     public DateTime CreateAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
     public List<OrderItem> OrderItems { get; set; } = new();
 
     public Order(Guid userId)
@@ -18,6 +19,7 @@ public class Order
         Id = Guid.NewGuid();
         CreateAt = DateTime.UtcNow;
         OrderStatus = OrderStatus.Pending;
+        UpdatedAt= DateTime.UtcNow;
     }
 
     public void AddItem(OrderItem item)
@@ -35,10 +37,12 @@ public class Order
     public void ChangeOrderStatusTo(OrderStatus status)
     {
         OrderStatus = status;
+        UpdatedAt= DateTime.UtcNow;
     }
 
     public void Cancel()
     {
         OrderStatus = OrderStatus.Cancelled;
+        UpdatedAt= DateTime.UtcNow;
     }
 }

@@ -1,3 +1,5 @@
+using System.Runtime;
+
 namespace Application.Features.DummyData.DTOs;
 
 public class DummyJsonProductResponse
@@ -11,10 +13,8 @@ public class DummyJsonProductDto
     public string Description { get; set; }
     public string Category { get; set; }
     public string Brand { get; set; }
-
+    public List<string> Images { get; set; }
     public decimal Price { get; set; }
     public decimal DiscountPercentage { get; set; }
-    public decimal Rating { get; set; }
-
     public int Stock { get; set; }
 }

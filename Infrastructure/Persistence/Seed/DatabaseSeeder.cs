@@ -3,6 +3,7 @@ using System.Security.AccessControl;
 using System.Text.Json;
 using Application.Features.DummyData.DTOs;
 using Domain.Entities;
+using Domain.Services;
 using Infrastructure.Persistence.Contexts;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,12 +12,14 @@ namespace Infrastructure.Persistence.Seed;
 public class DatabaseSeeder
 {
     private readonly ShopDbContext _context;
+    private readonly SkuGeneratorContract  _skuGeneratorContract;
     private readonly HttpClient _httpClient;
 
-    public DatabaseSeeder(ShopDbContext context, HttpClient httpClient)
+    public DatabaseSeeder(ShopDbContext context, HttpClient httpClient, SkuGeneratorContract skuGeneratorContract)
     {
         _context = context;
         _httpClient = httpClient;
+        _skuGeneratorContract = skuGeneratorContract;
     }
 
     public async Task SeedAsync()
@@ -118,17 +121,32 @@ public class DatabaseSeeder
                 if (!string.IsNullOrWhiteSpace(brandTitle) && brandMap.TryGetValue(brandTitle, out var bid))
                     brandId = bid;
 
-                var tomanPrice = (long)(Math.Round(p.Price * DollarToToman / 1000m, MidpointRounding.AwayFromZero) *
-                                        1000m);
-
+                var tomanPrice = (long)(Math.Round(p.Price * DollarToToman / 1000m, MidpointRounding.AwayFromZero) * 1000m);
+                
+                var sku=_skuGeneratorContract.GenerateSku();
+                
                 var product = Product.Create(
                     p.Title,
                     p.Description,
                     tomanPrice,
                     p.DiscountPercentage,
                     categoryId,
-                    brandId
+                    brandId,
+                    sku
                 );
+                
+                for (var i = 0; i < p.Images.Count; i++)
+                {
+                    product.Images.Add(
+                        new ProductImage(
+                            product.Id,
+                            p.Images[i],
+                            i == 0,
+                            i
+                        )
+                    );
+                }
+
                 productEntities.Add(product);
                 var inventoryItem = new InventoryItem(
                     productId: product.Id,
@@ -159,10 +177,6 @@ public class DatabaseSeeder
 
             #endregion
 
-
-            // ============================================
-            // 7. Save All Changes
-            // ============================================
             await _context.SaveChangesAsync();
 
             Console.WriteLine("Seeder: done");

@@ -14,4 +14,6 @@ public class ViewProductItemDto
     public int Stock { get; set; }
     public string Category { get; set; }
     public string? Brand { get; set; }
+    public string Sku { get; set; }
+    public List<string> Images { get; set; }
 }
