@@ -21,7 +21,6 @@ public class ProductsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetProducts([FromQuery] ProductQueryDto query)
     {
-        // Todo : fluent for query
         var product = await _productServicesContract.GetAllProducts(query);
         return Ok(product);
     }

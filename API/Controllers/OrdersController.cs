@@ -9,11 +9,11 @@ namespace ShopApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class OrderController : ControllerBase
+public class OrdersController : ControllerBase
 {
     private readonly OrderServicesContract _orderServicesContract;
 
-    public OrderController(OrderServicesContract orderServicesContract)
+    public OrdersController(OrderServicesContract orderServicesContract)
     {
         _orderServicesContract = orderServicesContract;
     }
