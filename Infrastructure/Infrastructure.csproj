@@ -28,6 +28,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <Folder Include="Email\Interface\" />
       <Folder Include="Services\Payment\Interface\" />
     </ItemGroup>
 

@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices.ComTypes;
 using Application.Features.Order.Interfaces;
 using Domain.Entities;
 using Infrastructure.Persistence.Contexts;
@@ -7,33 +8,51 @@ namespace Infrastructure.Persistence.Repositories;
 
 public class OrderRepository : OrderRepositoryContract
 {
-    private readonly ShopDbContext context;
+    private readonly ShopDbContext _context;
 
     public OrderRepository(ShopDbContext context)
     {
-        this.context = context;
+        this._context = context;
     }
 
-    public async Task<Order?> GetOrderByIdAsync(Guid orderId)
+    public async Task<Order?> GetOrderByIdAsync(Guid orderId, Guid userId)
     {
-        return await context
+        return await _context
             .Orders
-            .Where(o => o.Id == orderId)
+            .Include(o => o.OrderItems)
+            .Where(o => o.Id == orderId && o.UserId == userId)
             .FirstOrDefaultAsync();
     }
 
     public async Task CreateOrderAsync(Order order)
     {
-        await context.AddAsync(order);
+        await _context.AddAsync(order);
     }
 
     public void UpdateOrder(Order order)
     {
-        context.Update(order);
+        _context.Update(order);
     }
 
     public async Task SaveAsync()
     {
-        await context.SaveChangesAsync();
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task<List<Order>?> GetAllOrders()
+    {
+        return await _context
+            .Orders
+            .Include(o => o.OrderItems)
+            .ToListAsync();
+    }
+
+    public async Task<List<Order>?> GetOrderByUserIdAsync(Guid userId)
+    {
+        return await _context
+            .Orders
+            .Include(o => o.OrderItems)
+            .Where(o => o.UserId == userId)
+            .ToListAsync();
     }
 }
