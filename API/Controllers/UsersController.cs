@@ -7,11 +7,11 @@ namespace ShopApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class UserController : ControllerBase
+public class UsersController : ControllerBase
 {
     private readonly IUserService _service;
     private readonly IPasswordRecoveryService _passwordRecoveryService;
-    public UserController(IUserService service, IPasswordRecoveryService passwordRecoveryService)
+    public UsersController(IUserService service, IPasswordRecoveryService passwordRecoveryService)
     {
         _service = service;
         _passwordRecoveryService = passwordRecoveryService;
