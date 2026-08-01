@@ -1,6 +1,6 @@
 namespace Domain.Services;
 
-public class SkuGeneratorContract
+public interface SkuGeneratorContract
 {
-    
+    string GenerateSku();
 }
