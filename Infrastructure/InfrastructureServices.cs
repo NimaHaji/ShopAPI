@@ -8,6 +8,7 @@ using Application.Features.InventoryTransaction.Interfaces;
 using Application.Features.Order.Interfaces;
 using Application.Features.Payment.Interfaces;
 using Application.Features.Product.Interfaces;
+using Domain.Services;
 using Infrastructure.Email;
 using Infrastructure.Persistence;
 using Infrastructure.Persistence.Contexts;
@@ -17,6 +18,7 @@ using Infrastructure.Security.Hashing;
 using Infrastructure.Security.Jwt;
 using Infrastructure.Security.Verification;
 using Infrastructure.Services.Payment.Implement;
+using Infrastructure.Services.Sku;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -52,6 +54,7 @@ public static class InfrastructureServices
         services.Configure<SmtpSettings>(configuration.GetSection("SmtpSettings"));
         services.AddScoped<IEmailSender, EmailSender>();
         services.AddScoped<IVerificationCodeGenerator, VerificationCodeGenerator>();
+        services.AddScoped<SkuGeneratorContract, SkuGenerator>();
         services.AddScoped<DatabaseSeeder>();
 
         return services;
