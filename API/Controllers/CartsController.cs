@@ -8,11 +8,11 @@ namespace ShopApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class CartController : ControllerBase
+public class CartsController : ControllerBase
 {
     private readonly CartServicesContract _cartService;
 
-    public CartController(CartServicesContract cartService)
+    public CartsController(CartServicesContract cartService)
     {
         _cartService = cartService;
     }

@@ -6,11 +6,11 @@ namespace ShopApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class CheckoutController : ControllerBase
+public class CheckoutsController : ControllerBase
 {
     private readonly CheckoutServiceContract _checkoutServiceContract;
 
-    public CheckoutController(CheckoutServiceContract checkoutServiceContract)
+    public CheckoutsController(CheckoutServiceContract checkoutServiceContract)
     {
         _checkoutServiceContract = checkoutServiceContract;
     }
