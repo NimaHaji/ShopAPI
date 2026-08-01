@@ -7,11 +7,11 @@ namespace ShopApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class CategoryController : ControllerBase
+public class CategoriesController : ControllerBase
 {
     private readonly ProductServicesContract _productServicesContract;
 
-    public CategoryController(ProductServicesContract productServicesContract)
+    public CategoriesController(ProductServicesContract productServicesContract)
     {
         _productServicesContract = productServicesContract;
     }

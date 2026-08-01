@@ -8,13 +8,13 @@ namespace ShopApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]/[action]")]
-public class PaymentController : ControllerBase
+public class PaymentsController : ControllerBase
 {
     private readonly HttpClient _httpClient;
     private readonly IConfiguration _config;
     private readonly PaymentServiceContract _paymentServiceContract;
 
-    public PaymentController(HttpClient httpClient, IConfiguration config,
+    public PaymentsController(HttpClient httpClient, IConfiguration config,
         PaymentServiceContract paymentServiceContract)
     {
         _httpClient = httpClient;

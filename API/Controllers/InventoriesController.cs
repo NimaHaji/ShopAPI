@@ -8,11 +8,11 @@ namespace ShopApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class InventoryController : ControllerBase
+public class InventoriesController : ControllerBase
 {
     private readonly InventoryServiceContract _inventoryServiceContract;
 
-    public InventoryController(InventoryServiceContract inventoryServiceContract)
+    public InventoriesController(InventoryServiceContract inventoryServiceContract)
     {
         _inventoryServiceContract = inventoryServiceContract;
     }
