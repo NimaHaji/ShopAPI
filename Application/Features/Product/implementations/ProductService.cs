@@ -6,6 +6,7 @@ using Application.Features.Order.Interfaces;
 using Application.Features.Product.DTOs;
 using Application.Features.Product.Interfaces;
 using Domain.Entities;
+using Domain.Services;
 using Microsoft.EntityFrameworkCore;
 using Shared.Exceptions;
 
@@ -16,13 +17,16 @@ public class ProductService : ProductServicesContract
     private readonly ProductRepositoryContract _productRepositoryContract;
     private readonly InventoryServiceContract _inventoryServiceContract;
     private readonly UnitOfWorkContract _unitOfWorkContract;
+    private readonly SkuGeneratorContract _skuGeneratorContract;
 
     public ProductService(ProductRepositoryContract productRepositoryContract,
-        InventoryServiceContract inventoryServiceContract, UnitOfWorkContract unitOfWorkContract)
+        InventoryServiceContract inventoryServiceContract, UnitOfWorkContract unitOfWorkContract,
+        SkuGeneratorContract skuGeneratorContract)
     {
         _productRepositoryContract = productRepositoryContract;
         _inventoryServiceContract = inventoryServiceContract;
         _unitOfWorkContract = unitOfWorkContract;
+        _skuGeneratorContract = skuGeneratorContract;
     }
 
     #region product
@@ -30,15 +34,6 @@ public class ProductService : ProductServicesContract
     public async Task<ViewProductDto> GetAllProducts(ProductQueryDto query)
     {
         var products = await _productRepositoryContract.GetProductList(query);
-        foreach (var p in products)
-        {
-            Console.WriteLine($"""
-                               Product: {p.Title}
-                               Category: {p.Category != null}
-                               Brand: {p.Brand != null}
-                               Inventory: {p.InventoryItem != null}
-                               """);
-        }
 
         var dto = products.Select(p => new ViewProductItemDto
         {
@@ -48,7 +43,12 @@ public class ProductService : ProductServicesContract
             Price = p.Price,
             Category = p.Category.Title,
             DiscountPercentage = p.DiscountPercentage,
-            Stock = p.InventoryItem.AvailableQuantity
+            Stock = p.InventoryItem.AvailableQuantity,
+            Sku = p.Sku,
+            Images = p.Images
+                .OrderBy(pi => pi.SortOrder)
+                .Select(pi => pi.ImageLink)
+                .ToList()
         }).ToList();
 
         return new ViewProductDto
@@ -63,13 +63,15 @@ public class ProductService : ProductServicesContract
         if (isExist)
             throw new DuplicateNameException("این محصول از قبل وجود دارد");
 
+        var sku = _skuGeneratorContract.GenerateSku();
         var product = Domain.Entities.Product.Create(
             title: dto.Title,
             description: dto.Description,
             price: dto.Price,
             discountPercentage: null,
             categoryId: dto.CategoryId,
-            brandId: dto.BrandId ?? null
+            brandId: dto.BrandId ?? null,
+            sku: sku
         );
 
         await _inventoryServiceContract.AddStockAsync(product.Id, dto.Quantity, product.Description);
@@ -127,7 +129,9 @@ public class ProductService : ProductServicesContract
             Category = product.Category.Title,
             DiscountPercentage = product.DiscountPercentage,
             Brand = product.Brand?.Title ?? "بدون برند",
-            Stock = product.InventoryItem.AvailableQuantity
+            Stock = product.InventoryItem.AvailableQuantity,
+            Sku = product.Sku,
+            Images = product.Images.OrderBy(x => x.SortOrder).Select(x => x.ImageLink).ToList()
         };
 
         return dto;
@@ -205,7 +209,6 @@ public class ProductService : ProductServicesContract
         throw new InvalidOperationException("خطای ناشناخته");
     }
 
-
     #endregion
 
     #region category
@@ -242,6 +245,7 @@ public class ProductService : ProductServicesContract
 
         throw new InvalidOperationException("خطای ناشناخته");
     }
+
     public async Task<ViewProductCategoryDto> GetAllCategories()
     {
         var categories = await _productRepositoryContract.GetAllProductCategories();
