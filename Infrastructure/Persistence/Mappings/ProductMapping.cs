@@ -36,15 +36,22 @@ public class ProductMapping : IEntityTypeConfiguration<Product>
         builder
             .Property(p=>p.IsDeleted)
             .IsRequired();
-        
+
         builder
-            .Property(p => p.DeletedAt)
-            .IsRequired();
+            .Property(p => p.DeletedAt);
         
         builder
             .Property(p=>p.RowVersion)
             .IsRowVersion()
             .IsConcurrencyToken();
+        
+        builder
+            .Property(p=>p.UpdatedAt)
+            .IsRequired();
+        
+        builder
+            .Property(p=>p.Sku)
+            .IsRequired();
         
         builder
             .HasOne(p => p.Category)
@@ -59,5 +66,13 @@ public class ProductMapping : IEntityTypeConfiguration<Product>
         builder.HasOne(x => x.InventoryItem)
             .WithOne(x => x.Product)
             .HasForeignKey<InventoryItem>(x => x.ProductId);
+        
+        builder.HasMany(p => p.Images)
+            .WithOne(p => p.Product)
+            .HasForeignKey(p => p.ProductId);
+        
+        builder
+            .HasIndex(p => p.Sku)
+            .IsUnique();
     }
 }

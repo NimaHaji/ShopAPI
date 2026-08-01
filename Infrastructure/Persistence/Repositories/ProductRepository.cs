@@ -26,6 +26,7 @@ public class ProductRepository : ProductRepositoryContract
             .Include(x => x.Category)
             .Include(x => x.Brand)
             .Include(x => x.InventoryItem)
+            .Include(x=>x.Images)
             .Where(p => !p.IsDeleted)
             .AsQueryable();
 
@@ -95,6 +96,10 @@ public class ProductRepository : ProductRepositoryContract
     {
         return await _context
             .Products
+            .Include(x=>x.Category)
+            .Include(x=>x.Brand)
+            .Include(x=>x.Images)
+            .Include(x=>x.InventoryItem)
             .Where(p => !p.IsDeleted && p.Id == productId)
             .FirstOrDefaultAsync();
     }
