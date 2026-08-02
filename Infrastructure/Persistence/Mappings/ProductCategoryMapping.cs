@@ -26,7 +26,10 @@ public class ProductCategoryMapping : IEntityTypeConfiguration<ProductCategory>
             .IsRequired();
         
         builder
-            .Property(pc=>pc.DeletedAt)
+            .Property(pc=>pc.DeletedAt);
+        
+        builder
+            .Property(pc => pc.UpdatedAt)
             .IsRequired();
     }
 }
