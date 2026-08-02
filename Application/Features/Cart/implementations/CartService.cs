@@ -51,13 +51,13 @@ public class CartService : CartServicesContract
             await _cartRepository.CreateCartAsync(cart);
         }
 
-        var existingItem = await _cartRepository.GetCartItemByProductIdAsync(cart.Id,inventory.ProductId);
-        
+        var existingItem = await _cartRepository.GetCartItemByProductIdAsync(cart.Id, inventory.ProductId);
+
         var requestedQuantity =
             existingItem == null
                 ? dto.Quantity
                 : existingItem.Quantity + dto.Quantity;
-        
+
         if (existingItem is not null)
         {
             if (inventory.AvailableQuantity < requestedQuantity)
@@ -84,7 +84,7 @@ public class CartService : CartServicesContract
     public async Task UpdateItemQuantityAsync(UpdateCartDto dto)
     {
         var userId = _userContext.UserId ?? throw new UnauthorizedAccessException("کاربر احراز هویت نشده است.");
-        
+
         if (dto.NewQuantity <= 0)
             throw new InvalidQuantityException("تعداد باید بیشتر از صفر باشد. برای حذف، از متد حذف استفاده کنید.");
 
@@ -94,16 +94,17 @@ public class CartService : CartServicesContract
         var item = cart.CartItems.FirstOrDefault(x => x.ProductId == dto.ProductId);
         if (item is null) throw new NotFoundException("این محصول در سبد خرید شما وجود ندارد.");
 
-        
+
         var inventory = await _inventoryRepositoryContract.GetByProductIdAsync(dto.ProductId);
-        
+
         if (inventory is null) throw new NotFoundException("محصول یافت نشد.");
-        
+
         if (inventory.AvailableQuantity < dto.NewQuantity)
-            throw new InsufficientStockException($"موجودی انبار کافی نیست. حداکثر موجودی: {inventory.AvailableQuantity}");
+            throw new InsufficientStockException(
+                $"موجودی انبار کافی نیست. حداکثر موجودی: {inventory.AvailableQuantity}");
 
         item.Quantity = dto.NewQuantity;
-        
+
         // Todo: Update Timespan
         // cart.UpdateTimestamp();
 
@@ -142,15 +143,18 @@ public class CartService : CartServicesContract
     public async Task DeleteItemAsync(Guid productId)
     {
         var userId = _userContext.UserId ?? throw new UnauthorizedAccessException("کاربر احراز هویت نشده است.");
+        
         var cart = await _cartRepository.GetCartByUserIdAsync(userId);
-        if (cart is null) throw new Exception("سبد خرید یافت نشد");
+        
+        if (cart is null) 
+            throw new NotFoundException("سبد خرید یافت نشد");
 
         var item = cart.CartItems.FirstOrDefault(x => x.ProductId == productId);
-        if (item is null) throw new Exception("محصول در سبد خرید یافت نشد");
+        
+        if (item is null) 
+            throw new NotFoundException("محصول در سبد خرید یافت نشد");
 
         cart.CartItems.Remove(item);
-        // Todo: Update Timespan
-        // cart.UpdateTimestamp();
         await _cartRepository.SaveAsync();
     }
 

@@ -1,6 +1,7 @@
 using Application.Features.Auth.Interfaces;
 using Application.Features.Product.DTOs;
 using Application.Features.Product.Interfaces;
+using Application.Features.Review.DTOs;
 using Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -32,7 +33,7 @@ public class ProductsController : ControllerBase
         return Ok(product);
     }
 
-    [Authorize(Roles = "SuperAdmin")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     [HttpPost]
     public async Task<IActionResult> AddProduct(CreateProductDto dto)
     {
@@ -43,7 +44,7 @@ public class ProductsController : ControllerBase
         });
     }
 
-    [Authorize(Roles = "SuperAdmin")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     [HttpPatch]
     public async Task<IActionResult> EditProduct([FromBody] EditProductDto dto)
     {
@@ -54,7 +55,8 @@ public class ProductsController : ControllerBase
             }
         );
     }
-    [Authorize(Roles = "SuperAdmin")]
+
+    [Authorize(Roles = "Admin,SuperAdmin")]
     [HttpDelete("{productId:guid}")]
     public async Task<IActionResult> DeleteProduct([FromRoute] Guid productId)
     {
@@ -63,12 +65,42 @@ public class ProductsController : ControllerBase
         {
             message = result
         });
-}
+    }
+
+    [Authorize(Roles = "Admin,SuperAdmin")]
+    [HttpPost("{productId:guid}/restore")]
+    public async Task<IActionResult> RestoreProduct([FromRoute] Guid productId)
+    {
+        var result = await _productServicesContract.RestoreProductAsync(productId);
+        return Ok(new
+        {
+            message = result
+        });
+    }
+
     [HttpGet]
     [Route("Search")]
     public async Task<IActionResult> SearchProduct([FromQuery] string query)
     {
         var product = await _productServicesContract.SearchProductByTitle(query);
         return Ok(product);
+    }
+
+    [HttpGet("{productId:guid}/Reviews")]
+    public async Task<IActionResult> GetProductReviews(Guid productId)
+    {
+        var reviews = await _productServicesContract.GetAllProductReviews(productId);
+        return Ok(reviews);
+    }
+
+    [HttpPost("{productId:guid}/Reviews")]
+    [Authorize]
+    public async Task<IActionResult> AddReviewForProduct([FromRoute] Guid productId, [FromBody] CreateReviewDto dto)
+    {
+        var result = await _productServicesContract.AddReviewForProduct(productId, dto);
+        return Ok(new
+        {
+            message = result
+        });
     }
 }

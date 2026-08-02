@@ -23,7 +23,7 @@ public class BrandsController : ControllerBase
         return Ok(brands);
     }
 
-    [Authorize(Roles = "SuperAdmin")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     [HttpPost]
     public async Task<IActionResult> CreateBrand(CreateProductBrandDto dto)
     {
@@ -34,7 +34,7 @@ public class BrandsController : ControllerBase
         });
     }
 
-    [Authorize(Roles = "SuperAdmin")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     [HttpDelete("{brandId:guid}")]
     public async Task<IActionResult> DeleteBrand([FromRoute] Guid brandId)
     {
@@ -45,7 +45,19 @@ public class BrandsController : ControllerBase
             message = result
         });
     }
+    
+    [Authorize(Roles = "Admin,SuperAdmin")]
+    [HttpPost("{brandId:guid}/restore")]
+    public async Task<IActionResult> RestoreBrand([FromRoute] Guid brandId)
+    {
+        var result = await _productServicesContract.RestoreProductBrandAsync(brandId);
 
+        return Ok(new
+        {
+            message = result
+        });
+    }
+    
     [HttpPut]
     public async Task<IActionResult> EditBrand(EditProductBrandDto dto)
     {

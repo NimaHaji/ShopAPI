@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.AccessControl;
+using Shared.Exceptions;
 
 namespace Domain.Entities;
 
@@ -23,7 +24,7 @@ public class Product
     public List<ProductImage> Images { get; private set; } = new();
     public string Sku { get;private set; }
     [Timestamp] public byte[] RowVersion { get; set; }
-    
+    public List<Review> Reviews { get; private set; } = new();
     
     public static Product Create(
         string title,
@@ -63,6 +64,16 @@ public class Product
     {
         IsDeleted = true;
         DeletedAt = DateTime.UtcNow;
+        UpdatedAt = DateTime.UtcNow;
+    }
+    
+    public void Restore()
+    {
+        if (!IsDeleted)
+            throw new BusinessException("این محصول حذف نشده است .");
+        
+        IsDeleted = false;
+        DeletedAt = null;
         UpdatedAt = DateTime.UtcNow;
     }
 }
