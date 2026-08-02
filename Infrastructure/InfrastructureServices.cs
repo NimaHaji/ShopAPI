@@ -8,6 +8,7 @@ using Application.Features.InventoryTransaction.Interfaces;
 using Application.Features.Order.Interfaces;
 using Application.Features.Payment.Interfaces;
 using Application.Features.Product.Interfaces;
+using Application.Features.Review.interfaces;
 using Domain.Services;
 using Infrastructure.Email;
 using Infrastructure.Persistence;
@@ -55,6 +56,7 @@ public static class InfrastructureServices
         services.AddScoped<IEmailSender, EmailSender>();
         services.AddScoped<IVerificationCodeGenerator, VerificationCodeGenerator>();
         services.AddScoped<SkuGeneratorContract, SkuGenerator>();
+        services.AddScoped<ReviewsRepositoryContract, ReviewsRepository>();
         services.AddScoped<DatabaseSeeder>();
 
         return services;

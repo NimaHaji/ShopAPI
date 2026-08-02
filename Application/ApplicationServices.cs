@@ -13,6 +13,8 @@ using Application.Features.Payment.Interfaces;
 using Application.Features.Payment.Services;
 using Application.Features.Product.implementations;
 using Application.Features.Product.Interfaces;
+using Application.Features.Review.Implement;
+using Application.Features.Review.interfaces;
 using Domain.Entities;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -30,6 +32,7 @@ public static class ApplicationServices
         services.AddScoped<IPasswordRecoveryService, PasswordRecoveryService>();
         services.AddScoped<CheckoutServiceContract,CheckoutService>();
         services.AddScoped<InventoryServiceContract, InventoryService>();
+        services.AddScoped<ReviewServiceContract, ReviewService>();
         return services;
     }
 }
