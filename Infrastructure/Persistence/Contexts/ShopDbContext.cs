@@ -24,6 +24,7 @@ public class ShopDbContext : DbContext
     public DbSet<RefreshToken> RefreshTokens { get; set; }
     public DbSet<InventoryItem> InventoryItems { get; set; }
     public DbSet<InventoryTransaction> InventoryTransactions { get; set; }
+    public DbSet<Review> Reviews { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

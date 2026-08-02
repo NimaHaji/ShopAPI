@@ -19,7 +19,7 @@ public class ProductRepository : ProductRepositoryContract
 
     #region product
 
-    public async Task<List<Product>> GetProductList(ProductQueryDto query)
+    public async Task<List<Product>?> GetProductList(ProductQueryDto query)
     {
         var products = _context
             .Products
@@ -27,6 +27,7 @@ public class ProductRepository : ProductRepositoryContract
             .Include(x => x.Brand)
             .Include(x => x.InventoryItem)
             .Include(x=>x.Images)
+            .Include(x=>x.Reviews)
             .Where(p => !p.IsDeleted)
             .AsQueryable();
 
