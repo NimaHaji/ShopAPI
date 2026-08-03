@@ -1,6 +1,4 @@
-using System.Data;
 using Application.Common.Interfaces;
-using Application.Features.Cart.Interfaces;
 using Domain.Entities;
 using Infrastructure.Persistence.Contexts;
 using Microsoft.EntityFrameworkCore.Storage;

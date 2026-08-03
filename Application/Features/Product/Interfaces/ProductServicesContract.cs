@@ -1,7 +1,5 @@
-using Application.Features.Order.DTOs;
 using Application.Features.Product.DTOs;
 using Application.Features.Review.DTOs;
-using Domain.Entities;
 
 namespace Application.Features.Product.Interfaces;
 

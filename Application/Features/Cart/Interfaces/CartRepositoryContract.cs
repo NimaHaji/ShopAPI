@@ -1,5 +1,3 @@
-using Domain.Entities;
-
 namespace Application.Features.Cart.Interfaces;
 
 public interface CartRepositoryContract

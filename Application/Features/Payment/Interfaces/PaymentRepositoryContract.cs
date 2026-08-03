@@ -1,5 +1,3 @@
-using Application.Features.Payment.DTOs;
-
 namespace Application.Features.Payment.Interfaces;
 
 public interface PaymentRepositoryContract

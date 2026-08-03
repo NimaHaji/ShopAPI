@@ -1,4 +1,3 @@
-using System.ComponentModel.Design;
 using Application.Features.Auth.Interfaces;
 using Application.Features.Auth.Services;
 using Application.Features.Cart.implementations;
@@ -15,7 +14,8 @@ using Application.Features.Product.implementations;
 using Application.Features.Product.Interfaces;
 using Application.Features.Review.Implement;
 using Application.Features.Review.interfaces;
-using Domain.Entities;
+using Application.Features.Wishlist.Implementations;
+using Application.Features.Wishlist.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Application;
@@ -33,6 +33,7 @@ public static class ApplicationServices
         services.AddScoped<CheckoutServiceContract,CheckoutService>();
         services.AddScoped<InventoryServiceContract, InventoryService>();
         services.AddScoped<ReviewServiceContract, ReviewService>();
+        services.AddScoped<WishlistServiceContract, WishlistService>();
         return services;
     }
 }

@@ -1,5 +1,4 @@
 using Application.Features.Inventory.DTOs;
-using Domain.Entities;
 
 namespace Application.Features.Inventory.Interfaces;
 

@@ -25,6 +25,8 @@ public class ShopDbContext : DbContext
     public DbSet<InventoryItem> InventoryItems { get; set; }
     public DbSet<InventoryTransaction> InventoryTransactions { get; set; }
     public DbSet<Review> Reviews { get; set; }
+    public DbSet<Wishlist> Wishlists { get; set; }
+    public DbSet<WishlistItem> WishlistsItems { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
