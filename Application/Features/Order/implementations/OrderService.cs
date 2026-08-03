@@ -74,7 +74,7 @@ public class OrderService : OrderServicesContract
                     ProductQuantity = item.Quantity,
                     ProductTitle = item.ProductTitle
                 }).ToList(),
-                CreatedAt = order.CreateAt,
+                CreatedAt = order.CreatedAt,
                 OrderStatus = order.OrderStatus.ToString(),
                 TotalPrice = order.TotalPrice
             }).ToList()
@@ -105,7 +105,7 @@ public class OrderService : OrderServicesContract
                     ProductQuantity = item.Quantity,
                     ProductTitle = item.ProductTitle
                 }).ToList(),
-                CreatedAt = order.CreateAt,
+                CreatedAt = order.CreatedAt,
                 OrderStatus = order.OrderStatus.ToString(),
                 TotalPrice = order.TotalPrice
             }).ToList()
@@ -131,7 +131,7 @@ public class OrderService : OrderServicesContract
                 ProductQuantity = item.Quantity,
                 ProductTitle = item.ProductTitle
             }).ToList(),
-            CreatedAt = order.CreateAt,
+            CreatedAt = order.CreatedAt,
             OrderStatus = order.OrderStatus.ToString(),
             TotalPrice = order.TotalPrice
         };

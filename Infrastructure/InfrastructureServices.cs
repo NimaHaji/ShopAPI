@@ -3,6 +3,7 @@ using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.Features.Auth.Interfaces;
 using Application.Features.Cart.Interfaces;
+using Application.Features.CartItem.Interfaces;
 using Application.Features.Inventory.Interfaces;
 using Application.Features.InventoryTransaction.Interfaces;
 using Application.Features.Order.Interfaces;
@@ -57,6 +58,7 @@ public static class InfrastructureServices
         services.AddScoped<IVerificationCodeGenerator, VerificationCodeGenerator>();
         services.AddScoped<SkuGeneratorContract, SkuGenerator>();
         services.AddScoped<ReviewsRepositoryContract, ReviewsRepository>();
+        services.AddScoped<CartItemRepositoryContract, CartItemRepository>();
         services.AddScoped<DatabaseSeeder>();
 
         return services;

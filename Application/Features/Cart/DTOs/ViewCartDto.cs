@@ -2,7 +2,7 @@ namespace Application.Features.Cart.DTOs;
 
 public class ViewCartDto
 {
-    public Guid Id { get; set; }
+    public Guid? Id { get; set; }
     public Guid UserId { get; set; }
     public List<ViewCartItemsDto> Items { get; set; }
 }

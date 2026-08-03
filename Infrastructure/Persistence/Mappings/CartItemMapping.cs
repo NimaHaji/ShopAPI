@@ -8,7 +8,7 @@ public class CartItemMapping : IEntityTypeConfiguration<CartItem>
 {
     public void Configure(EntityTypeBuilder<CartItem> builder)
     {
-        builder.ToTable("CartItems", "dbo");
+        builder.ToTable("CartItems");
 
         builder.HasKey(x => x.Id);
 
@@ -27,7 +27,7 @@ public class CartItemMapping : IEntityTypeConfiguration<CartItem>
         builder.HasIndex(x => x.CartId);
 
         builder.HasIndex(x => x.ProductId);
-
+        
 
         builder.HasIndex(x => new { x.CartId, x.ProductId })
             .IsUnique();

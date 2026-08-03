@@ -83,7 +83,7 @@ public class InventoryService : InventoryServiceContract
         throw new InvalidOperationException("خطای غیرمنتظره در رزرو موجودی");
     }
 
-    public async Task ReserveAllItemStockAsync(List<CartItem> items)
+    public async Task ReserveAllItemStockAsync(List<Domain.Entities.CartItem> items)
     {
         var productIds = items.Select(i => i.ProductId).Distinct().ToList();
         var inventories = await _inventoryRepositoryContract.GetByProductIdsAsync(productIds);
