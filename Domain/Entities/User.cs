@@ -1,4 +1,5 @@
-﻿using Domain.Enums;
+﻿using System.Security.AccessControl;
+using Domain.Enums;
 
 namespace Domain.Entities;
 
@@ -15,7 +16,7 @@ public class User
     public int PasswordResetAttemptsCount { get; private set; }
 
     public ICollection<RefreshToken> RefreshTokens { get; private set; } = new List<RefreshToken>();
-
+    public Cart Cart { get; private set; }
     public User()
     {
     }

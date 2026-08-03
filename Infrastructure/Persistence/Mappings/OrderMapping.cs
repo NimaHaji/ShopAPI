@@ -18,7 +18,7 @@ public class OrderMapping : IEntityTypeConfiguration<Order>
 
         builder.Property(o => o.OrderStatus).IsRequired();
 
-        builder.Property(o => o.CreateAt).IsRequired();
+        builder.Property(o => o.CreatedAt).IsRequired();
         
         builder.Property(o => o.UpdatedAt).IsRequired();
         

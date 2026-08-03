@@ -1,6 +1,7 @@
 using Application.Common.Interfaces;
 using Application.Features.Cart.DTOs;
 using Application.Features.Cart.Interfaces;
+using Application.Features.CartItem.Interfaces;
 using Application.Features.Inventory.Interfaces;
 using Application.Features.Product.Interfaces;
 using Domain.Entities;
@@ -11,104 +12,114 @@ namespace Application.Features.Cart.implementations;
 public class CartService : CartServicesContract
 {
     private readonly CartRepositoryContract _cartRepository;
-    private readonly ProductRepositoryContract _productRepository;
+    private readonly CartItemRepositoryContract _cartItemRepositoryContract;
+    private readonly UnitOfWorkContract _unitOfWorkContract;
     private readonly InventoryRepositoryContract _inventoryRepositoryContract;
     private readonly IUSerContext _userContext;
 
-    public CartService(CartRepositoryContract cartRepository, ProductRepositoryContract productRepository,
-        IUSerContext userContext, InventoryRepositoryContract inventoryRepositoryContract)
+    public CartService(CartRepositoryContract cartRepository, IUSerContext userContext,
+        InventoryRepositoryContract inventoryRepositoryContract, UnitOfWorkContract unitOfWorkContract,
+        CartItemRepositoryContract cartItemRepositoryContract)
     {
         _cartRepository = cartRepository;
-        _productRepository = productRepository;
         _userContext = userContext;
         _inventoryRepositoryContract = inventoryRepositoryContract;
+        _unitOfWorkContract = unitOfWorkContract;
+        _cartItemRepositoryContract = cartItemRepositoryContract;
     }
 
     public async Task<string> AddItemAsync(AddCartItemDto dto)
     {
-        var userId = _userContext.UserId ?? throw new UnauthorizedAccessException("کاربر احراز هویت نشده است.");
+        var userId = _userContext.UserId
+                     ?? throw new UnauthorizedAccessException(
+                         "کاربر احراز هویت نشده است.");
 
         if (dto.Quantity <= 0)
-        {
-            throw new Exception("تعداد درخواستی باید بیشتر از صفر باشد.");
-        }
+            throw new InvalidQuantityException(
+                "تعداد درخواستی باید بیشتر از صفر باشد.");
 
-        var inventory = await _inventoryRepositoryContract.GetByProductId(dto.ProductId);
+        var inventory = await _inventoryRepositoryContract
+            .GetByProductIdAsync(dto.ProductId);
 
         if (inventory is null)
-        {
-            throw new Exception("محصول مورد نظر یافت نشد.");
-        }
+            throw new NotFoundException("محصول یافت نشد.");
 
-        var cart = await _cartRepository.GetCartByUserIdAsync(userId);
+        var cart = await _cartRepository
+            .GetCartByUserIdAsync(userId);
+
         if (cart is null)
         {
-            cart = new Domain.Entities.Cart
-            {
-                UserId = userId
-            };
+            cart = new Domain.Entities.Cart(userId);
 
             await _cartRepository.CreateCartAsync(cart);
         }
 
-        var existingItem = await _cartRepository.GetCartItemByProductIdAsync(cart.Id, inventory.ProductId);
+        var existingItem = cart.CartItems
+            .FirstOrDefault(x => x.ProductId == dto.ProductId);
 
-        var requestedQuantity =
-            existingItem == null
-                ? dto.Quantity
-                : existingItem.Quantity + dto.Quantity;
+        var requestedQuantity = existingItem is null
+            ? dto.Quantity
+            : existingItem.Quantity + dto.Quantity;
+
+        if (requestedQuantity > inventory.AvailableQuantity)
+        {
+            throw new InsufficientStockException(
+                "مجموع تعداد درخواستی در سبد خرید، از موجودی انبار بیشتر است.");
+        }
 
         if (existingItem is not null)
         {
-            if (inventory.AvailableQuantity < requestedQuantity)
-            {
-                throw new InsufficientExecutionStackException("مجموع تعداد درخواستی در سبد خرید، از موجودی انبار بیشتر است.");
-            }
-
-            existingItem.Quantity += dto.Quantity;
+            existingItem.IncreaseQuantity(dto.Quantity);
         }
         else
         {
-            cart.CartItems.Add(new CartItem
-            {
-                ProductId = dto.ProductId,
-                Quantity = dto.Quantity
-            });
+            var cartItem = new Domain.Entities.CartItem(
+                cart.Id,
+                dto.ProductId,
+                dto.Quantity);
+
+            await _cartItemRepositoryContract.AddCartItemAsync(cartItem);
         }
 
-        await _cartRepository.SaveAsync();
+        await _unitOfWorkContract.SaveAsync();
 
         return "با موفقیت به سبد خرید اضافه شد";
     }
 
-    public async Task UpdateItemQuantityAsync(UpdateCartDto dto)
+    public async Task<string> UpdateItemQuantityAsync(UpdateCartDto dto)
     {
-        var userId = _userContext.UserId ?? throw new UnauthorizedAccessException("کاربر احراز هویت نشده است.");
+        var userId = _userContext.UserId
+                     ?? throw new UnauthorizedAccessException(
+                         "کاربر احراز هویت نشده است.");
 
         if (dto.NewQuantity <= 0)
-            throw new InvalidQuantityException("تعداد باید بیشتر از صفر باشد. برای حذف، از متد حذف استفاده کنید.");
+            throw new InvalidQuantityException(
+                "تعداد باید بیشتر از صفر باشد. برای حذف، از متد حذف استفاده کنید.");
 
-        var cart = await _cartRepository.GetCartByUserIdAsync(userId);
-        if (cart is null) throw new NotFoundException("سبد خرید یافت نشد.");
+        var cart = await _cartRepository
+            .GetCartByUserIdAsync(userId);
 
-        var item = cart.CartItems.FirstOrDefault(x => x.ProductId == dto.ProductId);
-        if (item is null) throw new NotFoundException("این محصول در سبد خرید شما وجود ندارد.");
+        if (cart is null)
+            throw new NotFoundException("سبد خرید یافت نشد.");
 
+        var inventory = await _inventoryRepositoryContract
+            .GetByProductIdAsync(dto.ProductId);
 
-        var inventory = await _inventoryRepositoryContract.GetByProductIdAsync(dto.ProductId);
+        if (inventory is null)
+            throw new NotFoundException("محصول یافت نشد.");
 
-        if (inventory is null) throw new NotFoundException("محصول یافت نشد.");
-
-        if (inventory.AvailableQuantity < dto.NewQuantity)
+        if (dto.NewQuantity > inventory.AvailableQuantity)
+        {
             throw new InsufficientStockException(
                 $"موجودی انبار کافی نیست. حداکثر موجودی: {inventory.AvailableQuantity}");
+        }
 
-        item.Quantity = dto.NewQuantity;
+        cart.UpdateItemQuantity(
+            dto.ProductId,
+            dto.NewQuantity);
 
-        // Todo: Update Timespan
-        // cart.UpdateTimestamp();
-
-        await _cartRepository.SaveAsync();
+        await _unitOfWorkContract.SaveAsync();
+        return "تعداد با موفقیت بروزرسانی شد .";
     }
 
     public async Task<ViewCartDto> GetCartByUserIdAsync()
@@ -119,6 +130,7 @@ public class CartService : CartServicesContract
         {
             return new ViewCartDto
             {
+                Id = null,
                 UserId = userId,
                 Items = new List<ViewCartItemsDto>()
             };
@@ -140,32 +152,40 @@ public class CartService : CartServicesContract
         return cartDto;
     }
 
-    public async Task DeleteItemAsync(Guid productId)
+    public async Task<string> DeleteItemAsync(Guid productId)
     {
-        var userId = _userContext.UserId ?? throw new UnauthorizedAccessException("کاربر احراز هویت نشده است.");
-        
-        var cart = await _cartRepository.GetCartByUserIdAsync(userId);
-        
-        if (cart is null) 
-            throw new NotFoundException("سبد خرید یافت نشد");
+        var userId = _userContext.UserId
+                     ?? throw new UnauthorizedAccessException(
+                         "کاربر احراز هویت نشده است.");
 
-        var item = cart.CartItems.FirstOrDefault(x => x.ProductId == productId);
-        
-        if (item is null) 
-            throw new NotFoundException("محصول در سبد خرید یافت نشد");
+        var cart = await _cartRepository
+            .GetCartByUserIdAsync(userId);
 
-        cart.CartItems.Remove(item);
-        await _cartRepository.SaveAsync();
+        if (cart is null)
+            throw new NotFoundException("سبد خرید یافت نشد.");
+
+        var item = cart.CartItems
+            .FirstOrDefault(x => x.ProductId == productId);
+
+        if (item is null)
+            throw new NotFoundException(
+                "محصول در سبد خرید یافت نشد.");
+
+        cart.RemoveCartItem(item);
+
+        await _unitOfWorkContract.SaveAsync();
+        return "محصول با موفقیت حذف شد .";
     }
 
-    public async Task ClearCartAsync()
+    public async Task<string> ClearCartAsync()
     {
         var userId = _userContext.UserId ?? throw new UnauthorizedAccessException("کاربر احراز هویت نشده است.");
         var cart = await _cartRepository.GetCartByUserIdAsync(userId);
         if (cart is null) throw new Exception("سبد خرید یافت نشد");
 
         cart.ClearCart();
-        await _cartRepository.SaveAsync();
+        await _unitOfWorkContract.SaveAsync();
+        return "سبد خرید کاملاً خالی شد .";
     }
 
     public async Task<int> GetCartItemsCountAsync()
