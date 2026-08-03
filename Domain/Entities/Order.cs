@@ -9,7 +9,7 @@ public class Order
     public Guid UserId { get; set; }
     public long TotalPrice { get; set; }
     public OrderStatus OrderStatus { get; set; }
-    public DateTime CreateAt { get; set; }
+    public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
     public List<OrderItem> OrderItems { get; set; } = new();
 
@@ -17,7 +17,7 @@ public class Order
     {
         UserId = userId;
         Id = Guid.NewGuid();
-        CreateAt = DateTime.UtcNow;
+        CreatedAt = DateTime.UtcNow;
         OrderStatus = OrderStatus.Pending;
         UpdatedAt= DateTime.UtcNow;
     }

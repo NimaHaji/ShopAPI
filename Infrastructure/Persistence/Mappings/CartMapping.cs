@@ -14,11 +14,20 @@ public class CartMapping : IEntityTypeConfiguration<Cart>
 
         builder.Property(x => x.UserId).IsRequired();
 
-        builder.Property(x => x.CreateAt).IsRequired();
+        builder.Property(x => x.CreatedAt).IsRequired();
 
+        builder
+            .Property(x => x.UpdatedAt)
+            .IsRequired();
+        
         builder
             .HasMany(x => x.CartItems)
             .WithOne(cart => cart.Cart)
             .HasForeignKey(fk => fk.CartId);
+
+        builder
+            .HasOne(x => x.User)
+            .WithOne(x => x.Cart)
+            .HasForeignKey<Cart>(fk => fk.UserId);
     }
 }
