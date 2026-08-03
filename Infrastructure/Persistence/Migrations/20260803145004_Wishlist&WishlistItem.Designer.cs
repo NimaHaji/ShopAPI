@@ -4,16 +4,19 @@ using Infrastructure.Persistence.Contexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace Infrastructure.Migrations
+namespace Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ShopDbContext))]
-    partial class ShopDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260803145004_Wishlist&WishlistItem")]
+    partial class WishlistWishlistItem
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -568,7 +571,6 @@ namespace Infrastructure.Migrations
             modelBuilder.Entity("Domain.Entities.WishlistItem", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("AddedAt")
@@ -724,15 +726,15 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Domain.Entities.WishlistItem", b =>
                 {
-                    b.HasOne("Domain.Entities.Product", "Product")
-                        .WithMany()
-                        .HasForeignKey("ProductId")
+                    b.HasOne("Domain.Entities.Wishlist", "Wishlist")
+                        .WithMany("WishlistItems")
+                        .HasForeignKey("Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Domain.Entities.Wishlist", "Wishlist")
-                        .WithMany("WishlistItems")
-                        .HasForeignKey("WishlistId")
+                    b.HasOne("Domain.Entities.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

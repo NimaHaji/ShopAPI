@@ -1,5 +1,4 @@
-﻿using System.Security.AccessControl;
-using Domain.Enums;
+﻿using Domain.Enums;
 
 namespace Domain.Entities;
 
@@ -17,6 +16,7 @@ public class User
 
     public ICollection<RefreshToken> RefreshTokens { get; private set; } = new List<RefreshToken>();
     public Cart Cart { get; private set; }
+    public Wishlist Wishlist { get; private set; }
     public User()
     {
     }

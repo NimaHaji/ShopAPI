@@ -1,13 +1,9 @@
-using System.Data;
 using Application.Common.Interfaces;
-using Application.Features.Cart.DTOs;
 using Application.Features.Cart.Interfaces;
 using Application.Features.Checkout.Interfaces;
 using Application.Features.Inventory.Interfaces;
 using Application.Features.Order.DTOs;
 using Application.Features.Order.Interfaces;
-using Application.Features.Payment.DTOs;
-using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Shared.Exceptions;
 

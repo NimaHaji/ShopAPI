@@ -1,5 +1,3 @@
-using Domain.Enums;
-
 namespace Application.Features.Order.DTOs;
 
 public class ViewOrderListDto

@@ -10,6 +10,7 @@ using Application.Features.Order.Interfaces;
 using Application.Features.Payment.Interfaces;
 using Application.Features.Product.Interfaces;
 using Application.Features.Review.interfaces;
+using Application.Features.Wishlist.Interfaces;
 using Domain.Services;
 using Infrastructure.Email;
 using Infrastructure.Persistence;
@@ -21,7 +22,6 @@ using Infrastructure.Security.Jwt;
 using Infrastructure.Security.Verification;
 using Infrastructure.Services.Payment.Implement;
 using Infrastructure.Services.Sku;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -60,6 +60,8 @@ public static class InfrastructureServices
         services.AddScoped<ReviewsRepositoryContract, ReviewsRepository>();
         services.AddScoped<CartItemRepositoryContract, CartItemRepository>();
         services.AddScoped<DatabaseSeeder>();
+        services.AddScoped<WishlistRepositoryContract, WishlistRepository>();
+        services.AddScoped<WishlistItemRepositoryContract, WishlistItemRepository>();
 
         return services;
     }

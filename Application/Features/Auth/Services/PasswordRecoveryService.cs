@@ -1,8 +1,6 @@
 using Application.Common;
-using Application.Common.Interfaces;
 using Application.Features.Auth.Interfaces;
 using Domain.Entities;
-using FluentValidation.Validators;
 using Shared.Exceptions;
 
 namespace Application.Features.Auth.Services;
