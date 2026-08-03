@@ -1,5 +1,4 @@
 using Application.Features.Cart.DTOs;
-using Application.Features.Cart.implementations;
 using Application.Features.Cart.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -30,7 +29,10 @@ public class CartsController : ControllerBase
     public async Task<IActionResult> AddItem(AddCartItemDto item)
     {
         var result = await _cartService.AddItemAsync(item);
-        return Ok(result);
+        return Ok(new
+        {
+            message = result
+        });
     }
 
     [HttpPut("items")]

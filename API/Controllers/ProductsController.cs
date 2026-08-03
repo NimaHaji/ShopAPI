@@ -1,8 +1,6 @@
-using Application.Features.Auth.Interfaces;
 using Application.Features.Product.DTOs;
 using Application.Features.Product.Interfaces;
 using Application.Features.Review.DTOs;
-using Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

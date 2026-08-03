@@ -1,5 +1,3 @@
-using System.Runtime;
-
 namespace Application.Features.DummyData.DTOs;
 
 public class DummyJsonProductResponse
