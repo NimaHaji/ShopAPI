@@ -1,13 +1,8 @@
-using System.Net.Http.Json;
-using System.Security.Cryptography;
 using Application.Common.Interfaces;
 using Application.Features.Order.Interfaces;
 using Application.Features.Payment.DTOs;
-using Application.Features.Payment.DTOs.ZarinPal;
 using Application.Features.Payment.Interfaces;
-using Domain.Entities;
 using Domain.Enums;
-using Microsoft.Extensions.Configuration;
 using Shared.Exceptions;
 
 namespace Application.Features.Payment.Services;
