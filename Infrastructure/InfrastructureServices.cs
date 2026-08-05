@@ -4,6 +4,8 @@ using Application.Common.Interfaces.Repositories;
 using Application.Features.Auth.Interfaces;
 using Application.Features.Cart.Interfaces;
 using Application.Features.CartItem.Interfaces;
+using Application.Features.Discount.Interfaces;
+using Application.Features.DiscountProduct.Interfaces;
 using Application.Features.Inventory.Interfaces;
 using Application.Features.InventoryTransaction.Interfaces;
 using Application.Features.Order.Interfaces;
@@ -62,6 +64,8 @@ public static class InfrastructureServices
         services.AddScoped<DatabaseSeeder>();
         services.AddScoped<WishlistRepositoryContract, WishlistRepository>();
         services.AddScoped<WishlistItemRepositoryContract, WishlistItemRepository>();
+        services.AddScoped<DiscountRepositoryContract, DiscountRepository>();
+        services.AddScoped<DiscountProductRepositoryContract, DiscountProductRepository>();
 
         return services;
     }

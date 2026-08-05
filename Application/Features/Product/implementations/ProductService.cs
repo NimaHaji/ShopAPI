@@ -40,41 +40,100 @@ public class ProductService : ProductServicesContract
     public async Task<ViewProductDto> GetAllProducts(ProductQueryDto query)
     {
         var products = await _productRepositoryContract.GetProductList(query);
-        
+
         if (products is null)
+        {
             return new ViewProductDto
             {
                 Items = []
             };
-        
-        
-        var dto = products.Select(p => new ViewProductItemDto
-        {
-            Id = p.Id,
-            Title = p.Title,
-            Description = p.Description,
-            Brand = p.Brand?.Title ?? "بدون برند",
-            Price = p.Price,
-            Category = p.Category.Title,
-            DiscountPercentage = p.DiscountPercentage,
-            Stock = p.InventoryItem.AvailableQuantity,
-            Sku = p.Sku,
-            Images = p.Images
-                .OrderBy(pi => pi.SortOrder)
-                .Select(pi => pi.ImageLink)
-                .ToList(),
-            
-            Rating = p.Reviews
-                .Where(r =>
-                    !r.IsDeleted &&
-                    r.ReviewStatus == ReviewStatus.Approved)
-                .Select(r => (decimal?)r.StarsCount)
-                .Average() ?? 0,
+        }
 
-            ReviewCount = p.Reviews
-                .Count(r =>
-                    !r.IsDeleted &&
-                    r.ReviewStatus == ReviewStatus.Approved)
+        var now = DateTime.UtcNow;
+
+        var dto = products.Select(p =>
+        {
+            var activeDiscount = p.DiscountProducts
+                .Select(dp => dp.Discount)
+                .FirstOrDefault(d =>
+                    !d.IsDeleted &&
+                    d.IsActive &&
+                    d.StartsAt <= now &&
+                    d.EndsAt > now);
+
+            long finalPrice = p.Price;
+            long? discountAmount = null;
+            decimal? discountPercentage = null;
+            DiscountType? discountType = null;
+
+            if (activeDiscount is not null)
+            {
+                discountType = activeDiscount.DiscountType;
+
+                if (activeDiscount.DiscountType == DiscountType.Percentage)
+                {
+                    discountPercentage = activeDiscount.Value;
+
+                    var calculatedDiscount =
+                        p.Price * (activeDiscount.Value / 100);
+
+                    if (activeDiscount.MaxDiscountAmount.HasValue)
+                    {
+                        calculatedDiscount = Math.Min(
+                            calculatedDiscount,
+                            activeDiscount.MaxDiscountAmount.Value);
+                    }
+
+                    discountAmount = (long)calculatedDiscount;
+
+                    finalPrice = p.Price - discountAmount.Value;
+                }
+                else if (activeDiscount.DiscountType == DiscountType.FixedAmount)
+                {
+                    discountAmount = (long)activeDiscount.Value;
+
+                    finalPrice = p.Price - discountAmount.Value;
+                }
+
+                if (finalPrice < 0)
+                    finalPrice = 0;
+            }
+
+            return new ViewProductItemDto
+            {
+                Id = p.Id,
+                Title = p.Title,
+                Description = p.Description,
+
+                Price = p.Price,
+                FinalPrice = finalPrice,
+
+                DiscountType = discountType,
+                DiscountPercentage = discountPercentage,
+                DiscountAmount = discountAmount,
+
+                Brand = p.Brand?.Title ?? "بدون برند",
+                Category = p.Category.Title,
+
+                Stock = p.InventoryItem.AvailableQuantity,
+
+                Images = p.Images
+                    .OrderBy(pi => pi.SortOrder)
+                    .Select(pi => pi.ImageLink)
+                    .ToList(),
+
+                Rating = p.Reviews
+                    .Where(r =>
+                        !r.IsDeleted &&
+                        r.ReviewStatus == ReviewStatus.Approved)
+                    .Select(r => (decimal?)r.StarsCount)
+                    .Average() ?? 0,
+
+                ReviewCount = p.Reviews
+                    .Count(r =>
+                        !r.IsDeleted &&
+                        r.ReviewStatus == ReviewStatus.Approved)
+            };
         }).ToList();
 
         return new ViewProductDto
@@ -139,34 +198,96 @@ public class ProductService : ProductServicesContract
 
     public async Task<ViewProductItemDto> GetProductById(Guid productId)
     {
-        if (productId.Equals(Guid.Empty))
-            throw new BusinessException("شناسه محصول خالی است");
+        if (productId == Guid.Empty)
+            throw new BusinessException("شناسه محصول خالی است.");
 
         var product = await _productRepositoryContract.GetProductByIdAsync(productId);
 
         if (product is null)
-            throw new NotFoundException("محصول یافت نشد");
+            throw new NotFoundException("محصول یافت نشد.");
 
         var (rating, reviewCount) =
             await _reviewsRepositoryContract.GetProductRatingAsync(productId);
 
-        var dto = new ViewProductItemDto
+        var now = DateTime.UtcNow;
+
+        var activeDiscount = product.DiscountProducts
+            .Select(dp => dp.Discount)
+            .FirstOrDefault(d =>
+                !d.IsDeleted &&
+                d.IsActive &&
+                d.StartsAt <= now &&
+                d.EndsAt > now);
+
+
+        long finalPrice = product.Price;
+        long? discountAmount = null;
+        decimal? discountPercentage = null;
+        DiscountType? discountType = null;
+
+
+        if (activeDiscount is not null)
+        {
+            discountType = activeDiscount.DiscountType;
+
+            if (activeDiscount.DiscountType == DiscountType.Percentage)
+            {
+                discountPercentage = activeDiscount.Value;
+
+                var calculatedDiscount =
+                    product.Price * (activeDiscount.Value / 100);
+
+                if (activeDiscount.MaxDiscountAmount.HasValue)
+                {
+                    calculatedDiscount = Math.Min(
+                        calculatedDiscount,
+                        activeDiscount.MaxDiscountAmount.Value);
+                }
+
+                discountAmount = (long)calculatedDiscount;
+
+                finalPrice = product.Price - discountAmount.Value;
+            }
+            else if (activeDiscount.DiscountType == DiscountType.FixedAmount)
+            {
+                discountAmount = (long)activeDiscount.Value;
+
+                finalPrice = product.Price - discountAmount.Value;
+            }
+
+            if (finalPrice < 0)
+                finalPrice = 0;
+        }
+
+
+        return new ViewProductItemDto
         {
             Id = product.Id,
             Title = product.Title,
             Description = product.Description,
+
             Price = product.Price,
+            FinalPrice = finalPrice,
+
+            DiscountType = discountType,
+            DiscountPercentage = discountPercentage,
+            DiscountAmount = discountAmount,
+
             Category = product.Category.Title,
-            DiscountPercentage = product.DiscountPercentage,
             Brand = product.Brand?.Title ?? "بدون برند",
+
             Stock = product.InventoryItem.AvailableQuantity,
+
             Sku = product.Sku,
-            Images = product.Images.OrderBy(x => x.SortOrder).Select(x => x.ImageLink).ToList(),
+
+            Images = product.Images
+                .OrderBy(x => x.SortOrder)
+                .Select(x => x.ImageLink)
+                .ToList(),
+
             Rating = rating,
             ReviewCount = reviewCount
         };
-
-        return dto;
     }
 
     public async Task<string> EditProductAsync(EditProductDto dto)
@@ -240,7 +361,7 @@ public class ProductService : ProductServicesContract
 
         throw new InvalidOperationException("خطای ناشناخته");
     }
-    
+
     public async Task<string> RestoreProductAsync(Guid productId)
     {
         int attempt = 0;
@@ -310,7 +431,7 @@ public class ProductService : ProductServicesContract
 
         throw new InvalidOperationException("خطای ناشناخته");
     }
-    
+
     public async Task<string> RestoreProductCategoryAsync(Guid productCategoryId)
     {
         int attempt = 0;
@@ -343,7 +464,7 @@ public class ProductService : ProductServicesContract
 
         throw new InvalidOperationException("خطای ناشناخته");
     }
-    
+
     public async Task<ViewProductCategoryDto> GetAllCategories()
     {
         var categories = await _productRepositoryContract.GetAllProductCategories();
@@ -491,7 +612,7 @@ public class ProductService : ProductServicesContract
 
         throw new InvalidOperationException("خطای ناشناخته");
     }
-    
+
     public async Task<string> RestoreProductBrandAsync(Guid productBrandId)
     {
         int attempt = 0;
@@ -524,7 +645,7 @@ public class ProductService : ProductServicesContract
 
         throw new InvalidOperationException("خطای ناشناخته");
     }
-    
+
     public async Task<string> EditProductBrandAsync(EditProductBrandDto dto)
     {
         var brand = await _productRepositoryContract.GetProductBrandById(dto.Id);

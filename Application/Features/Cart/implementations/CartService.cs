@@ -3,6 +3,7 @@ using Application.Features.Cart.DTOs;
 using Application.Features.Cart.Interfaces;
 using Application.Features.CartItem.Interfaces;
 using Application.Features.Inventory.Interfaces;
+using Domain.Enums;
 using Shared.Exceptions;
 
 namespace Application.Features.Cart.implementations;
@@ -122,32 +123,93 @@ public class CartService : CartServicesContract
 
     public async Task<ViewCartDto> GetCartByUserIdAsync()
     {
-        var userId = _userContext.UserId ?? throw new UnauthorizedAccessException("کاربر احراز هویت نشده است.");
-        var cart = await _cartRepository.GetCartWithProductsByUserIdAsync(userId);
+        var userId = _userContext.UserId
+                     ?? throw new UnauthorizedAccessException(
+                         "کاربر احراز هویت نشده است.");
+
+        var cart = await _cartRepository
+            .GetCartWithProductsByUserIdAsync(userId);
+
         if (cart is null)
         {
             return new ViewCartDto
             {
                 Id = null,
                 UserId = userId,
-                Items = new List<ViewCartItemsDto>()
+                Items = []
             };
         }
 
-        var cartDto = new ViewCartDto
+        var now = DateTime.UtcNow;
+
+        var items = cart.CartItems.Select(x =>
         {
-            Id = cart.Id,
-            UserId = cart.UserId,
-            Items = cart.CartItems.Select(x => new ViewCartItemsDto
+            var activeDiscount = x.Product.DiscountProducts
+                .Select(dp => dp.Discount)
+                .FirstOrDefault(d =>
+                    !d.IsDeleted &&
+                    d.IsActive &&
+                    d.StartsAt <= now &&
+                    d.EndsAt > now);
+
+
+            long finalPrice = x.Product.Price;
+            long discountAmount = 0;
+            decimal? discountPercentage = null;
+
+
+            if (activeDiscount is not null)
+            {
+                if (activeDiscount.DiscountType == DiscountType.Percentage)
+                {
+                    discountPercentage = activeDiscount.Value;
+
+                    discountAmount =
+                        (long)(x.Product.Price *
+                               (activeDiscount.Value / 100));
+
+                    if (activeDiscount.MaxDiscountAmount.HasValue)
+                    {
+                        discountAmount = Math.Min(
+                            discountAmount,
+                            (long)activeDiscount.MaxDiscountAmount.Value);
+                    }
+
+                    finalPrice = x.Product.Price - discountAmount;
+                }
+                else if (activeDiscount.DiscountType == DiscountType.FixedAmount)
+                {
+                    discountAmount = (long)activeDiscount.Value;
+
+                    finalPrice = Math.Max(
+                        0,
+                        x.Product.Price - discountAmount);
+                }
+            }
+
+
+            return new ViewCartItemsDto
             {
                 Id = x.Id,
                 ProductId = x.ProductId,
                 ProductTitle = x.Product.Title,
+
                 Quantity = x.Quantity,
-                UnitPrice = x.Product.Price
-            }).ToList()
+
+                UnitPrice = x.Product.Price,
+                FinalPrice = finalPrice,
+                DiscountAmount = discountAmount,
+                DiscountPercentage = discountPercentage
+            };
+        }).ToList();
+
+
+        return new ViewCartDto
+        {
+            Id = cart.Id,
+            UserId = cart.UserId,
+            Items = items
         };
-        return cartDto;
     }
 
     public async Task<string> DeleteItemAsync(Guid productId)

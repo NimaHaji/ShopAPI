@@ -30,6 +30,8 @@ public class CartRepository : CartRepositoryContract
             .Carts
             .Include(c => c.CartItems)
             .ThenInclude(c => c.Product)
+            .ThenInclude(x=>x.DiscountProducts)
+            .ThenInclude(x=>x.Discount)
             .FirstOrDefaultAsync(c => c.UserId == userId);
     }
 

@@ -4,16 +4,19 @@ using Infrastructure.Persistence.Contexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace Infrastructure.Migrations
+namespace Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ShopDbContext))]
-    partial class ShopDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260805111043_StartAtRenameInDiscount")]
+    partial class StartAtRenameInDiscount
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -129,9 +132,6 @@ namespace Infrastructure.Migrations
                     b.HasKey("DiscountId", "ProductId");
 
                     b.HasIndex("ProductId");
-
-                    b.HasIndex("DiscountId", "ProductId")
-                        .IsUnique();
 
                     b.ToTable("DiscountProducts", (string)null);
                 });
@@ -360,6 +360,9 @@ namespace Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(2000)
                         .HasColumnType("nvarchar(2000)");
+
+                    b.Property<decimal?>("DiscountPercentage")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
@@ -683,13 +686,13 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Domain.Entities.DiscountProduct", b =>
                 {
-                    b.HasOne("Domain.Entities.Discount", "Discount")
+                    b.HasOne("Domain.Entities.Product", "Product")
                         .WithMany("DiscountProducts")
                         .HasForeignKey("DiscountId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Domain.Entities.Product", "Product")
+                    b.HasOne("Domain.Entities.Discount", "Discount")
                         .WithMany("DiscountProducts")
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Cascade)
