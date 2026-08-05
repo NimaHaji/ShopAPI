@@ -8,7 +8,7 @@ public class WishlistItemConfiguration:IEntityTypeConfiguration<WishlistItem>
 {
     public void Configure(EntityTypeBuilder<WishlistItem> builder)
     {
-        builder.ToTable("wishlist_items");
+        builder.ToTable("WishlistItems");
 
         builder.HasKey(w => w.Id);
 

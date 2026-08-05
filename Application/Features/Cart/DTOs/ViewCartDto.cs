@@ -12,7 +12,10 @@ public class ViewCartItemsDto
     public Guid Id { get; set; }
     public Guid ProductId { get; set; }
     public string ProductTitle { get; set; }
-    public long UnitPrice { get; set; }
+    public long UnitPrice { get; set; } 
+    public long FinalPrice { get; set; }
+    public long DiscountAmount { get; set; }
+    public decimal? DiscountPercentage { get; set; }
     public int Quantity { get; set; }
-    public long TotalPrice => UnitPrice * Quantity;
+    public long TotalPrice => FinalPrice * Quantity;
 }
