@@ -1,10 +1,7 @@
-using Application.Features.Discount.DTOs;
-using Application.Features.Discount.Interfaces;
 using Application.Features.DiscountProduct.Interfaces;
 using Domain.Entities;
 using Infrastructure.Persistence.Contexts;
 using Microsoft.EntityFrameworkCore;
-using Shared.Exceptions;
 
 namespace Infrastructure.Persistence.Repositories;
 

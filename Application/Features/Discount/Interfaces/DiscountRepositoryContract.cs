@@ -1,6 +1,3 @@
-using Application.Features.Discount.DTOs;
-using Domain.Entities;
-
 namespace Application.Features.Discount.Interfaces;
 
 public interface DiscountRepositoryContract

@@ -34,5 +34,6 @@ public interface ProductRepositoryContract
     Task<ProductBrand?> GetProductBrandById(Guid productBrandId);
     Task<List<ProductBrand>?> SearchProductBrandsWithTitle(string dtoTitle);
     #endregion
-    
+
+    Task<List<Domain.Entities.Product>> GetProductsWithDiscountByIdsAsync(List<Guid> productIds);
 }

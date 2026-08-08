@@ -85,7 +85,6 @@ public class DiscountsController : ControllerBase
         });
     }
     
-    //BUG
     [HttpPost("{discountId}/restore")]
     [Authorize(Roles = "Admin,SuperAdmin")]
     public async Task<IActionResult> RestoreDiscount([FromRoute] Guid discountId)
@@ -125,27 +124,5 @@ public class DiscountsController : ControllerBase
         var discount=await _discountServiceContract.GetDiscountByProductId(productId);
         return Ok(discount);
     }
-    // GET    /api/Coupons
-    // GET    /api/Coupons/{couponId}
-    // POST   /api/Coupons
-    // PUT    /api/Coupons/{couponId}
-    // DELETE /api/Coupons/{couponId}
-    // PATCH  /api/Coupons/{couponId}/activate
-    // PATCH  /api/Coupons/{couponId}/deactivate   
-    // POST   /api/Cart/coupon
-    // DELETE /api/Cart/coupon
-    // POST   /api/Coupons/validate   
-    // Coupons
-    // ├── GET    /api/Coupons
-    // ├── GET    /api/Coupons/{couponId}
-    // ├── POST   /api/Coupons
-    // ├── PUT    /api/Coupons/{couponId}
-    // ├── DELETE /api/Coupons/{couponId}
-    // ├── PATCH  /api/Coupons/{couponId}/activate
-    // └── PATCH  /api/Coupons/{couponId}/deactivate
-    //
-    //     Customer
-    // ├── POST   /api/Coupons/validate
-    // ├── POST   /api/Cart/coupon
-    // └── DELETE /api/Cart/coupon
+    
 }

@@ -20,6 +20,7 @@ public class ProductsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetProducts([FromQuery] ProductQueryDto query)
     {
+        // BUG : Sku null
         var product = await _productServicesContract.GetAllProducts(query);
         return Ok(product);
     }

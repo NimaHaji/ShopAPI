@@ -4,9 +4,10 @@ using Application.Features.Cart.implementations;
 using Application.Features.Cart.Interfaces;
 using Application.Features.Checkout.Implement;
 using Application.Features.Checkout.Interfaces;
+using Application.Features.Coupon.Implementations;
+using Application.Features.Coupon.Interfaces;
 using Application.Features.Discount.Implementations;
 using Application.Features.Discount.Interfaces;
-using Application.Features.DiscountProduct.Interfaces;
 using Application.Features.Inventory.Implement;
 using Application.Features.Inventory.Interfaces;
 using Application.Features.Order.implementations;
@@ -38,6 +39,7 @@ public static class ApplicationServices
         services.AddScoped<ReviewServiceContract, ReviewService>();
         services.AddScoped<WishlistServiceContract, WishlistService>();
         services.AddScoped<DiscountServiceContract, DiscountService>();
+        services.AddScoped<CouponsServiceContract, CouponService>();
         return services;
     }
 }
