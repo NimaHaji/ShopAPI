@@ -8,4 +8,5 @@ public interface OrderRepositoryContract
     Task SaveAsync();
     Task<List<Domain.Entities.Order>?> GetAllOrders();
     Task<List<Domain.Entities.Order>?> GetOrderByUserIdAsync(Guid userId);
+    Task<Domain.Entities.Order?> GetOrderByIdAsync(Guid paymentOrderId);
 }

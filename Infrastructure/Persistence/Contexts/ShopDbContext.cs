@@ -29,7 +29,8 @@ public class ShopDbContext : DbContext
     public DbSet<WishlistItem> WishlistsItems { get; set; }
     public DbSet<Discount> Discounts { get; set; }
     public DbSet<DiscountProduct> DiscountProducts { get; set; }
-
+    public DbSet<Coupon> Coupons { get; set; }
+    public DbSet<CouponUsage> CouponUsages { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         var assembly = Assembly.GetAssembly(typeof(ProductMapping));
