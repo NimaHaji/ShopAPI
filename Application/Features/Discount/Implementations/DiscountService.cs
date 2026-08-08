@@ -3,7 +3,6 @@ using Application.Features.Discount.DTOs;
 using Application.Features.Discount.Interfaces;
 using Application.Features.DiscountProduct.Interfaces;
 using Application.Features.Product.Interfaces;
-using Domain.Entities;
 using Shared.Exceptions;
 
 namespace Application.Features.Discount.Implementations;

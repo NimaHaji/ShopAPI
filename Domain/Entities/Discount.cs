@@ -37,15 +37,39 @@ public class Discount
         IsDeleted = false;
     }
 
-    public void Edit(string title, DiscountType discountType, decimal value, decimal? maxDiscountAmount,
-        DateTime startsAt, DateTime endsAt)
+    public void Edit(
+        string? title,
+        DiscountType? discountType,
+        decimal? value,
+        decimal? maxDiscountAmount,
+        DateTime? startsAt,
+        DateTime? endsAt)
     {
-        Title = title;
-        DiscountType = discountType;
-        Value = value;
-        MaxDiscountAmount = maxDiscountAmount;
-        StartsAt = startsAt;
-        EndsAt = endsAt;
+        var newStartsAt = startsAt ?? StartsAt;
+        var newEndsAt = endsAt ?? EndsAt;
+
+        if (newStartsAt >= newEndsAt)
+            throw new BusinessException(
+                "تاریخ شروع تخفیف باید قبل از تاریخ پایان باشد.");
+
+        if (title is not null)
+            Title = title;
+
+        if (discountType.HasValue)
+            DiscountType = discountType.Value;
+
+        if (value.HasValue)
+            Value = value.Value;
+
+        if (maxDiscountAmount.HasValue)
+            MaxDiscountAmount = maxDiscountAmount.Value;
+
+        if (startsAt.HasValue)
+            StartsAt = startsAt.Value;
+
+        if (endsAt.HasValue)
+            EndsAt = endsAt.Value;
+
         UpdatedAt = DateTime.UtcNow;
     }
 

@@ -1,6 +1,9 @@
 using Application.Common.Interfaces;
 using Application.Features.Cart.Interfaces;
+using Application.Features.Checkout.DTOs;
 using Application.Features.Checkout.Interfaces;
+using Application.Features.Coupon.DTOs;
+using Application.Features.Coupon.Interfaces;
 using Application.Features.Inventory.Interfaces;
 using Application.Features.Order.DTOs;
 using Application.Features.Order.Interfaces;
@@ -12,25 +15,26 @@ namespace Application.Features.Checkout.Implement;
 public class CheckoutService : CheckoutServiceContract
 {
     private readonly CartRepositoryContract _cartRepositoryContract;
-    private readonly OrderRepositoryContract _orderRepositoryContract;
+    private readonly CouponsServiceContract _couponsServiceContract;
     private readonly OrderServicesContract _orderServicesContract;
     private readonly InventoryServiceContract _inventoryServiceContract;
     private readonly UnitOfWorkContract _unitOfWork;
     private readonly IUSerContext _userContext;
 
-    public CheckoutService(CartRepositoryContract cartRepositoryContract,
-        OrderRepositoryContract orderRepositoryContract, UnitOfWorkContract unitOfWork, IUSerContext userContext,
-        InventoryServiceContract inventoryServiceContract, OrderServicesContract orderServicesContract)
+    public CheckoutService(CartRepositoryContract cartRepositoryContract, UnitOfWorkContract unitOfWork,
+        IUSerContext userContext,
+        InventoryServiceContract inventoryServiceContract, OrderServicesContract orderServicesContract,
+        CouponsServiceContract couponsServiceContract)
     {
         _cartRepositoryContract = cartRepositoryContract;
-        _orderRepositoryContract = orderRepositoryContract;
         _unitOfWork = unitOfWork;
         _userContext = userContext;
         _inventoryServiceContract = inventoryServiceContract;
         _orderServicesContract = orderServicesContract;
+        _couponsServiceContract = couponsServiceContract;
     }
 
-    public async Task<Guid> CheckoutAsync()
+    public async Task<Guid> CheckoutAsync(CheckoutDto dto)
     {
         int attempts = 0;
         const int maxAttempts = 4;
@@ -46,6 +50,17 @@ public class CheckoutService : CheckoutServiceContract
 
             if (cart.CartItems is null || !cart.CartItems.Any())
                 throw new CartEmptyException("سبد خرید خالی است");
+            
+            ValidateCouponResponseDto? couponResult = null;
+
+            if (!string.IsNullOrWhiteSpace(dto.CouponCode))
+            {
+                couponResult = await _couponsServiceContract
+                    .ValidateCouponAsync(new ValidateCouponDto
+                    {
+                        Code = dto.CouponCode
+                    });
+            }
 
             try
             {
@@ -59,7 +74,10 @@ public class CheckoutService : CheckoutServiceContract
                     {
                         ProductId = x.ProductId,
                         Quantity = x.Quantity
-                    }).ToList()
+                    }).ToList(),
+                    CouponCode = couponResult?.Code,
+                    CouponDiscountAmount = couponResult?.DiscountAmount ?? 0,
+                    CouponId = couponResult?.CouponId
                 };
                 var orderId = await _orderServicesContract.CreateOrderAsync(createOrderDto);
 
@@ -69,7 +87,7 @@ public class CheckoutService : CheckoutServiceContract
                 await _unitOfWork.CommitTransactionAsync();
                 return orderId;
             }
-            catch (DbUpdateConcurrencyException ex)
+            catch (DbUpdateConcurrencyException)
             {
                 attempts++;
                 await _unitOfWork.RollbackTransactionAsync();
@@ -84,6 +102,6 @@ public class CheckoutService : CheckoutServiceContract
             }
         }
 
-        throw new InvalidOperationException("خطای ناشناخه");
+        throw new InvalidOperationException("خطای ناشناخته");
     }
 }

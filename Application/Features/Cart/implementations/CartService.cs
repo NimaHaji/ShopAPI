@@ -152,7 +152,6 @@ public class CartService : CartServicesContract
                     d.StartsAt <= now &&
                     d.EndsAt > now);
 
-
             long finalPrice = x.Product.Price;
             long discountAmount = 0;
             decimal? discountPercentage = null;
@@ -180,7 +179,6 @@ public class CartService : CartServicesContract
                 else if (activeDiscount.DiscountType == DiscountType.FixedAmount)
                 {
                     discountAmount = (long)activeDiscount.Value;
-
                     finalPrice = Math.Max(
                         0,
                         x.Product.Price - discountAmount);
