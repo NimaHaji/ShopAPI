@@ -20,7 +20,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Features\Checkout\DTOs\" />
+      <Folder Include="Features\CouponUsage\Implementations\" />
       <Folder Include="Features\DummyData\" />
     </ItemGroup>
 

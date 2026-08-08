@@ -4,33 +4,37 @@ namespace Domain.Entities;
 
 public class Payment
 {
-    public Guid Id { get; set; }
-    public string? State { get; set; }
-    public long Amount { get; set; }
-    public string? Wage { get; set; }
-    public string ResNum { get; set; }
-    public string Description { get; set; }
-    public string? RefNum { get; set; }
+    public Guid Id { get; private set; }
+    public string? State { get; private set; }
+    public long Amount { get; private set; }
+    public string? Wage { get; private set; }
+    public string ResNum { get; private set; }
+    public string Description { get; private set; }
+    public string? RefNum { get; private set; }
 
-    public string? TraceNo { get; set; }
+    public string? TraceNo { get; private set; }
 
-    public string? RRN { get; set; }
+    public string? RRN { get; private set; }
 
-    public string? CardNumber { get; set; }
-    public string? Authority { get; set; }
+    public string? CardNumber { get; private set; }
+    public string? Authority { get; private set; }
 
-    public PaymentStatus PaymentStatus { get; set; }
-    public string? PaymentGatewayStatus { get; set; }
-    public PaymentGateway Gateway { get; set; }
-    public string? SecurePan { get; set; }
+    public PaymentStatus PaymentStatus { get; private set; }
+    public string? PaymentGatewayStatus { get; private set; }
+    public PaymentGateway Gateway { get; private set; }
+    public string? SecurePan { get; private set; }
 
-    public DateTime CreatedAt { get; set; }
+    public DateTime CreatedAt { get; private set; }
 
-    public DateTime? PaidAt { get; set; }
+    public DateTime? PaidAt { get; private set; }
 
-    public Payment(long amount, string description, PaymentGateway gateway)
+    public Order Order { get; private set; }
+    public Guid OrderId { get; private set; }
+
+    public Payment(long amount, string description, PaymentGateway gateway, Guid orderId)
     {
         Id = Guid.NewGuid();
+        OrderId = orderId;
         Amount = amount;
         Gateway = gateway;
         PaymentStatus = PaymentStatus.pending;
@@ -82,6 +86,11 @@ public class Payment
         string timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
         string shortGuid = Guid.NewGuid().ToString("N").Substring(0, 8);
         ResNum = $"{timestamp}{shortGuid}";
+    }
+
+    public void SetAuthority(string? gatewayToken)
+    {
+        Authority = gatewayToken;
     }
 }
 

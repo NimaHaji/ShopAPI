@@ -3,7 +3,6 @@ using Application.Features.Product.Interfaces;
 using Application.Features.Wishlist.DTOs;
 using Application.Features.Wishlist.Interfaces;
 using Domain.Entities;
-using Microsoft.EntityFrameworkCore;
 using Shared.Exceptions;
 
 namespace Application.Features.Wishlist.Implementations;

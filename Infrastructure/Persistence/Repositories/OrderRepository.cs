@@ -54,4 +54,13 @@ public class OrderRepository : OrderRepositoryContract
             .Where(o => o.UserId == userId)
             .ToListAsync();
     }
+
+    public async Task<Order?> GetOrderByIdAsync(Guid paymentOrderId)
+    {
+        return await _context
+            .Orders
+            .Include(o => o.OrderItems)
+            .Where(o => o.Id == paymentOrderId)
+            .FirstOrDefaultAsync();
+    }
 }

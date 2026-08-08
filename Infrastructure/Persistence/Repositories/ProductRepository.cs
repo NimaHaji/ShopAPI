@@ -212,5 +212,15 @@ public class ProductRepository : ProductRepositoryContract
             .ToListAsync();
     }
 
+    public async Task<List<Product>> GetProductsWithDiscountByIdsAsync(List<Guid> productIds)
+    {
+        return await _context
+            .Products
+            .Include(p=>p.DiscountProducts)
+            .ThenInclude(d=>d.Discount)
+            .Where(p => !p.IsDeleted && productIds.Contains(p.Id))
+            .ToListAsync();
+    }
+
     #endregion
 }
