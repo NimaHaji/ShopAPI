@@ -18,19 +18,60 @@ public class Order
     public List<OrderItem> OrderItems { get; private set; } = new();
     public Guid? CouponId { get; private set; }
     public Coupon? Coupon { get; private set; }
-
+    
+    public string ReceiverName { get; private set; }
+    public string PhoneNumber { get; private set; }
+    public string Province { get; private set; }
+    public string City { get; private set; }
+    public string AddressLine { get; private set; }
+    public string PostalCode { get; private set; }
+    
     public string? CouponCode { get; private set; }
     public long CouponDiscountAmount { get; private set; }
     public List<Payment> Payments { get; private set; }
-    
-    public Order(Guid userId)
+
+    private Order()
+    {
+        
+    }
+    public Order(Guid userId,
+        string receiverName,
+        string phoneNumber,
+        string province,
+        string city,
+        string addressLine,
+        string postalCode)
     {
         if (userId == Guid.Empty)
             throw new BusinessException("شناسه کاربر نامعتبر است.");
 
+        if (string.IsNullOrWhiteSpace(receiverName))
+            throw new BusinessException("نام دریافت کننده نمی تواند خالی باشد .");    
+        if (string.IsNullOrWhiteSpace(phoneNumber))
+            throw new BusinessException("موبایل دریافت کننده نمی تواند خالی باشد .");
+        
+        if (string.IsNullOrWhiteSpace(province))
+            throw new BusinessException("نام استان نمی تواند خالی باشد .");
+        
+        if (string.IsNullOrWhiteSpace(city))
+            throw new BusinessException("نام شهر نمی تواند خالی باشد .");
+        
+        if (string.IsNullOrWhiteSpace(addressLine))
+            throw new BusinessException("آدرس نمی تواند خالی باشد .");
+        
+        if (string.IsNullOrWhiteSpace(addressLine))
+            throw new BusinessException("کد پستی نمی تواند خالی باشد .");
+        
         Id = Guid.NewGuid();
         UserId = userId;
-
+        
+        ReceiverName=receiverName;
+        PhoneNumber=phoneNumber;
+        Province=province;
+        City=city;
+        AddressLine=addressLine;
+        PostalCode=postalCode;
+        
         CreatedAt = DateTime.UtcNow;
         UpdatedAt = CreatedAt;
 

@@ -6,7 +6,6 @@ using Application.Features.Payment.DTOs.ZarinPal;
 using Application.Features.Payment.Interfaces;
 using Domain.Entities;
 using Domain.Enums;
-using Infrastructure.Persistence;
 using Microsoft.Extensions.Configuration;
 
 namespace Infrastructure.Services.Payment.Implement;

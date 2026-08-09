@@ -1,6 +1,7 @@
 using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
+using Application.Features.Address.Interfaces;
 using Application.Features.Auth.Interfaces;
 using Application.Features.Cart.Interfaces;
 using Application.Features.CartItem.Interfaces;
@@ -70,7 +71,7 @@ public static class InfrastructureServices
         services.AddScoped<DiscountProductRepositoryContract, DiscountProductRepository>();
         services.AddScoped<CouponRepositoryContract, CouponRepository>();
         services.AddScoped<CouponUsageRepositoryContract, CouponUsageRepository>();
-        
+        services.AddScoped<AddressRepositoryContract, AddressRepository>();
         
         return services;
     }

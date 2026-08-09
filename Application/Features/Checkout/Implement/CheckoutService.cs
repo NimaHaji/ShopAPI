@@ -1,4 +1,5 @@
 using Application.Common.Interfaces;
+using Application.Features.Address.Interfaces;
 using Application.Features.Cart.Interfaces;
 using Application.Features.Checkout.DTOs;
 using Application.Features.Checkout.Interfaces;
@@ -20,11 +21,12 @@ public class CheckoutService : CheckoutServiceContract
     private readonly InventoryServiceContract _inventoryServiceContract;
     private readonly UnitOfWorkContract _unitOfWork;
     private readonly IUSerContext _userContext;
+    private readonly AddressRepositoryContract _addressRepositoryContract;
 
     public CheckoutService(CartRepositoryContract cartRepositoryContract, UnitOfWorkContract unitOfWork,
         IUSerContext userContext,
         InventoryServiceContract inventoryServiceContract, OrderServicesContract orderServicesContract,
-        CouponsServiceContract couponsServiceContract)
+        CouponsServiceContract couponsServiceContract, AddressRepositoryContract addressRepositoryContract)
     {
         _cartRepositoryContract = cartRepositoryContract;
         _unitOfWork = unitOfWork;
@@ -32,6 +34,7 @@ public class CheckoutService : CheckoutServiceContract
         _inventoryServiceContract = inventoryServiceContract;
         _orderServicesContract = orderServicesContract;
         _couponsServiceContract = couponsServiceContract;
+        _addressRepositoryContract = addressRepositoryContract;
     }
 
     public async Task<Guid> CheckoutAsync(CheckoutDto dto)
@@ -41,6 +44,11 @@ public class CheckoutService : CheckoutServiceContract
 
         var userId = _userContext.UserId ?? throw new UnauthorizedAccessException("کاربر احراز هویت نشده است.");
 
+        var userAddress = await _addressRepositoryContract.GetAddressByIdAndUserIdAsync(userId,dto.AddressId);
+
+        if (userAddress is null)
+            throw new NotFoundException("آدرس انتخاب شده یافت نشد .");
+        
         while (attempts < maxAttempts)
         {
             var cart = await _cartRepositoryContract.GetCartWithProductsByUserIdAsync(userId);
@@ -79,7 +87,7 @@ public class CheckoutService : CheckoutServiceContract
                     CouponDiscountAmount = couponResult?.DiscountAmount ?? 0,
                     CouponId = couponResult?.CouponId
                 };
-                var orderId = await _orderServicesContract.CreateOrderAsync(createOrderDto);
+                var orderId = await _orderServicesContract.CreateOrderAsync(createOrderDto,userAddress);
 
 
                 cart.ClearCart();
