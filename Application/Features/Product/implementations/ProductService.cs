@@ -1,11 +1,12 @@
-using System.ComponentModel;
 using System.Data;
 using Application.Common.Interfaces;
 using Application.Features.Inventory.Interfaces;
-using Application.Features.Order.Interfaces;
 using Application.Features.Product.DTOs;
 using Application.Features.Product.Interfaces;
+using Application.Features.Review.DTOs;
+using Application.Features.Review.interfaces;
 using Domain.Entities;
+using Domain.Enums;
 using Domain.Services;
 using Microsoft.EntityFrameworkCore;
 using Shared.Exceptions;
@@ -18,15 +19,20 @@ public class ProductService : ProductServicesContract
     private readonly InventoryServiceContract _inventoryServiceContract;
     private readonly UnitOfWorkContract _unitOfWorkContract;
     private readonly SkuGeneratorContract _skuGeneratorContract;
+    private readonly ReviewsRepositoryContract _reviewsRepositoryContract;
+    private readonly IUSerContext _userContext;
 
     public ProductService(ProductRepositoryContract productRepositoryContract,
         InventoryServiceContract inventoryServiceContract, UnitOfWorkContract unitOfWorkContract,
-        SkuGeneratorContract skuGeneratorContract)
+        SkuGeneratorContract skuGeneratorContract, ReviewsRepositoryContract reviewsRepositoryContract,
+        IUSerContext userContext)
     {
         _productRepositoryContract = productRepositoryContract;
         _inventoryServiceContract = inventoryServiceContract;
         _unitOfWorkContract = unitOfWorkContract;
         _skuGeneratorContract = skuGeneratorContract;
+        _reviewsRepositoryContract = reviewsRepositoryContract;
+        _userContext = userContext;
     }
 
     #region product
@@ -35,20 +41,99 @@ public class ProductService : ProductServicesContract
     {
         var products = await _productRepositoryContract.GetProductList(query);
 
-        var dto = products.Select(p => new ViewProductItemDto
+        if (products is null)
         {
-            Title = p.Title,
-            Description = p.Description,
-            Brand = p.Brand?.Title ?? "بدون برند",
-            Price = p.Price,
-            Category = p.Category.Title,
-            DiscountPercentage = p.DiscountPercentage,
-            Stock = p.InventoryItem.AvailableQuantity,
-            Sku = p.Sku,
-            Images = p.Images
-                .OrderBy(pi => pi.SortOrder)
-                .Select(pi => pi.ImageLink)
-                .ToList()
+            return new ViewProductDto
+            {
+                Items = []
+            };
+        }
+
+        var now = DateTime.UtcNow;
+
+        var dto = products.Select(p =>
+        {
+            var activeDiscount = p.DiscountProducts
+                .Select(dp => dp.Discount)
+                .FirstOrDefault(d =>
+                    !d.IsDeleted &&
+                    d.IsActive &&
+                    d.StartsAt <= now &&
+                    d.EndsAt > now);
+
+            long finalPrice = p.Price;
+            long? discountAmount = null;
+            decimal? discountPercentage = null;
+            DiscountType? discountType = null;
+
+            if (activeDiscount is not null)
+            {
+                discountType = activeDiscount.DiscountType;
+
+                if (activeDiscount.DiscountType == DiscountType.Percentage)
+                {
+                    discountPercentage = activeDiscount.Value;
+
+                    var calculatedDiscount =
+                        p.Price * (activeDiscount.Value / 100);
+
+                    if (activeDiscount.MaxDiscountAmount.HasValue)
+                    {
+                        calculatedDiscount = Math.Min(
+                            calculatedDiscount,
+                            activeDiscount.MaxDiscountAmount.Value);
+                    }
+
+                    discountAmount = (long)calculatedDiscount;
+
+                    finalPrice = p.Price - discountAmount.Value;
+                }
+                else if (activeDiscount.DiscountType == DiscountType.FixedAmount)
+                {
+                    discountAmount = (long)activeDiscount.Value;
+
+                    finalPrice = p.Price - discountAmount.Value;
+                }
+
+                if (finalPrice < 0)
+                    finalPrice = 0;
+            }
+
+            return new ViewProductItemDto
+            {
+                Id = p.Id,
+                Title = p.Title,
+                Description = p.Description,
+
+                Price = p.Price,
+                FinalPrice = finalPrice,
+
+                DiscountType = discountType,
+                DiscountPercentage = discountPercentage,
+                DiscountAmount = discountAmount,
+
+                Brand = p.Brand?.Title ?? "بدون برند",
+                Category = p.Category.Title,
+
+                Stock = p.InventoryItem.AvailableQuantity,
+
+                Images = p.Images
+                    .OrderBy(pi => pi.SortOrder)
+                    .Select(pi => pi.ImageLink)
+                    .ToList(),
+
+                Rating = p.Reviews
+                    .Where(r =>
+                        !r.IsDeleted &&
+                        r.ReviewStatus == ReviewStatus.Approved)
+                    .Select(r => (decimal?)r.StarsCount)
+                    .Average() ?? 0,
+
+                ReviewCount = p.Reviews
+                    .Count(r =>
+                        !r.IsDeleted &&
+                        r.ReviewStatus == ReviewStatus.Approved)
+            };
         }).ToList();
 
         return new ViewProductDto
@@ -113,28 +198,96 @@ public class ProductService : ProductServicesContract
 
     public async Task<ViewProductItemDto> GetProductById(Guid productId)
     {
-        if (productId.Equals(Guid.Empty))
-            throw new BusinessException("شناسه محصول خالی است");
+        if (productId == Guid.Empty)
+            throw new BusinessException("شناسه محصول خالی است.");
 
         var product = await _productRepositoryContract.GetProductByIdAsync(productId);
 
         if (product is null)
-            throw new NotFoundException("محصول یافت نشد");
+            throw new NotFoundException("محصول یافت نشد.");
 
-        var dto = new ViewProductItemDto
+        var (rating, reviewCount) =
+            await _reviewsRepositoryContract.GetProductRatingAsync(productId);
+
+        var now = DateTime.UtcNow;
+
+        var activeDiscount = product.DiscountProducts
+            .Select(dp => dp.Discount)
+            .FirstOrDefault(d =>
+                !d.IsDeleted &&
+                d.IsActive &&
+                d.StartsAt <= now &&
+                d.EndsAt > now);
+
+
+        long finalPrice = product.Price;
+        long? discountAmount = null;
+        decimal? discountPercentage = null;
+        DiscountType? discountType = null;
+
+
+        if (activeDiscount is not null)
         {
+            discountType = activeDiscount.DiscountType;
+
+            if (activeDiscount.DiscountType == DiscountType.Percentage)
+            {
+                discountPercentage = activeDiscount.Value;
+
+                var calculatedDiscount =
+                    product.Price * (activeDiscount.Value / 100);
+
+                if (activeDiscount.MaxDiscountAmount.HasValue)
+                {
+                    calculatedDiscount = Math.Min(
+                        calculatedDiscount,
+                        activeDiscount.MaxDiscountAmount.Value);
+                }
+
+                discountAmount = (long)calculatedDiscount;
+
+                finalPrice = product.Price - discountAmount.Value;
+            }
+            else if (activeDiscount.DiscountType == DiscountType.FixedAmount)
+            {
+                discountAmount = (long)activeDiscount.Value;
+
+                finalPrice = product.Price - discountAmount.Value;
+            }
+
+            if (finalPrice < 0)
+                finalPrice = 0;
+        }
+
+
+        return new ViewProductItemDto
+        {
+            Id = product.Id,
             Title = product.Title,
             Description = product.Description,
-            Price = product.Price,
-            Category = product.Category.Title,
-            DiscountPercentage = product.DiscountPercentage,
-            Brand = product.Brand?.Title ?? "بدون برند",
-            Stock = product.InventoryItem.AvailableQuantity,
-            Sku = product.Sku,
-            Images = product.Images.OrderBy(x => x.SortOrder).Select(x => x.ImageLink).ToList()
-        };
 
-        return dto;
+            Price = product.Price,
+            FinalPrice = finalPrice,
+
+            DiscountType = discountType,
+            DiscountPercentage = discountPercentage,
+            DiscountAmount = discountAmount,
+
+            Category = product.Category.Title,
+            Brand = product.Brand?.Title ?? "بدون برند",
+
+            Stock = product.InventoryItem.AvailableQuantity,
+
+            Sku = product.Sku,
+
+            Images = product.Images
+                .OrderBy(x => x.SortOrder)
+                .Select(x => x.ImageLink)
+                .ToList(),
+
+            Rating = rating,
+            ReviewCount = reviewCount
+        };
     }
 
     public async Task<string> EditProductAsync(EditProductDto dto)
@@ -209,6 +362,39 @@ public class ProductService : ProductServicesContract
         throw new InvalidOperationException("خطای ناشناخته");
     }
 
+    public async Task<string> RestoreProductAsync(Guid productId)
+    {
+        int attempt = 0;
+        const int maxAttempts = 5;
+
+        while (maxAttempts > attempt)
+        {
+            var product = await _productRepositoryContract.GetProductByIdAsync(productId);
+
+            if (product is null)
+                throw new NotFoundException("محصولی یافت نشد !");
+
+            try
+            {
+                product.Restore();
+
+                await _unitOfWorkContract.SaveAsync();
+                return "محصول با موفقیت بازیابی شد";
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                attempt++;
+
+                _unitOfWorkContract.ClearChangeTracker();
+
+                if (attempt == maxAttempts)
+                    throw new ConflictException("محصول در حال تغییر است . لطفا دوباره تلاش کنید");
+            }
+        }
+
+        throw new InvalidOperationException("خطای ناشناخته");
+    }
+
     #endregion
 
     #region category
@@ -231,6 +417,39 @@ public class ProductService : ProductServicesContract
 
                 await _unitOfWorkContract.SaveAsync();
                 return "دسته بندی محصول با موفقیت حذف شد";
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                attempt++;
+
+                _unitOfWorkContract.ClearChangeTracker();
+
+                if (attempt == maxAttempts)
+                    throw new ConflictException("دسته بندی محصول در حال تغییر است . لطفا دوباره تلاش کنید");
+            }
+        }
+
+        throw new InvalidOperationException("خطای ناشناخته");
+    }
+
+    public async Task<string> RestoreProductCategoryAsync(Guid productCategoryId)
+    {
+        int attempt = 0;
+        const int maxAttempts = 5;
+
+        while (maxAttempts > attempt)
+        {
+            var productCategory = await _productRepositoryContract.GetProductCategoryById(productCategoryId);
+
+            if (productCategory is null)
+                throw new NotFoundException("دسته بندی محصولی یافت نشد !");
+
+            try
+            {
+                productCategory.Restore();
+
+                await _unitOfWorkContract.SaveAsync();
+                return "دسته بندی محصول با موفقیت بازیابی شد";
             }
             catch (DbUpdateConcurrencyException)
             {
@@ -394,6 +613,39 @@ public class ProductService : ProductServicesContract
         throw new InvalidOperationException("خطای ناشناخته");
     }
 
+    public async Task<string> RestoreProductBrandAsync(Guid productBrandId)
+    {
+        int attempt = 0;
+        const int maxAttempts = 5;
+
+        while (maxAttempts > attempt)
+        {
+            var productBrand = await _productRepositoryContract.GetProductBrandById(productBrandId);
+
+            if (productBrand is null)
+                throw new NotFoundException("دسته بندی محصولی یافت نشد !");
+
+            try
+            {
+                productBrand.Delete();
+
+                await _unitOfWorkContract.SaveAsync();
+                return "دسته بندی محصول با موفقیت حذف شد";
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                attempt++;
+
+                _unitOfWorkContract.ClearChangeTracker();
+
+                if (attempt == maxAttempts)
+                    throw new ConflictException("دسته بندی محصول در حال تغییر است . لطفا دوباره تلاش کنید");
+            }
+        }
+
+        throw new InvalidOperationException("خطای ناشناخته");
+    }
+
     public async Task<string> EditProductBrandAsync(EditProductBrandDto dto)
     {
         var brand = await _productRepositoryContract.GetProductBrandById(dto.Id);
@@ -440,6 +692,66 @@ public class ProductService : ProductServicesContract
         };
 
         return dto;
+    }
+
+    #endregion
+
+    #region Review
+
+    public async Task<ViewReviewsDto> GetAllProductReviews(Guid productId)
+    {
+        var product = await _productRepositoryContract.GetProductByIdAsync(productId);
+
+        if (product is null)
+            throw new NotFoundException("محصول یافت نشد");
+
+        var reviews = await _reviewsRepositoryContract.GetAllReviewsByProductId(productId);
+
+        if (reviews is null)
+            return new ViewReviewsDto
+            {
+                Reviews = []
+            };
+
+        return new ViewReviewsDto
+        {
+            Reviews = product.Reviews.Select(r => new ViewReviewItemsDto
+            {
+                Comment = r.Comment,
+                CreatedAt = r.CreatedAt,
+                StarsCount = r.StarsCount,
+                User = new ViewReviewItemUserDto
+                {
+                    Name = r.User.FullName
+                }
+            }).ToList()
+        };
+    }
+
+    public async Task<string> AddReviewForProduct(Guid productId, CreateReviewDto dto)
+    {
+        var userId = _userContext.UserId ?? throw new UnauthorizedAccessException("کاربر یافت نشد");
+
+        var product = await _productRepositoryContract.GetProductByIdAsync(productId);
+
+        if (product is null)
+            throw new NotFoundException("محصول یافت نشد");
+
+        var isExistCommentByUser = await _reviewsRepositoryContract.ExistsByUserAndProductAsync(productId, userId);
+
+        if (isExistCommentByUser)
+            throw new ConflictException("شما قبلا برای این محصول نظر ثبت کرده اید.");
+
+        var review = new Domain.Entities.Review(
+            starsCount: dto.StarsCount,
+            comment: dto.Comment,
+            userId: userId,
+            productId: productId);
+
+        await _reviewsRepositoryContract.AddReview(review);
+        await _unitOfWorkContract.SaveAsync();
+
+        return "نظر شما با موفقیت ثبت شد";
     }
 
     #endregion

@@ -1,6 +1,5 @@
-using Application.Features.Order.DTOs;
 using Application.Features.Product.DTOs;
-using Domain.Entities;
+using Application.Features.Review.DTOs;
 
 namespace Application.Features.Product.Interfaces;
 
@@ -14,6 +13,7 @@ public interface ProductServicesContract
     Task<ViewProductItemDto> GetProductById(Guid productId);
     Task<string> EditProductAsync(EditProductDto dto);
     Task<string> DeleteProductAsync(Guid productId);
+    Task<string> RestoreProductAsync(Guid productId);
     
     #endregion
     
@@ -22,6 +22,7 @@ public interface ProductServicesContract
     Task<ViewProductCategoryDto> GetAllCategories();
     Task<string> CreateProductCategoryAsync(CreateProductCategoryDto dto);
     Task<string> DeleteProductCategoryAsync(Guid productCategoryId);
+    Task<string> RestoreProductCategoryAsync(Guid productCategoryId);
     Task<string> EditProductCategoryAsync(EditProductCategoryDto dto);
     Task<ViewProductCategoryDto> SearchProductCategoryByTitle(SearchProductCategoryDto dto);
     Task<ViewProductCategoryItemDto> GetProductCategoryById(Guid productCategoryId);
@@ -33,9 +34,17 @@ public interface ProductServicesContract
     Task<ViewProductBrandDto> GetAllProductBrands();
     Task<string> CreateProductBrandAsync(CreateProductBrandDto dto);
     Task<string> DeleteProductBrandAsync(Guid productBrandId);
+    Task<string> RestoreProductBrandAsync(Guid brandId);
     Task<string> EditProductBrandAsync(EditProductBrandDto dto);
     Task<ViewProductBrandDto> SearchProductBrandByTitle(SearchProductBrandDto dto);
     Task<ViewProductBrandItemDto> GetProductBrandById(Guid productBrandId);
+    #endregion
+    
+    #region Review
+    
+    Task<ViewReviewsDto> GetAllProductReviews(Guid productId);
+    Task<string> AddReviewForProduct(Guid productId, CreateReviewDto dto);
+    
     #endregion
 
 }

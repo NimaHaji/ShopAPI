@@ -30,6 +30,8 @@ public class CartRepository : CartRepositoryContract
             .Carts
             .Include(c => c.CartItems)
             .ThenInclude(c => c.Product)
+            .ThenInclude(x=>x.DiscountProducts)
+            .ThenInclude(x=>x.Discount)
             .FirstOrDefaultAsync(c => c.UserId == userId);
     }
 
@@ -46,8 +48,4 @@ public class CartRepository : CartRepositoryContract
         await _context.Carts.AddAsync(cart);
     }
 
-    public async Task SaveAsync()
-    {
-        await _context.SaveChangesAsync();
-    }
 }

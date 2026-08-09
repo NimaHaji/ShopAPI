@@ -1,3 +1,5 @@
+using Shared.Exceptions;
+
 namespace Domain.Entities;
 
 public class ProductBrand
@@ -7,8 +9,9 @@ public class ProductBrand
     private readonly List<Product> _products = new();
     public IReadOnlyCollection<Product> Products => _products;
     public bool IsDeleted { get; private set; }
-    public DateTime DeletedAt { get; private set; }
-    public DateTime CreatedAt { get; set; }
+    public DateTime? DeletedAt { get; private set; }
+    public DateTime CreatedAt { get; private set; }
+    public DateTime UpdatedAt { get; private set; }
 
     private ProductBrand()
     {
@@ -20,18 +23,36 @@ public class ProductBrand
         {
             Id = Guid.NewGuid(),
             Title = title,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            IsDeleted = false,
+            DeletedAt = null,
+            UpdatedAt = DateTime.UtcNow
         };
     }
 
     public void Edit(string title)
     {
-        Title=title;
+        if (string.IsNullOrEmpty(title))
+            throw new BusinessException("عنوان برند نمی تواند خالی باشد .");
+
+        Title = title;
+        UpdatedAt = DateTime.UtcNow;
     }
 
     public void Delete()
     {
         IsDeleted = true;
         DeletedAt = DateTime.UtcNow;
+        UpdatedAt = DateTime.UtcNow;
+    }
+    
+    public void Restore()
+    {
+        if (!IsDeleted)
+            throw new BusinessException("این برند حذف نشده است .");
+        
+        IsDeleted = false;
+        DeletedAt = null;
+        UpdatedAt = DateTime.UtcNow;
     }
 }

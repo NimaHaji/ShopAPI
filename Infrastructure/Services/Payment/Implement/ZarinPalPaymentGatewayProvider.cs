@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using System.Text.Json;
+using Application.Common.Interfaces;
 using Application.Features.Payment.DTOs;
 using Application.Features.Payment.DTOs.ZarinPal;
 using Application.Features.Payment.Interfaces;
@@ -14,13 +15,15 @@ public class ZarinPalPaymentGatewayProvider : PaymentGatewayProviderContract
     private readonly IConfiguration _config;
     private readonly HttpClient _httpClient;
     private readonly PaymentRepositoryContract _repositoryContract;
+    private readonly UnitOfWorkContract _unitOfWorkContract;
 
     public ZarinPalPaymentGatewayProvider(IConfiguration config, HttpClient httpClient,
-        PaymentRepositoryContract repositoryContract)
+        PaymentRepositoryContract repositoryContract, UnitOfWorkContract unitOfWorkContract)
     {
         _config = config;
         _httpClient = httpClient;
         _repositoryContract = repositoryContract;
+        _unitOfWorkContract = unitOfWorkContract;
     }
 
     public PaymentGateway Gateway => PaymentGateway.ZarinPal;
@@ -75,7 +78,7 @@ public class ZarinPalPaymentGatewayProvider : PaymentGatewayProviderContract
         return PaymentGatewayRequestResult.Success(result.Data.Authority, paymentUrl);
     }
 
-    public async Task<VerifyPaymentResult> HandleCallBackAsync(SandBoxCallBackDto dto)
+    public async Task<VerifyPaymentResult>  HandleCallBackAsync(SandBoxCallBackDto dto)
     {
         var payment = await _repositoryContract.GetPaymentByAuthorityAsync(dto.Authority);
 
@@ -86,7 +89,7 @@ public class ZarinPalPaymentGatewayProvider : PaymentGatewayProviderContract
         {
             payment.Edit("NOK", null, null, 0);
             payment.MarkAsFailed();
-            await _repositoryContract.SaveAsync();
+            await _unitOfWorkContract.SaveAsync();
 
             return VerifyPaymentResult.Failed("پرداخت توسط کاربر لغو شد.");
         }
@@ -135,7 +138,7 @@ public class ZarinPalPaymentGatewayProvider : PaymentGatewayProviderContract
             {
                 payment.Edit("OK", result.Data.RefId, result.Data.CardPan, result.Data.Fee);
                 payment.MarkAsSuccess();
-                await _repositoryContract.SaveAsync();
+                await _unitOfWorkContract.SaveAsync();
 
                 return VerifyPaymentResult.Success(
                     $"تراکنش با شماره پیگیری {result.Data.RefId} انجام شد");
@@ -147,7 +150,7 @@ public class ZarinPalPaymentGatewayProvider : PaymentGatewayProviderContract
                 {
                     payment.Edit("OK", result.Data.RefId, result.Data.CardPan, result.Data.Fee);
                     payment.MarkAsSuccess();
-                    await _repositoryContract.SaveAsync();
+                    await _unitOfWorkContract.SaveAsync();
                 }
 
                 return VerifyPaymentResult.Success(
@@ -156,7 +159,7 @@ public class ZarinPalPaymentGatewayProvider : PaymentGatewayProviderContract
 
             payment.Edit("NOK", null, null, 0);
             payment.MarkAsFailed();
-            await _repositoryContract.SaveAsync();
+            await _unitOfWorkContract.SaveAsync();
 
             return VerifyPaymentResult.Failed("تایید تراکنش توسط درگاه انجام نشد.");
         }

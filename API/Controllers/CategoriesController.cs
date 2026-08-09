@@ -23,7 +23,7 @@ public class CategoriesController : ControllerBase
         return Ok(categories);
     }
 
-    [Authorize(Roles = "SuperAdmin")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     [HttpPost]
     public async Task<IActionResult> CreateProductCategory(CreateProductCategoryDto dto)
     {
@@ -34,7 +34,7 @@ public class CategoriesController : ControllerBase
         });
     }
 
-    [Authorize(Roles = "SuperAdmin")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     [HttpDelete("{categoryId:guid}")]
     public async Task<IActionResult> DeleteCategory([FromRoute] Guid categoryId)
     {
@@ -45,7 +45,19 @@ public class CategoriesController : ControllerBase
             message = result
         });
     }
+    
+    [Authorize(Roles = "Admin,SuperAdmin")]
+    [HttpPost("{categoryId:guid}/restore")]
+    public async Task<IActionResult> RestoreCategory([FromRoute] Guid categoryId)
+    {
+        var result = await _productServicesContract.RestoreProductCategoryAsync(categoryId);
 
+        return Ok(new
+        {
+            message = result
+        });
+    }
+    
     [HttpPut]
     public async Task<IActionResult> EditCategory(EditProductCategoryDto dto)
     {

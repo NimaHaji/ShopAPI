@@ -1,4 +1,3 @@
-using Application.Features.Order.Interfaces;
 using Application.Features.Product.DTOs;
 using Application.Features.Product.Interfaces;
 using Domain.Entities;
@@ -19,7 +18,7 @@ public class ProductRepository : ProductRepositoryContract
 
     #region product
 
-    public async Task<List<Product>> GetProductList(ProductQueryDto query)
+    public async Task<List<Product>?> GetProductList(ProductQueryDto query)
     {
         var products = _context
             .Products
@@ -27,6 +26,9 @@ public class ProductRepository : ProductRepositoryContract
             .Include(x => x.Brand)
             .Include(x => x.InventoryItem)
             .Include(x=>x.Images)
+            .Include(x=>x.Reviews)
+            .Include(x=>x.DiscountProducts)
+            .ThenInclude(x=>x.Discount)
             .Where(p => !p.IsDeleted)
             .AsQueryable();
 
@@ -96,10 +98,10 @@ public class ProductRepository : ProductRepositoryContract
     {
         return await _context
             .Products
-            .Include(x=>x.Category)
-            .Include(x=>x.Brand)
-            .Include(x=>x.Images)
-            .Include(x=>x.InventoryItem)
+            .Include(x => x.Category)
+            .Include(x => x.Brand)
+            .Include(x => x.Images)
+            .Include(x => x.InventoryItem)
             .Where(p => !p.IsDeleted && p.Id == productId)
             .FirstOrDefaultAsync();
     }
@@ -207,6 +209,16 @@ public class ProductRepository : ProductRepositoryContract
         return await _context
             .ProductBrands
             .Where(b => !b.IsDeleted && b.Title.Contains(dtoTitle))
+            .ToListAsync();
+    }
+
+    public async Task<List<Product>> GetProductsWithDiscountByIdsAsync(List<Guid> productIds)
+    {
+        return await _context
+            .Products
+            .Include(p=>p.DiscountProducts)
+            .ThenInclude(d=>d.Discount)
+            .Where(p => !p.IsDeleted && productIds.Contains(p.Id))
             .ToListAsync();
     }
 
