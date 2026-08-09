@@ -24,7 +24,7 @@ public class OrderService : OrderServicesContract
         _unitOfWorkContract = unitOfWorkContract;
     }
 
-    public async Task<Guid> CreateOrderAsync(CreateOrderDto orderDto)
+    public async Task<Guid> CreateOrderAsync(CreateOrderDto orderDto, Domain.Entities.Address userAddress)
     {
         var userId = _userContext.UserId
                      ?? throw new UnauthorizedAccessException(
@@ -42,7 +42,15 @@ public class OrderService : OrderServicesContract
             throw new NotFoundException(
                 "یک یا چند محصول یافت نشد.");
 
-        var order = new Domain.Entities.Order(userId);
+        var order = new Domain.Entities.Order(
+            userId: userId,
+            receiverName: userAddress.ReceiverName,
+            phoneNumber: userAddress.PhoneNumber,
+            province: userAddress.Province,
+            city: userAddress.City,
+            addressLine: userAddress.AddressLine,
+            postalCode: userAddress.PostalCode
+        );
 
         var now = DateTime.UtcNow;
 
@@ -107,6 +115,7 @@ public class OrderService : OrderServicesContract
 
             order.AddItem(orderItem);
         }
+
         if (orderDto.CouponId.HasValue)
         {
             order.ApplyCoupon(
@@ -114,6 +123,7 @@ public class OrderService : OrderServicesContract
                 orderDto.CouponCode!,
                 orderDto.CouponDiscountAmount);
         }
+
         await _orderRepository.CreateOrderAsync(order);
 
         return order.Id;
@@ -122,7 +132,7 @@ public class OrderService : OrderServicesContract
     public async Task<ViewOrderListDto> GetAllOrdersAsync()
     {
         var orders = await _orderRepository.GetAllOrders();
-        
+
         if (orders is null || !orders.Any())
         {
             return new ViewOrderListDto
@@ -156,7 +166,7 @@ public class OrderService : OrderServicesContract
                         .ToList(),
 
                     TotalPrice = order.TotalPrice,
-                    
+
                     TotalDiscountAmount =
                         order.OrderItems.Sum(item =>
                             item.DiscountAmount * item.Quantity)
@@ -168,6 +178,13 @@ public class OrderService : OrderServicesContract
                     CouponId = order.CouponId,
                     CouponCode = order.CouponCode,
                     CouponDiscountAmount = order.CouponDiscountAmount,
+
+                    ReceiverName = order.ReceiverName,
+                    PhoneNumber = order.PhoneNumber,
+                    Province = order.Province,
+                    City = order.City,
+                    AddressLine = order.AddressLine,
+                    PostalCode = order.PostalCode
                 })
                 .ToList()
         };
@@ -216,7 +233,7 @@ public class OrderService : OrderServicesContract
                         .ToList(),
 
                     TotalPrice = order.TotalPrice,
-                    
+
                     TotalDiscountAmount =
                         order.OrderItems.Sum(item =>
                             item.DiscountAmount * item.Quantity)
@@ -228,6 +245,13 @@ public class OrderService : OrderServicesContract
                     CouponId = order.CouponId,
                     CouponCode = order.CouponCode,
                     CouponDiscountAmount = order.CouponDiscountAmount,
+                    
+                    ReceiverName = order.ReceiverName,
+                    PhoneNumber = order.PhoneNumber,
+                    Province = order.Province,
+                    City = order.City,
+                    AddressLine = order.AddressLine,
+                    PostalCode = order.PostalCode
                 })
                 .ToList()
         };
@@ -240,9 +264,7 @@ public class OrderService : OrderServicesContract
         if (orderId == Guid.Empty)
             throw new BusinessException("شناسه سفارش نامعتبر است.");
 
-        var userId = _userContext.UserId
-                     ?? throw new UnauthorizedAccessException(
-                         "کاربر احراز هویت نشده است.");
+        var userId = _userContext.UserId ?? throw new UnauthorizedAccessException("کاربر احراز هویت نشده است.");
 
         var order = await _orderRepository.GetOrderByIdAsync(orderId, userId);
 
@@ -253,29 +275,45 @@ public class OrderService : OrderServicesContract
         {
             Id = order.Id,
 
-            Items = order.OrderItems.Select(item => new ViewOrderItemsDto
-            {
-                ProductId = item.ProductId,
-                ProductTitle = item.ProductTitle,
+            Items = order.OrderItems
+                .Select(item => new ViewOrderItemsDto
+                {
+                    ProductId = item.ProductId,
+                    ProductTitle = item.ProductTitle,
 
-                ProductQuantity = item.Quantity,
+                    ProductQuantity = item.Quantity,
 
-                UnitPrice = item.UnitPrice,
-                DiscountAmount = item.DiscountAmount,
-                FinalUnitPrice = item.FinalUnitPrice,
+                    UnitPrice = item.UnitPrice,
 
-                TotalPrice = item.FinalUnitPrice * item.Quantity
+                    DiscountAmount = item.DiscountAmount,
 
-            }).ToList(),
+                    FinalUnitPrice = item.FinalUnitPrice,
+
+                    TotalPrice = item.FinalUnitPrice * item.Quantity
+                })
+                .ToList(),
 
             TotalPrice = order.TotalPrice,
 
-            TotalDiscountAmount = order.OrderItems.Sum(
-                item => item.DiscountAmount * item.Quantity),
+            TotalDiscountAmount =
+                order.OrderItems.Sum(item =>
+                    item.DiscountAmount * item.Quantity)
+                + order.CouponDiscountAmount,
+
+            OrderStatus = order.OrderStatus.ToString(),
 
             CreatedAt = order.CreatedAt,
 
-            OrderStatus = order.OrderStatus.ToString()
+            CouponId = order.CouponId,
+            CouponCode = order.CouponCode,
+            CouponDiscountAmount = order.CouponDiscountAmount,
+
+            ReceiverName = order.ReceiverName,
+            PhoneNumber = order.PhoneNumber,
+            Province = order.Province,
+            City = order.City,
+            AddressLine = order.AddressLine,
+            PostalCode = order.PostalCode
         };
 
         return dto;
