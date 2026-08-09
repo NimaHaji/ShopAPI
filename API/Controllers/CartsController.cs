@@ -1,5 +1,4 @@
 using Application.Features.Cart.DTOs;
-using Application.Features.Cart.implementations;
 using Application.Features.Cart.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -16,7 +15,7 @@ public class CartsController : ControllerBase
     {
         _cartService = cartService;
     }
-
+    
     [HttpGet("Cart")]
     [Authorize]
     public async Task<IActionResult> GetCartAsync()
@@ -30,31 +29,43 @@ public class CartsController : ControllerBase
     public async Task<IActionResult> AddItem(AddCartItemDto item)
     {
         var result = await _cartService.AddItemAsync(item);
-        return Ok(result);
+        return Ok(new
+        {
+            message = result
+        });
     }
 
     [HttpPut("items")]
     [Authorize]
     public async Task<IActionResult> UpdateQuantity(UpdateCartDto dto)
     {
-        await _cartService.UpdateItemQuantityAsync(dto);
-        return Ok(new { message = "تعداد با موفقیت بروزرسانی شد." });
+        var result = await _cartService.UpdateItemQuantityAsync(dto);
+        return Ok(new
+        {
+            message = result
+        });
     }
 
     [HttpDelete("items/{productId:guid}")]
     [Authorize]
     public async Task<IActionResult> DeleteItem(Guid productId)
     {
-        await _cartService.DeleteItemAsync(productId);
-        return Ok(new { message = "محصول با موفقیت حذف شد ." });
+        var result = await _cartService.DeleteItemAsync(productId);
+        return Ok(new
+        {
+            message = result
+        });
     }
 
     [HttpDelete("clear")]
     [Authorize]
     public async Task<IActionResult> ClearCart()
     {
-        await _cartService.ClearCartAsync();
-        return Ok(new { message = "سبد خرید کاملاً خالی شد." });
+        var result = await _cartService.ClearCartAsync();
+        return Ok(new
+        {
+            message =result
+        });
     }
 
     [HttpGet("count")]
@@ -62,6 +73,9 @@ public class CartsController : ControllerBase
     public async Task<IActionResult> GetCount()
     {
         var count = await _cartService.GetCartItemsCountAsync();
-        return Ok(count);
+        return Ok(new
+        {
+            itemscount = count
+        });
     }
 }

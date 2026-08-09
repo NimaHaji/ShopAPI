@@ -26,7 +26,10 @@ public class ProductBrandMapping : IEntityTypeConfiguration<ProductBrand>
             .IsRequired();
         
         builder
-            .Property(b=>b.DeletedAt)
+            .Property(b=>b.DeletedAt);
+
+        builder
+            .Property(b => b.UpdatedAt)
             .IsRequired();
     }
 }

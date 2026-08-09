@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using System.Diagnostics;
 using Shared.Exceptions;
 
 namespace Domain.Entities;

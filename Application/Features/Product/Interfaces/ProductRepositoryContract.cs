@@ -7,7 +7,7 @@ public interface ProductRepositoryContract
 {
     #region Product
 
-    Task<List<Domain.Entities.Product>> GetProductList(ProductQueryDto query);
+    Task<List<Domain.Entities.Product>?> GetProductList(ProductQueryDto query);
     Task<bool> IsExistingProduct(string productName);
     Task<Domain.Entities.Product?> GetProductByIdAsync(Guid productId);
     Task CreateProductAsync(Domain.Entities.Product product);
@@ -34,5 +34,6 @@ public interface ProductRepositoryContract
     Task<ProductBrand?> GetProductBrandById(Guid productBrandId);
     Task<List<ProductBrand>?> SearchProductBrandsWithTitle(string dtoTitle);
     #endregion
-    
+
+    Task<List<Domain.Entities.Product>> GetProductsWithDiscountByIdsAsync(List<Guid> productIds);
 }

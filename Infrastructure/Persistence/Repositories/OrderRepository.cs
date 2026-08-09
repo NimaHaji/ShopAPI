@@ -1,4 +1,3 @@
-using System.Runtime.InteropServices.ComTypes;
 using Application.Features.Order.Interfaces;
 using Domain.Entities;
 using Infrastructure.Persistence.Contexts;
@@ -29,16 +28,6 @@ public class OrderRepository : OrderRepositoryContract
         await _context.AddAsync(order);
     }
 
-    public void UpdateOrder(Order order)
-    {
-        _context.Update(order);
-    }
-
-    public async Task SaveAsync()
-    {
-        await _context.SaveChangesAsync();
-    }
-
     public async Task<List<Order>?> GetAllOrders()
     {
         return await _context
@@ -54,5 +43,14 @@ public class OrderRepository : OrderRepositoryContract
             .Include(o => o.OrderItems)
             .Where(o => o.UserId == userId)
             .ToListAsync();
+    }
+
+    public async Task<Order?> GetOrderByIdAsync(Guid paymentOrderId)
+    {
+        return await _context
+            .Orders
+            .Include(o => o.OrderItems)
+            .Where(o => o.Id == paymentOrderId)
+            .FirstOrDefaultAsync();
     }
 }
