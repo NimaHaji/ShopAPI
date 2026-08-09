@@ -1,3 +1,5 @@
+using Application.Features.Address.Implementations;
+using Application.Features.Address.Interfaces;
 using Application.Features.Auth.Interfaces;
 using Application.Features.Auth.Services;
 using Application.Features.Cart.implementations;
@@ -40,6 +42,7 @@ public static class ApplicationServices
         services.AddScoped<WishlistServiceContract, WishlistService>();
         services.AddScoped<DiscountServiceContract, DiscountService>();
         services.AddScoped<CouponsServiceContract, CouponService>();
+        services.AddScoped<AddressServiceContract, AddressService>();
         return services;
     }
 }

@@ -4,7 +4,6 @@ using Application.Features.CouponUsage.Interfaces;
 using Application.Features.Order.Interfaces;
 using Application.Features.Payment.DTOs;
 using Application.Features.Payment.Interfaces;
-using Domain.Entities;
 using Domain.Enums;
 using Shared.Exceptions;
 
