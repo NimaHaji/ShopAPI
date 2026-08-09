@@ -17,6 +17,7 @@ public class User
     public ICollection<RefreshToken> RefreshTokens { get; private set; } = new List<RefreshToken>();
     public Cart Cart { get; private set; }
     public Wishlist Wishlist { get; private set; }
+    public List<Address> Addresses { get;private set; } = new();
     public User()
     {
     }

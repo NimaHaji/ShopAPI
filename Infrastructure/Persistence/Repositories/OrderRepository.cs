@@ -28,16 +28,6 @@ public class OrderRepository : OrderRepositoryContract
         await _context.AddAsync(order);
     }
 
-    public void UpdateOrder(Order order)
-    {
-        _context.Update(order);
-    }
-
-    public async Task SaveAsync()
-    {
-        await _context.SaveChangesAsync();
-    }
-
     public async Task<List<Order>?> GetAllOrders()
     {
         return await _context

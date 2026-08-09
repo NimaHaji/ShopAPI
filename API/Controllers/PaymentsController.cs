@@ -48,6 +48,7 @@ public class PaymentsController : ControllerBase
 
     [HttpPost("{gateway}")]
     [HttpGet("{gateway}")]
+    [Authorize]
     public async Task<IActionResult> CallBack([FromRoute] PaymentGateway gateway)
     {
         var values = GetAllValues();
