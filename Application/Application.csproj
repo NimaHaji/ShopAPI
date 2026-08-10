@@ -14,6 +14,7 @@
     <ItemGroup>
       <PackageReference Include="FluentValidation" Version="11.3.1" />
       <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.3.9" />
+      <PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.2" />
       <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.17" />
       <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.17" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.17" />
@@ -22,6 +23,8 @@
     <ItemGroup>
       <Folder Include="Features\CouponUsage\Implementations\" />
       <Folder Include="Features\DummyData\" />
+      <Folder Include="Features\IdempotencyKey\enum\" />
+      <Folder Include="Features\IdempotencyKey\Validators\" />
     </ItemGroup>
 
 </Project>
