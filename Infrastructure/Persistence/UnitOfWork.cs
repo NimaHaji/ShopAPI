@@ -17,14 +17,6 @@ public class UnitOfWork : UnitOfWorkContract
 
     public async Task<int> SaveAsync()
     {
-        foreach (var entry in _shopDbContext.ChangeTracker.Entries<CartItem>())
-        {
-            Console.WriteLine(
-                $"CartItem: Id={entry.Entity.Id}, " +
-                $"State={entry.State}, " +
-                $"ProductId={entry.Entity.ProductId}, " +
-                $"CartId={entry.Entity.CartId}");
-        }
         return await _shopDbContext.SaveChangesAsync();
     }
 

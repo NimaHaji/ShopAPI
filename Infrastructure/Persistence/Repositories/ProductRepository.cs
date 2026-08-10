@@ -18,6 +18,14 @@ public class ProductRepository : ProductRepositoryContract
 
     #region product
 
+    public async Task<List<Product>> GetAllProducts()
+    {
+        return await _context
+            .Products
+            .Where(p => !p.IsDeleted)
+            .ToListAsync();
+    }
+
     public async Task<List<Product>?> GetProductList(ProductQueryDto query)
     {
         var products = _context
@@ -128,10 +136,45 @@ public class ProductRepository : ProductRepositoryContract
             .Include(x => x.Category)
             .Where(p => !p.IsDeleted && p.Title.Contains(query)).ToListAsync();
     }
+    
+    public async Task<List<Product>> GetDiscountedProducts()
+    {
+        var now = DateTime.UtcNow;
+
+        return await _context.Products
+            .Where(p =>
+                !p.IsDeleted &&
+                p.DiscountProducts.Any(dp =>
+                    !dp.Discount.IsDeleted &&
+                    dp.Discount.IsActive &&
+                    dp.Discount.StartsAt <= now &&
+                    dp.Discount.EndsAt > now))
+            .Include(p => p.DiscountProducts)
+            .ThenInclude(dp => dp.Discount)
+            .Include(p => p.Images)
+            .OrderByDescending(p=>p.AddedAt)
+            .Take(10)
+            .ToListAsync();
+    }
+
+    public async Task<List<Product>> GetNewestProducts()
+    {
+        return await _context
+            .Products
+            .Include(p=>p.Images)
+            .Include(p=>p.DiscountProducts)
+            .ThenInclude(dp => dp.Discount)
+            .Where(p => !p.IsDeleted)
+            .OrderByDescending(p => p.AddedAt)
+            .Take(10)
+            .ToListAsync();
+    }
 
     #endregion
 
     #region Category
+
+    
 
     public async Task<List<ProductCategory>> GetAllProductCategories()
     {
@@ -139,6 +182,7 @@ public class ProductRepository : ProductRepositoryContract
             .ProductCategories
             .Where(c => !c.IsDeleted)
             .OrderByDescending(x => x.Title)
+            .Take(4)
             .ToListAsync();
     }
 
@@ -178,6 +222,7 @@ public class ProductRepository : ProductRepositoryContract
         return await _context
             .ProductBrands
             .Where(b=>!b.IsDeleted)
+            .Take(10)
             .ToListAsync();
     }
 
