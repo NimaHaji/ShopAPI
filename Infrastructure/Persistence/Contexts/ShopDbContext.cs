@@ -32,6 +32,7 @@ public class ShopDbContext : DbContext
     public DbSet<Coupon> Coupons { get; set; }
     public DbSet<CouponUsage> CouponUsages { get; set; }
     public DbSet<Address> Addresses { get; set; }
+    public DbSet<IdempotencyKey> IdempotencyKeys { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         var assembly = Assembly.GetAssembly(typeof(ProductMapping));
