@@ -10,6 +10,10 @@ using Application.Features.Coupon.Implementations;
 using Application.Features.Coupon.Interfaces;
 using Application.Features.Discount.Implementations;
 using Application.Features.Discount.Interfaces;
+using Application.Features.Home.Implementations;
+using Application.Features.Home.Interfaces;
+using Application.Features.IdempotencyKey.Implementations;
+using Application.Features.IdempotencyKey.Interfaces;
 using Application.Features.Inventory.Implement;
 using Application.Features.Inventory.Interfaces;
 using Application.Features.Order.implementations;
@@ -43,6 +47,8 @@ public static class ApplicationServices
         services.AddScoped<DiscountServiceContract, DiscountService>();
         services.AddScoped<CouponsServiceContract, CouponService>();
         services.AddScoped<AddressServiceContract, AddressService>();
+        services.AddScoped<HomeServiceContract, HomeService>();
+        services.AddScoped<IdempotencyServiceContract, IdempotencyService>();
         return services;
     }
 }
