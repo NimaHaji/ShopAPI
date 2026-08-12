@@ -42,8 +42,18 @@ public class PaymentRepository : PaymentRepositoryContract
             .FirstOrDefaultAsync();
     }
 
-    public Task<bool> IsExistByRefNum(string refNum)
+    public async Task<bool> IsExistByRefNum(string refNum)
     {
-        throw new NotImplementedException();
+        return await _dbContext
+            .Payments
+            .AnyAsync(p => p.RefNum == refNum);
+    }
+
+    public async Task<Payment?> GetPaymentByIdAsync(Guid paymentId)
+    {
+        return await _dbContext
+            .Payments
+            .Where(p=>p.Id == paymentId)
+            .FirstOrDefaultAsync();
     }
 }

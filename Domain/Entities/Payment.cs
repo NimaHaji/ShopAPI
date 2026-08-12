@@ -1,4 +1,5 @@
 using Domain.Enums;
+using Shared.Exceptions;
 
 namespace Domain.Entities;
 
@@ -30,6 +31,7 @@ public class Payment
 
     public Order Order { get; private set; }
     public Guid OrderId { get; private set; }
+    public string? PaymentUrl { get; private set; }
 
     public Payment(long amount, string description, PaymentGateway gateway, Guid orderId)
     {
@@ -91,6 +93,14 @@ public class Payment
     public void SetAuthority(string? gatewayToken)
     {
         Authority = gatewayToken;
+    }
+    
+    public void SetPaymentUrl(string? paymentUrl)
+    {
+        if (string.IsNullOrWhiteSpace(paymentUrl))
+            throw new BusinessException("آدرس پرداخت نمی‌تواند خالی باشد.");
+        
+        PaymentUrl = paymentUrl;
     }
 }
 

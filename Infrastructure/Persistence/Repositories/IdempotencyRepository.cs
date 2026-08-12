@@ -14,21 +14,25 @@ public class IdempotencyRepository:IdempotencyRepositoryContract
         _shopDbContext = shopDbContext;
     }
 
-    public async Task<IdempotencyKey?> GetAsync(Guid userId, string key)
+    public async Task<IdempotencyKey?> GetAsync(Guid userId, string key,IdempotencyOperation operation)
     {
         return await _shopDbContext
             .IdempotencyKeys
             .Where(ik => 
                 ik.UserId == userId &&
-                ik.Key == key)
+                ik.Key == key &&
+                ik.IdempotencyOperation == operation)
             .FirstOrDefaultAsync();
     }
 
-    public async Task<bool> ExistsAsync(Guid userId, string key)
+    public async Task<bool> ExistsAsync(Guid userId, string key, IdempotencyOperation operation)
     {
         return await _shopDbContext
             .IdempotencyKeys
-            .Where(ik => ik.UserId == userId && ik.Key == key)
+            .Where(ik =>
+                ik.UserId == userId &&
+                ik.Key == key &&
+                ik.IdempotencyOperation == operation)
             .AnyAsync();
     }
 

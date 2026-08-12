@@ -28,8 +28,7 @@ public class ZarinPalPaymentGatewayProvider : PaymentGatewayProviderContract
 
     public PaymentGateway Gateway => PaymentGateway.ZarinPal;
 
-    public async Task<PaymentGatewayRequestResult> RequestPaymentAsync(Domain.Entities.Payment payment,
-        CreatePaymentDto dto)
+    public async Task<PaymentGatewayRequestResult> RequestPaymentAsync(Domain.Entities.Payment payment, CreatePaymentDto dto)
     {
         payment.GenerateOrderNumber();
         var requestDto = new CreateZarinPalPaymentDto
@@ -73,9 +72,18 @@ public class ZarinPalPaymentGatewayProvider : PaymentGatewayProviderContract
                 "INVALID_RESPONSE",
                 "پاسخ نامعتبر از درگاه زرین پال");
         }
+        
+        var authority = result.Data.Authority;
 
-        var paymentUrl = "https://sandbox.zarinpal.com/pg/StartPay/" + result?.Data.Authority;
-        return PaymentGatewayRequestResult.Success(result.Data.Authority, paymentUrl);
+        var paymentUrl =
+            $"https://sandbox.zarinpal.com/pg/StartPay/{authority}";
+
+        payment.SetAuthority(authority);
+        payment.SetPaymentUrl(paymentUrl);
+
+        return PaymentGatewayRequestResult.Success(
+            authority,
+            paymentUrl);
     }
 
     public async Task<VerifyPaymentResult>  HandleCallBackAsync(SandBoxCallBackDto dto)
