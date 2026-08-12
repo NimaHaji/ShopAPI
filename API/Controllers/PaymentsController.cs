@@ -24,9 +24,9 @@ public class PaymentsController : ControllerBase
 
     [HttpPost]
     [Authorize]
-    public async Task<IActionResult> GetPaymentUrl([FromBody] CreatePaymentDto dto)
+    public async Task<IActionResult> GetPaymentUrl([FromBody] CreatePaymentDto dto,[FromHeader(Name = "Idempotency-Key")]string idempotencyKey)
     {
-        var paymentUrl = await _paymentServiceContract.CreatePaymentAsync(dto);
+        var paymentUrl = await _paymentServiceContract.CreatePaymentAsync(dto,idempotencyKey);
         return Ok(paymentUrl);
     }
 
