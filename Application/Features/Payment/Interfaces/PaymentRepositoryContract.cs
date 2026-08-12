@@ -7,4 +7,5 @@ public interface PaymentRepositoryContract
     Task<Domain.Entities.Payment?> GetPaymentByResNumAsync(string resNum);
     Task<Domain.Entities.Payment?> GetPaymentByAuthorityAsync(string authority);
     Task<bool> IsExistByRefNum(string refNum);
+    Task<Domain.Entities.Payment?> GetPaymentByIdAsync(Guid paymentId);
 }

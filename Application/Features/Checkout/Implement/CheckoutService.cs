@@ -5,6 +5,7 @@ using Application.Features.Checkout.DTOs;
 using Application.Features.Checkout.Interfaces;
 using Application.Features.Coupon.DTOs;
 using Application.Features.Coupon.Interfaces;
+using Application.Features.IdempotencyKey.DTOs;
 using Application.Features.IdempotencyKey.Interfaces;
 using Application.Features.Inventory.Interfaces;
 using Application.Features.Order.DTOs;
@@ -73,19 +74,22 @@ public class CheckoutService : CheckoutServiceContract
             {
                 await _unitOfWork.BeginTransactionAsync();
 
-                var idempotencyResult = await _idempotencyServiceContract.CheckAsync(userId, idempotencyKey);
+                var idempotencyResult = await _idempotencyServiceContract.CheckAsync(
+                    userId,
+                    idempotencyKey,
+                    IdempotencyOperation.Checkout);
 
-                if (idempotencyResult.Status == IdempotencyStatus.Completed)
+                if (idempotencyResult.Status == IdempotencyStatusDto.Completed)
                 {
                     await _unitOfWork.RollbackTransactionAsync();
 
                     return new CheckoutResultDto
                     {
-                        OrderId = idempotencyResult.OrderId
+                        OrderId = idempotencyResult.ResourceId!.Value
                     };
                 }
 
-                if (idempotencyResult.Status == IdempotencyStatus.Processing)
+                if (idempotencyResult.Status == IdempotencyStatusDto.Processing)
                 {
                     await _unitOfWork.RollbackTransactionAsync();
 
@@ -122,7 +126,8 @@ public class CheckoutService : CheckoutServiceContract
                 await _idempotencyServiceContract.CompleteAsync(
                     userId,
                     idempotencyKey,
-                    orderId);
+                    orderId,
+                    IdempotencyOperation.Checkout);
 
                 await _unitOfWork.SaveAsync();
                 await _unitOfWork.CommitTransactionAsync();
@@ -149,13 +154,16 @@ public class CheckoutService : CheckoutServiceContract
                     sqlException.Number is 2601 or 2627)
                 {
                     var existing = await _idempotencyServiceContract
-                        .CheckAsync(userId, idempotencyKey);
+                        .CheckAsync(
+                            userId,
+                            idempotencyKey,
+                            IdempotencyOperation.Checkout);
 
-                    if (existing.Status == IdempotencyStatus.Completed)
+                    if (existing.Status == IdempotencyStatusDto.Completed)
                     {
                         return new CheckoutResultDto
                         {
-                            OrderId = existing.OrderId
+                            OrderId = existing.ResourceId!.Value
                         };
                     }
                     

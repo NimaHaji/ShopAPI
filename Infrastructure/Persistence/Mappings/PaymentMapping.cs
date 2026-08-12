@@ -61,5 +61,8 @@ public class PaymentMapping : IEntityTypeConfiguration<Payment>
 
         builder
             .Property(p => p.Authority);
+
+        builder
+            .Property(p => p.PaymentUrl);
     }
 }
