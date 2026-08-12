@@ -34,7 +34,12 @@ public class IdempotencyKeyConfiguration:IEntityTypeConfiguration<IdempotencyKey
             .HasForeignKey(k=>k.UserId);
         
         builder
-            .HasIndex(k => new { k.UserId, k.Key })
+            .HasIndex(k => new
+            {
+                k.UserId,
+                k.Key,
+                k.IdempotencyOperation
+            })
             .IsUnique();
     }
 }
