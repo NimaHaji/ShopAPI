@@ -4,9 +4,11 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Infrastructure.Persistence.Mappings;
 
-public class InventoryItemMapping : IEntityTypeConfiguration<InventoryItem>
+public class InventoryItemMapping
+    : IEntityTypeConfiguration<InventoryItem>
 {
-    public void Configure(EntityTypeBuilder<InventoryItem> builder)
+    public void Configure(
+        EntityTypeBuilder<InventoryItem> builder)
     {
         builder.ToTable("InventoryItems", "dbo");
 
@@ -16,8 +18,8 @@ public class InventoryItemMapping : IEntityTypeConfiguration<InventoryItem>
             .HasColumnName("InventoryId")
             .IsRequired();
 
-        builder.Property(i => i.ProductId)
-            .HasColumnName("ProductId")
+        builder.Property(i => i.ProductVariantId)
+            .HasColumnName("ProductVariantId")
             .IsRequired();
 
         builder.Property(i => i.StockQuantity)
@@ -36,14 +38,15 @@ public class InventoryItemMapping : IEntityTypeConfiguration<InventoryItem>
             .IsRowVersion()
             .IsConcurrencyToken();
 
-        builder.HasIndex(i => i.ProductId)
+        builder.HasIndex(i => i.ProductVariantId)
             .IsUnique();
 
         builder.HasIndex(i => i.LastUpdated);
 
-        builder.HasOne(i => i.Product)
+        builder.HasOne(i => i.ProductVariant)
             .WithOne()
-            .HasForeignKey<InventoryItem>(i => i.ProductId)
+            .HasForeignKey<InventoryItem>(
+                i => i.ProductVariantId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasMany(i => i.Transactions)

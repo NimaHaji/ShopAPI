@@ -30,15 +30,15 @@ public class OrderService : OrderServicesContract
                      ?? throw new UnauthorizedAccessException(
                          "کاربر احراز هویت نشده است.");
 
-        var productIds = orderDto.Items
-            .Select(x => x.ProductId)
+        var productVariantIds = orderDto.Items
+            .Select(x => x.ProductVariantId)
             .Distinct()
             .ToList();
 
-        var products = await _productRepository
-            .GetProductsWithDiscountByIdsAsync(productIds);
+        var variants = await _productRepository
+            .GetVariantsWithDiscountAsync(productVariantIds);
 
-        if (products.Count != productIds.Count)
+        if (variants.Count != productVariantIds.Count)
             throw new NotFoundException(
                 "یک یا چند محصول یافت نشد.");
 
@@ -54,7 +54,7 @@ public class OrderService : OrderServicesContract
 
         var now = DateTime.UtcNow;
 
-        var productMap = products.ToDictionary(x => x.Id);
+        var variantMap = variants.ToDictionary(x => x.Id);
 
         foreach (var item in orderDto.Items)
         {
@@ -62,9 +62,29 @@ public class OrderService : OrderServicesContract
                 throw new BusinessException(
                     "تعداد محصول باید بیشتر از صفر باشد.");
 
-            var product = productMap[item.ProductId];
+            if (!variantMap.TryGetValue(
+                    item.ProductVariantId,
+                    out var variant))
+            {
+                throw new NotFoundException(
+                    "Variant موردنظر یافت نشد.");
+            }
 
-            var activeDiscount = product.DiscountProducts
+            var product = variant.Product;
+
+            var unitPrice = variant.Price;
+
+            long discountAmount = 0;
+
+            var variantDiscount = variant.DiscountVariants
+                .Select(dv => dv.Discount)
+                .FirstOrDefault(d => d is not null &&
+                                     !d.IsDeleted &&
+                                     d.IsActive &&
+                                     d.StartsAt <= now &&
+                                     d.EndsAt > now);
+
+            var productDiscount = product.DiscountProducts
                 .Select(dp => dp.Discount)
                 .FirstOrDefault(d =>
                     d is not null &&
@@ -73,9 +93,7 @@ public class OrderService : OrderServicesContract
                     d.StartsAt <= now &&
                     d.EndsAt > now);
 
-            long unitPrice = product.Price;
-            long discountAmount = 0;
-            long finalUnitPrice = unitPrice;
+            var activeDiscount = variantDiscount ?? productDiscount;
 
             if (activeDiscount is not null)
             {
@@ -99,12 +117,13 @@ public class OrderService : OrderServicesContract
                         (long)activeDiscount.Value,
                         unitPrice);
                 }
-
-                finalUnitPrice = unitPrice - discountAmount;
             }
+
+            var finalUnitPrice = unitPrice - discountAmount;
 
             var orderItem = new OrderItem(
                 productId: product.Id,
+                productVariantId: variant.Id,
                 orderId: order.Id,
                 quantity: item.Quantity,
                 unitPrice: unitPrice,
@@ -245,7 +264,7 @@ public class OrderService : OrderServicesContract
                     CouponId = order.CouponId,
                     CouponCode = order.CouponCode,
                     CouponDiscountAmount = order.CouponDiscountAmount,
-                    
+
                     ReceiverName = order.ReceiverName,
                     PhoneNumber = order.PhoneNumber,
                     Province = order.Province,

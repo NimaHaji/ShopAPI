@@ -1,0 +1,16 @@
+[
+  {
+    "userKey": "user1",
+    "items": [
+      { "variantKey": "iphone-15-black-128", "quantity": 1 },
+      { "variantKey": "dior-sauvage-default", "quantity": 2 }
+    ]
+  },
+  {
+    "userKey": "user2",
+    "items": [
+      { "variantKey": "samsung-s24-gray", "quantity": 1 },
+      { "variantKey": "skincare-set-default", "quantity": 1 }
+    ]
+  }
+]

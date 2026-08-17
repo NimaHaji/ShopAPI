@@ -19,7 +19,7 @@ public class CartRepository : CartRepositoryContract
         return await _context
             .Carts
             .Include(c => c.CartItems)
-            .ThenInclude(c => c.Product)
+            .ThenInclude(c => c.ProductVariant)
             .Where(c => c.UserId == userId)
             .FirstOrDefaultAsync();
     }
@@ -28,20 +28,16 @@ public class CartRepository : CartRepositoryContract
     {
         return await _context
             .Carts
+            .Include(c=>c.CartItems)
+                .ThenInclude(it=>it.ProductVariant)
+                    .ThenInclude(pv=>pv.Product)
             .Include(c => c.CartItems)
-            .ThenInclude(c => c.Product)
-            .ThenInclude(x=>x.DiscountProducts)
-            .ThenInclude(x=>x.Discount)
+                .ThenInclude(c => c.ProductVariant)
+                    .ThenInclude(x=>x.DiscountVariants)
+                        .ThenInclude(x=>x.Discount)
             .FirstOrDefaultAsync(c => c.UserId == userId);
     }
 
-    public async Task<CartItem?> GetCartItemByProductIdAsync(Guid cartId, Guid productId)
-    {
-        return await _context
-            .CartItems
-            .Where(ci => ci.ProductId == productId && ci.CartId == cartId)
-            .FirstOrDefaultAsync();
-    }
 
     public async Task CreateCartAsync(Cart cart)
     {

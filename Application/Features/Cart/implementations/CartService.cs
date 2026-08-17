@@ -38,7 +38,7 @@ public class CartService : CartServicesContract
                 "تعداد درخواستی باید بیشتر از صفر باشد.");
 
         var inventory = await _inventoryRepositoryContract
-            .GetByProductIdAsync(dto.ProductId);
+            .GetByProductVariantIdAsync(dto.ProductVariantId);
 
         if (inventory is null)
             throw new NotFoundException("محصول یافت نشد.");
@@ -54,7 +54,7 @@ public class CartService : CartServicesContract
         }
 
         var existingItem = cart.CartItems
-            .FirstOrDefault(x => x.ProductId == dto.ProductId);
+            .FirstOrDefault(x => x.ProductVariantId == dto.ProductVariantId);
 
         var requestedQuantity = existingItem is null
             ? dto.Quantity
@@ -74,7 +74,7 @@ public class CartService : CartServicesContract
         {
             var cartItem = new Domain.Entities.CartItem(
                 cart.Id,
-                dto.ProductId,
+                dto.ProductVariantId,
                 dto.Quantity);
 
             await _cartItemRepositoryContract.AddCartItemAsync(cartItem);
@@ -102,7 +102,7 @@ public class CartService : CartServicesContract
             throw new NotFoundException("سبد خرید یافت نشد.");
 
         var inventory = await _inventoryRepositoryContract
-            .GetByProductIdAsync(dto.ProductId);
+            .GetByProductVariantIdAsync(dto.ProductVariantId);
 
         if (inventory is null)
             throw new NotFoundException("محصول یافت نشد.");
@@ -114,7 +114,7 @@ public class CartService : CartServicesContract
         }
 
         cart.UpdateItemQuantity(
-            dto.ProductId,
+            dto.ProductVariantId,
             dto.NewQuantity);
 
         await _unitOfWorkContract.SaveAsync();
@@ -142,65 +142,90 @@ public class CartService : CartServicesContract
 
         var now = DateTime.UtcNow;
 
-        var items = cart.CartItems.Select(x =>
-        {
-            var activeDiscount = x.Product.DiscountProducts
-                .Select(dp => dp.Discount)
-                .FirstOrDefault(d =>
-                    !d.IsDeleted &&
-                    d.IsActive &&
-                    d.StartsAt <= now &&
-                    d.EndsAt > now);
-
-            long finalPrice = x.Product.Price;
-            long discountAmount = 0;
-            decimal? discountPercentage = null;
-
-
-            if (activeDiscount is not null)
+        var items = cart.CartItems
+            .Select(x =>
             {
-                if (activeDiscount.DiscountType == DiscountType.Percentage)
+                var variant = x.ProductVariant;
+
+                var variantDiscount = variant.DiscountVariants
+                    .Select(dv => dv.Discount)
+                    .FirstOrDefault(d =>
+                        !d.IsDeleted &&
+                        d.IsActive &&
+                        d.StartsAt <= now &&
+                        d.EndsAt > now);
+
+                var productDiscount = variant.Product
+                    .DiscountProducts
+                    .Select(dp => dp.Discount)
+                    .FirstOrDefault(d =>
+                        !d.IsDeleted &&
+                        d.IsActive &&
+                        d.StartsAt <= now &&
+                        d.EndsAt > now);
+                
+                var activeDiscount =
+                    variantDiscount ?? productDiscount;
+
+                long unitPrice = variant.Price;
+                long discountAmount = 0;
+                decimal? discountPercentage = null;
+
+                if (activeDiscount is not null)
                 {
-                    discountPercentage = activeDiscount.Value;
+                    if (activeDiscount.DiscountType ==
+                        DiscountType.Percentage)
+                    {
+                        discountPercentage =
+                            activeDiscount.Value;
 
-                    discountAmount =
-                        (long)(x.Product.Price *
-                               (activeDiscount.Value / 100));
+                        discountAmount = (long)(
+                            unitPrice *
+                            (activeDiscount.Value / 100));
 
-                    if (activeDiscount.MaxDiscountAmount.HasValue)
+                        if (activeDiscount.MaxDiscountAmount.HasValue)
+                        {
+                            discountAmount = Math.Min(
+                                discountAmount,
+                                (long)activeDiscount.MaxDiscountAmount.Value);
+                        }
+                    }
+                    else if (activeDiscount.DiscountType ==
+                             DiscountType.FixedAmount)
                     {
                         discountAmount = Math.Min(
-                            discountAmount,
-                            (long)activeDiscount.MaxDiscountAmount.Value);
+                            (long)activeDiscount.Value,
+                            unitPrice);
                     }
-
-                    finalPrice = x.Product.Price - discountAmount;
                 }
-                else if (activeDiscount.DiscountType == DiscountType.FixedAmount)
+
+                var finalPrice =
+                    Math.Max(0, unitPrice - discountAmount);
+
+                return new ViewCartItemDto
                 {
-                    discountAmount = (long)activeDiscount.Value;
-                    finalPrice = Math.Max(
-                        0,
-                        x.Product.Price - discountAmount);
-                }
-            }
+                    Id = x.Id,
 
+                    ProductId = variant.ProductId,
 
-            return new ViewCartItemsDto
-            {
-                Id = x.Id,
-                ProductId = x.ProductId,
-                ProductTitle = x.Product.Title,
+                    ProductVariantId = variant.Id,
 
-                Quantity = x.Quantity,
+                    ProductTitle = variant.Product.Title,
 
-                UnitPrice = x.Product.Price,
-                FinalPrice = finalPrice,
-                DiscountAmount = discountAmount,
-                DiscountPercentage = discountPercentage
-            };
-        }).ToList();
+                    VariantSku = variant.Sku,
 
+                    Quantity = x.Quantity,
+
+                    UnitPrice = unitPrice,
+
+                    FinalPrice = finalPrice,
+
+                    DiscountAmount = discountAmount,
+
+                    DiscountPercentage = discountPercentage
+                };
+            })
+            .ToList();
 
         return new ViewCartDto
         {
@@ -210,7 +235,7 @@ public class CartService : CartServicesContract
         };
     }
 
-    public async Task<string> DeleteItemAsync(Guid productId)
+    public async Task<string> DeleteItemAsync(Guid productVariantId)
     {
         var userId = _userContext.UserId
                      ?? throw new UnauthorizedAccessException(
@@ -223,7 +248,7 @@ public class CartService : CartServicesContract
             throw new NotFoundException("سبد خرید یافت نشد.");
 
         var item = cart.CartItems
-            .FirstOrDefault(x => x.ProductId == productId);
+            .FirstOrDefault(x => x.ProductVariantId == productVariantId);
 
         if (item is null)
             throw new NotFoundException(

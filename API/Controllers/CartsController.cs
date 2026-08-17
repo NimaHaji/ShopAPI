@@ -46,11 +46,11 @@ public class CartsController : ControllerBase
         });
     }
 
-    [HttpDelete("items/{productId:guid}")]
+    [HttpDelete("items/{productVariantId:guid}")]
     [Authorize]
-    public async Task<IActionResult> DeleteItem(Guid productId)
+    public async Task<IActionResult> DeleteItem(Guid productVariantId)
     {
-        var result = await _cartService.DeleteItemAsync(productId);
+        var result = await _cartService.DeleteItemAsync(productVariantId);
         return Ok(new
         {
             message = result
