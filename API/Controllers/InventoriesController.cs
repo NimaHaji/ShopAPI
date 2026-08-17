@@ -17,16 +17,16 @@ public class InventoriesController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<ViewInventoryItemDto>>> GetAll()
+    public async Task<ActionResult> GetAll()
     {
         var result = await _inventoryServiceContract.GetAllInventoryAsync();
         return Ok(result);
     }
 
-    [HttpGet("{productId}")]
-    public async Task<ActionResult<ViewInventoryItemDto>> GetByProductId(Guid productId)
+    [HttpGet("{productVariantId}")]
+    public async Task<ActionResult> GetByProductId(Guid productVariantId)
     {
-        var result = await _inventoryServiceContract.GetInventoryByProductIdAsync(productId);
+        var result = await _inventoryServiceContract.GetInventoryByProductVariantIdAsync(productVariantId);
         return Ok(result);
     }
 

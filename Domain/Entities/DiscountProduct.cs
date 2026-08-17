@@ -1,7 +1,7 @@
 namespace Domain.Entities;
 
 public class DiscountProduct
-{   
+{
     public Guid DiscountId { get; private set; }
     public Discount Discount { get; private set; } = null!;
 

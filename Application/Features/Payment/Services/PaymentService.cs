@@ -95,7 +95,6 @@ public class PaymentService : PaymentServiceContract
             IdempotencyOperation.Payment);
         
         await _unitOfWorkContract.SaveAsync();
-        await Task.Delay(5000);
         return requestResult.PaymentUrl;
     }
 

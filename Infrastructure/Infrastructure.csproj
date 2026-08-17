@@ -29,7 +29,13 @@
 
     <ItemGroup>
       <Folder Include="Email\Interface\" />
+      <Folder Include="Persistence\Seed\Models\" />
       <Folder Include="Services\Payment\Interface\" />
     </ItemGroup>
 
+    <ItemGroup>
+        <None Update="Persistence\Seed\Data\*.json">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
 </Project>

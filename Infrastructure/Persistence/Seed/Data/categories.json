@@ -1,0 +1,10 @@
+[
+  { "key": "electronics", "title": "لوازم الکترونیکی" },
+  { "key": "smartphones", "title": "گوشی موبایل" },
+  { "key": "laptops", "title": "لپ‌تاپ" },
+  { "key": "fragrances", "title": "عطر و ادکلن" },
+  { "key": "skincare", "title": "مراقبت پوست" },
+  { "key": "groceries", "title": "مواد غذایی" },
+  { "key": "furniture", "title": "مبلمان" },
+  { "key": "womens-dresses", "title": "لباس زنانه" }
+]

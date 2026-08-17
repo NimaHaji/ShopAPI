@@ -6,22 +6,22 @@ namespace Domain.Entities;
 public class InventoryItem
 {
     public Guid InventoryId { get; private set; }
-    public Guid ProductId { get; private set; }
+    public Guid ProductVariantId { get; private set; }
+    public ProductVariant ProductVariant { get; private set; }
     public int StockQuantity { get; private set; }
     public int ReservedQuantity { get; private set; }
     public DateTime LastUpdated { get; private set; }
     [Timestamp] public byte[] RowVersion { get; private set; }
 
-    public Product Product { get; private set; }
-    public List<InventoryTransaction> Transactions { get; private set; } = new List<InventoryTransaction>();
+    public List<InventoryTransaction> Transactions { get; private set; } = new();
     
     public int AvailableQuantity => StockQuantity - ReservedQuantity;
 
-    public InventoryItem(Guid productId, int stockQuantity, int reservedQuantity)
+    public InventoryItem(Guid productVariantId, int stockQuantity, int reservedQuantity)
     {
         InventoryId = Guid.NewGuid();
         LastUpdated = DateTime.UtcNow;
-        ProductId = productId;
+        ProductVariantId = productVariantId;
         StockQuantity = stockQuantity;
         ReservedQuantity = reservedQuantity;
     }

@@ -7,7 +7,7 @@ public interface CartServicesContract
     Task<string> AddItemAsync(AddCartItemDto dto);
     Task<string> UpdateItemQuantityAsync(UpdateCartDto dto);
     Task<ViewCartDto> GetCartByUserIdAsync();
-    Task<string> DeleteItemAsync(Guid productId);
+    Task<string> DeleteItemAsync(Guid productVariantId);
     Task<string> ClearCartAsync();
     Task<int> GetCartItemsCountAsync();
 }

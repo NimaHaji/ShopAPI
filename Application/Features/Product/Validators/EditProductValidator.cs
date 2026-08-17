@@ -7,6 +7,13 @@ public class EditProductValidator : AbstractValidator<EditProductDto>
 {
     public EditProductValidator()
     {
+        RuleFor(x => x)
+            .Must(x =>
+                x.Title is not null ||
+                x.Description is not null)
+            .WithMessage(
+                "حداقل یکی از فیلدهای عنوان یا توضیحات باید برای ویرایش ارسال شود.");
+            
         RuleFor(x => x.Id)
             .NotEmpty().WithMessage("شناسه عددی محصول نمیتواند خالی باشد .");
         
@@ -20,12 +27,6 @@ public class EditProductValidator : AbstractValidator<EditProductDto>
             .MaximumLength(2000).WithMessage("توضیحات نمی تواند بیشتر از 2000 کاراکتر باشد .")
             .When(x => x.Description != null);
         
-        RuleFor(x => x.Price)
-            .GreaterThan(0).WithMessage("قیمت محصول نمی تواند منفی باشد .")
-            .When(x => x.Price.HasValue);
         
-        RuleFor(x => x.DiscountPercentage)
-            .InclusiveBetween(0, 100).WithMessage("درصد تخفیف باید بین 0 تا 100 باشد .")
-            .When(x => x.DiscountPercentage.HasValue);
     }
 }

@@ -53,7 +53,11 @@ public class ProductService : ProductServicesContract
 
         var dto = products.Select(p =>
         {
-            var activeDiscount = p.DiscountProducts
+            var variants = p.Variants
+                .Where(v => !v.IsDeleted)
+                .ToList();
+
+            var activeProductDiscount = p.DiscountProducts
                 .Select(dp => dp.Discount)
                 .FirstOrDefault(d =>
                     !d.IsDeleted &&
@@ -61,65 +65,93 @@ public class ProductService : ProductServicesContract
                     d.StartsAt <= now &&
                     d.EndsAt > now);
 
-            long finalPrice = p.Price;
-            long? discountAmount = null;
-            decimal? discountPercentage = null;
-            DiscountType? discountType = null;
-
-            if (activeDiscount is not null)
-            {
-                discountType = activeDiscount.DiscountType;
-
-                if (activeDiscount.DiscountType == DiscountType.Percentage)
+            var variantDtos = variants.Select(v =>
                 {
-                    discountPercentage = activeDiscount.Value;
+                    var activeVariantDiscount = v.DiscountVariants
+                        .Select(dp => dp.Discount)
+                        .FirstOrDefault(d =>
+                            !d.IsDeleted &&
+                            d.IsActive &&
+                            d.StartsAt <= now &&
+                            d.EndsAt > now);
 
-                    var calculatedDiscount =
-                        p.Price * (activeDiscount.Value / 100);
+                    var discount = activeVariantDiscount ?? activeProductDiscount;
 
-                    if (activeDiscount.MaxDiscountAmount.HasValue)
+                    var priceInfo = CalculatePrice(v.Price, discount);
+
+                    return new ViewProductVariantDto
                     {
-                        calculatedDiscount = Math.Min(
-                            calculatedDiscount,
-                            activeDiscount.MaxDiscountAmount.Value);
-                    }
+                        Id = v.Id,
+                        Sku = v.Sku,
+                        Price = v.Price,
+                        FinalPrice = priceInfo.FinalPrice,
 
-                    discountAmount = (long)calculatedDiscount;
+                        Stock = v.InventoryItem?.AvailableQuantity ?? 0,
+                        
+                        DiscountType = priceInfo.DiscountType,
+                        DiscountPercentage = priceInfo.DiscountPercentage,
+                        DiscountAmount = priceInfo.DiscountAmount,
+                        
+                        Options = v.Options
+                            .Select(pvo => new ViewProductVariantOptionDto
+                            {
+                                Id = pvo.Id,
+                                ProductOptionId = pvo.ProductOptionId,
+                                OptionName = pvo.ProductOption.Name,
+                                ProductOptionValueId = pvo.ProductOptionValueId,
+                                Value = pvo.ProductOptionValue.Value
+                            })
+                            .ToList(),
 
-                    finalPrice = p.Price - discountAmount.Value;
-                }
-                else if (activeDiscount.DiscountType == DiscountType.FixedAmount)
-                {
-                    discountAmount = (long)activeDiscount.Value;
+                        Images = v.Images
+                            .OrderBy(i => i.SortOrder)
+                            .Select(i => new ViewProductImageDto
+                            {
+                                Id = i.Id,
+                                Url = i.ImageUrl,
+                                IsPrimary = i.IsPrimary,
+                                SortOrder = i.SortOrder
+                            })
+                            .ToList()
+                    };
+                })
+                .ToList();
 
-                    finalPrice = p.Price - discountAmount.Value;
-                }
+            var prices = variantDtos
+                .Select(v => v.Price)
+                .ToList();
 
-                if (finalPrice < 0)
-                    finalPrice = 0;
-            }
+            var finalPrices = variantDtos
+                .Select(v => v.FinalPrice)
+                .ToList();
 
             return new ViewProductItemDto
             {
                 Id = p.Id,
                 Title = p.Title,
                 Description = p.Description,
-
-                Price = p.Price,
-                FinalPrice = finalPrice,
-
-                DiscountType = discountType,
-                DiscountPercentage = discountPercentage,
-                DiscountAmount = discountAmount,
-
                 Brand = p.Brand?.Title ?? "بدون برند",
                 Category = p.Category.Title,
+                
+                MinPrice = prices.DefaultIfEmpty(0).Min(),
+                MaxPrice = prices.DefaultIfEmpty(0).Max(),
 
-                Stock = p.InventoryItem.AvailableQuantity,
+                FinalMinPrice = finalPrices.DefaultIfEmpty(0).Min(),
+                FinalMaxPrice = finalPrices.DefaultIfEmpty(0).Max(),
+
+                
+                Stock = variants
+                    .Sum(v => v.InventoryItem?.AvailableQuantity ?? 0),
 
                 Images = p.Images
                     .OrderBy(pi => pi.SortOrder)
-                    .Select(pi => pi.ImageLink)
+                    .Select(pi => new ViewProductImageDto
+                    {
+                        Id = pi.Id,
+                        IsPrimary = pi.IsPrimary,
+                        SortOrder = pi.SortOrder,
+                        Url = pi.ImageLink
+                    })
                     .ToList(),
 
                 Rating = p.Reviews
@@ -132,7 +164,25 @@ public class ProductService : ProductServicesContract
                 ReviewCount = p.Reviews
                     .Count(r =>
                         !r.IsDeleted &&
-                        r.ReviewStatus == ReviewStatus.Approved)
+                        r.ReviewStatus == ReviewStatus.Approved),
+
+                Options = p.Options
+                    .Select(o => new ViewProductOptionDto
+                    {
+                        Id = o.Id,
+                        Name = o.Name,
+
+                        Values = o.Values
+                            .Select(pov => new ViewProductOptionValueDto
+                            {
+                                Id = pov.Id,
+                                Value = pov.Value
+                            })
+                            .ToList()
+                    })
+                    .ToList(),
+
+                Variants = variantDtos
             };
         }).ToList();
 
@@ -148,20 +198,27 @@ public class ProductService : ProductServicesContract
         if (isExist)
             throw new DuplicateNameException("این محصول از قبل وجود دارد");
 
-        var sku = _skuGeneratorContract.GenerateSku();
+        
         var product = Domain.Entities.Product.Create(
             title: dto.Title,
             description: dto.Description,
-            price: dto.Price,
-            discountPercentage: null,
             categoryId: dto.CategoryId,
-            brandId: dto.BrandId ?? null,
-            sku: sku
+            brandId: dto.BrandId ?? null
+        );
+        await _productRepositoryContract.CreateProductAsync(product);
+        
+        var sku = _skuGeneratorContract.GenerateSku();
+
+        var variant = ProductVariant.Create(
+            productId: product.Id,
+            sku: sku,
+            price: dto.Price
         );
 
+        await _productRepositoryContract.AddProductVariantAsync(variant);
+        
         await _inventoryServiceContract.AddStockAsync(product.Id, dto.Quantity, product.Description);
 
-        await _productRepositoryContract.CreateProductAsync(product);
         await _unitOfWorkContract.SaveAsync();
 
         return $"محصول {product.Title} ساخته شد";
@@ -206,12 +263,15 @@ public class ProductService : ProductServicesContract
         if (product is null)
             throw new NotFoundException("محصول یافت نشد.");
 
-        var (rating, reviewCount) =
-            await _reviewsRepositoryContract.GetProductRatingAsync(productId);
+        var (rating, reviewCount) = await _reviewsRepositoryContract.GetProductRatingAsync(productId);
 
         var now = DateTime.UtcNow;
 
-        var activeDiscount = product.DiscountProducts
+        var variants = product.Variants
+            .Where(v => !v.IsDeleted)
+            .ToList();
+
+        var activeProductDiscount = product.DiscountProducts
             .Select(dp => dp.Discount)
             .FirstOrDefault(d =>
                 !d.IsDeleted &&
@@ -219,83 +279,130 @@ public class ProductService : ProductServicesContract
                 d.StartsAt <= now &&
                 d.EndsAt > now);
 
-
-        long finalPrice = product.Price;
-        long? discountAmount = null;
-        decimal? discountPercentage = null;
-        DiscountType? discountType = null;
-
-
-        if (activeDiscount is not null)
-        {
-            discountType = activeDiscount.DiscountType;
-
-            if (activeDiscount.DiscountType == DiscountType.Percentage)
+        var variantDto = variants.Select(v =>
             {
-                discountPercentage = activeDiscount.Value;
+                var activeVariantDiscount = v.DiscountVariants
+                    .Select(dp => dp.Discount)
+                    .FirstOrDefault(d =>
+                        !d.IsDeleted &&
+                        d.IsActive &&
+                        d.StartsAt <= now &&
+                        d.EndsAt > now);
 
-                var calculatedDiscount =
-                    product.Price * (activeDiscount.Value / 100);
+                var discount = activeVariantDiscount ?? activeProductDiscount;
 
-                if (activeDiscount.MaxDiscountAmount.HasValue)
+                var priceInfo = CalculatePrice(v.Price, discount);
+
+                return new ViewProductVariantDto
                 {
-                    calculatedDiscount = Math.Min(
-                        calculatedDiscount,
-                        activeDiscount.MaxDiscountAmount.Value);
-                }
+                    Id = v.Id,
+                    Sku = v.Sku,
+                    Price = v.Price,
+                    FinalPrice = priceInfo.FinalPrice,
 
-                discountAmount = (long)calculatedDiscount;
+                    Stock = v.InventoryItem?.AvailableQuantity ?? 0,
+                    
+                    DiscountType = priceInfo.DiscountType,
+                    DiscountPercentage = priceInfo.DiscountPercentage,
+                    DiscountAmount = priceInfo.DiscountAmount,
+                    
+                    Options = v.Options
+                        .Select(pvo => new ViewProductVariantOptionDto
+                        {
+                            Id = pvo.Id,
+                            ProductOptionId = pvo.ProductOptionId,
+                            OptionName = pvo.ProductOption.Name,
+                            ProductOptionValueId = pvo.ProductOptionValueId,
+                            Value = pvo.ProductOptionValue.Value
+                        })
+                        .ToList(),
 
-                finalPrice = product.Price - discountAmount.Value;
-            }
-            else if (activeDiscount.DiscountType == DiscountType.FixedAmount)
-            {
-                discountAmount = (long)activeDiscount.Value;
+                    Images = v.Images
+                        .OrderBy(i => i.SortOrder)
+                        .Select(i => new ViewProductImageDto
+                        {
+                            Id = i.Id,
+                            Url = i.ImageUrl,
+                            IsPrimary = i.IsPrimary,
+                            SortOrder = i.SortOrder
+                        })
+                        .ToList()
+                };
+            })
+            .ToList();
+        
+        var prices = variantDto
+            .Select(v => v.Price)
+            .ToList();
 
-                finalPrice = product.Price - discountAmount.Value;
-            }
-
-            if (finalPrice < 0)
-                finalPrice = 0;
-        }
-
-
+        var finalPrices = variantDto
+            .Select(v => v.FinalPrice)
+            .ToList();
+        
         return new ViewProductItemDto
         {
             Id = product.Id,
             Title = product.Title,
             Description = product.Description,
-
-            Price = product.Price,
-            FinalPrice = finalPrice,
-
-            DiscountType = discountType,
-            DiscountPercentage = discountPercentage,
-            DiscountAmount = discountAmount,
-
-            Category = product.Category.Title,
             Brand = product.Brand?.Title ?? "بدون برند",
+            Category = product.Category.Title,
+            
+            MinPrice = prices.DefaultIfEmpty(0).Min(),
+            MaxPrice = prices.DefaultIfEmpty(0).Max(),
 
-            Stock = product.InventoryItem.AvailableQuantity,
-
-            Sku = product.Sku,
+            FinalMinPrice = finalPrices.DefaultIfEmpty(0).Min(),
+            FinalMaxPrice = finalPrices.DefaultIfEmpty(0).Max(),
+            
+            Stock = variants
+                .Sum(v => v.InventoryItem?.AvailableQuantity ?? 0),
 
             Images = product.Images
-                .OrderBy(x => x.SortOrder)
-                .Select(x => x.ImageLink)
+                .OrderBy(pi => pi.SortOrder)
+                .Select(pi => new ViewProductImageDto
+                {
+                    Id = pi.Id,
+                    IsPrimary = pi.IsPrimary,
+                    SortOrder = pi.SortOrder,
+                    Url = pi.ImageLink
+                })
                 .ToList(),
 
-            Rating = rating,
-            ReviewCount = reviewCount
+            Rating = product.Reviews
+                .Where(r =>
+                    !r.IsDeleted &&
+                    r.ReviewStatus == ReviewStatus.Approved)
+                .Select(r => (decimal?)r.StarsCount)
+                .Average() ?? 0,
+
+            ReviewCount = product.Reviews
+                .Count(r =>
+                    !r.IsDeleted &&
+                    r.ReviewStatus == ReviewStatus.Approved),
+
+            Options = product.Options
+                .Select(o => new ViewProductOptionDto
+                {
+                    Id = o.Id,
+                    Name = o.Name,
+
+                    Values = o.Values
+                        .Select(pov => new ViewProductOptionValueDto
+                        {
+                            Id = pov.Id,
+                            Value = pov.Value
+                        })
+                        .ToList()
+                })
+                .ToList(),
+
+            Variants = variantDto
         };
     }
 
     public async Task<string> EditProductAsync(EditProductDto dto)
     {
         if (dto.Title is null &&
-            dto.Description is null &&
-            dto.DiscountPercentage is null &&
-            dto.DiscountPercentage is null)
+            dto.Description is null)
             throw new BusinessException("برای ویرایش محصول، حداقل یک فیلد را تغییر دهید .");
 
         int attempt = 0;
@@ -310,7 +417,7 @@ public class ProductService : ProductServicesContract
 
             try
             {
-                product.Edit(dto.Title, dto.Description, dto.Price, dto.DiscountPercentage);
+                product.Edit(dto.Title, dto.Description);
 
                 await _unitOfWorkContract.SaveAsync();
                 return "محصول با موفقیت تغییر کرد";
@@ -393,6 +500,52 @@ public class ProductService : ProductServicesContract
         }
 
         throw new InvalidOperationException("خطای ناشناخته");
+    }
+
+    private static PriceCalculationResult CalculatePrice(long price, Domain.Entities.Discount? discount)
+    {
+        if (discount is null)
+        {
+            return new PriceCalculationResult(
+                FinalPrice: price,
+                DiscountAmount: null,
+                DiscountPercentage: null,
+                DiscountType: null);
+        }
+
+        long discountAmount = 0;
+        decimal? discountPercentage = null;
+
+        if (discount.DiscountType == DiscountType.Percentage)
+        {
+            discountPercentage = discount.Value;
+
+            var calculatedDiscount =
+                price * (discount.Value / 100);
+
+            if (discount.MaxDiscountAmount.HasValue)
+            {
+                calculatedDiscount = Math.Min(
+                    calculatedDiscount,
+                    discount.MaxDiscountAmount.Value);
+            }
+
+            discountAmount = (long)calculatedDiscount;
+        }
+        else if (discount.DiscountType == DiscountType.FixedAmount)
+        {
+            discountAmount = (long)discount.Value;
+        }
+
+        var finalPrice = Math.Max(
+            0,
+            price - discountAmount);
+
+        return new PriceCalculationResult(
+            FinalPrice: finalPrice,
+            DiscountAmount: discountAmount,
+            DiscountPercentage: discountPercentage,
+            DiscountType: discount.DiscountType);
     }
 
     #endregion
@@ -752,6 +905,59 @@ public class ProductService : ProductServicesContract
         await _unitOfWorkContract.SaveAsync();
 
         return "نظر شما با موفقیت ثبت شد";
+    }
+
+    #endregion
+
+    #region Variant
+
+    public async Task<string> EditProductVariantAsync(EditProductVariantDto dto)
+    {
+        if (dto.Sku is null &&
+            dto.Price is null)
+        {
+            throw new BusinessException(
+                "برای ویرایش Variant، حداقل یک فیلد را تغییر دهید.");
+        }
+
+        int attempt = 0;
+        const int maxAttempts = 5;
+
+        while (attempt < maxAttempts)
+        {
+            var variant =
+                await _productRepositoryContract.GetProductVariantByIdAsync(dto.Id);
+
+            if (variant is null)
+                throw new NotFoundException(
+                    "Variant یافت نشد!");
+
+            try
+            {
+                variant.Edit(
+                    dto.Sku,
+                    dto.Price);
+
+                await _unitOfWorkContract.SaveAsync();
+
+                return "Variant با موفقیت تغییر کرد";
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                attempt++;
+
+                _unitOfWorkContract.ClearChangeTracker();
+
+                if (attempt == maxAttempts)
+                {
+                    throw new ConflictException(
+                        "Variant در حال تغییر است. لطفاً دوباره تلاش کنید.");
+                }
+            }
+        }
+
+        throw new InvalidOperationException(
+            "خطای ناشناخته");
     }
 
     #endregion

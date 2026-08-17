@@ -51,7 +51,7 @@ public class WishlistService : WishlistServiceContract
                     .Select(i => i.ImageLink)
                     .FirstOrDefault(),
                 AddedAt = wi.AddedAt,
-                Price = wi.Product.Price
+                Price = wi.Product.Variants.Select(pv => pv.Price).Min()
             }).ToList()
         };
         return dto;
@@ -128,6 +128,7 @@ public class WishlistService : WishlistServiceContract
 
         return "محصول با موفقیت از علاقه‌مندی‌ها حذف شد.";
     }
+
     public async Task<string> ClearWishListAsync()
     {
         var userId = _userContext.UserId
