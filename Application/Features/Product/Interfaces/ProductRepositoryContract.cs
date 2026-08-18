@@ -6,7 +6,7 @@ namespace Application.Features.Product.Interfaces;
 public interface ProductRepositoryContract
 {
     #region Product
-    
+
     Task<List<Domain.Entities.Product>> GetAllProducts();
     Task<List<Domain.Entities.Product>?> GetProductList(ProductQueryDto query);
     Task<bool> IsExistingProduct(string productName);
@@ -17,8 +17,7 @@ public interface ProductRepositoryContract
     Task<List<Domain.Entities.Product>> GetProductsWithDiscountByIdsAsync(List<Guid> productIds);
     Task<List<Domain.Entities.Product>> GetDiscountedProducts();
     Task<List<Domain.Entities.Product>> GetNewestProducts();
-    
-    
+
     #endregion
 
     #region Category
@@ -30,15 +29,23 @@ public interface ProductRepositoryContract
     Task<List<ProductCategory>?> SearchProductCategoriesWithTitle(string dtoTitle);
 
     #endregion
-    
+
     #region Brand
-    
+
     Task<List<ProductBrand>> GetAllBrandAsync();
     Task<bool> IsExistingBrand(string dtoTitle);
     Task AddBrandAsync(ProductBrand brand);
     Task<ProductBrand?> GetProductBrandById(Guid productBrandId);
     Task<List<ProductBrand>?> SearchProductBrandsWithTitle(string dtoTitle);
+
     #endregion
 
+    #region Variant
+    
+    Task AddProductVariantAsync(ProductVariant variant);
+    Task<ProductVariant?> GetProductVariantByIdAsync(Guid dtoId);
+    Task<List<Domain.Entities.ProductVariant>?> GetVariantsWithDiscountAsync(List<Guid> productVariantIds);
+
+    #endregion
 
 }

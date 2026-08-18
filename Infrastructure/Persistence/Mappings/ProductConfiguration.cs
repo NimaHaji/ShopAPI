@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Infrastructure.Persistence.Mappings;
 
-public class ProductMapping : IEntityTypeConfiguration<Product>
+public class ProductConfiguration : IEntityTypeConfiguration<Product>
 {
     public void Configure(EntityTypeBuilder<Product> builder)
     {
@@ -23,53 +23,59 @@ public class ProductMapping : IEntityTypeConfiguration<Product>
             .IsRequired();
 
         builder
-            .Property(p => p.Price)
+            .Property(p => p.AddedAt)
             .IsRequired();
 
         builder
-            .Property(p=>p.AddedAt)
-            .IsRequired();
-        
-        builder
-            .Property(p=>p.IsDeleted)
+            .Property(p => p.IsDeleted)
             .IsRequired();
 
         builder
             .Property(p => p.DeletedAt);
-        
+
         builder
-            .Property(p=>p.RowVersion)
+            .Property(p => p.RowVersion)
             .IsRowVersion()
             .IsConcurrencyToken();
-        
+
         builder
-            .Property(p=>p.UpdatedAt)
+            .Property(p => p.UpdatedAt)
             .IsRequired();
-        
-        builder
-            .Property(p=>p.Sku)
-            .IsRequired();
-        
+
         builder
             .HasOne(p => p.Category)
             .WithMany(p => p.Products)
-            .HasForeignKey(f => f.CategoryId);
+            .HasForeignKey(f => f.CategoryId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         builder
             .HasOne(p => p.Brand)
             .WithMany(b => b.Products)
-            .HasForeignKey(f => f.BrandId);
+            .HasForeignKey(f => f.BrandId)
+            .OnDelete(DeleteBehavior.SetNull);
 
-        builder.HasOne(x => x.InventoryItem)
+        builder.HasMany(x => x.Options)
             .WithOne(x => x.Product)
-            .HasForeignKey<InventoryItem>(x => x.ProductId);
-        
+            .HasForeignKey(x => x.ProductId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasMany(x => x.Variants)
+            .WithOne(x => x.Product)
+            .HasForeignKey(x => x.ProductId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasIndex(x => x.CategoryId);
+
+        builder.HasIndex(x => x.BrandId);
+
+        builder.HasIndex(x => new
+        {
+            x.IsDeleted,
+            x.AddedAt
+        });
+
         builder.HasMany(p => p.Images)
             .WithOne(p => p.Product)
             .HasForeignKey(p => p.ProductId);
-        
-        builder
-            .HasIndex(p => p.Sku)
-            .IsUnique();
     }
 }

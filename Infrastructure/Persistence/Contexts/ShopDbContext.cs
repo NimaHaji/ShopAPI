@@ -13,6 +13,11 @@ public class ShopDbContext : DbContext
     }
 
     public DbSet<Product> Products { get; set; }
+    public DbSet<ProductVariant> Variants { get; set; }
+    public DbSet<ProductVariantOption> ProductVariantOptions { get; set; }
+    public DbSet<ProductVariantImage> ProductVariantImages { get; set; }
+    public DbSet<ProductOption> ProductOptions { get; set; }
+    public DbSet<ProductOptionValue> ProductOptionValues { get; set; }
     public DbSet<ProductCategory> ProductCategories { get; set; }
     public DbSet<ProductBrand> ProductBrands { get; set; }
     public DbSet<Payment> Payments { get; set; }
@@ -29,13 +34,14 @@ public class ShopDbContext : DbContext
     public DbSet<WishlistItem> WishlistsItems { get; set; }
     public DbSet<Discount> Discounts { get; set; }
     public DbSet<DiscountProduct> DiscountProducts { get; set; }
+    public DbSet<DiscountVariant> DiscountVariants { get; set; }
     public DbSet<Coupon> Coupons { get; set; }
     public DbSet<CouponUsage> CouponUsages { get; set; }
     public DbSet<Address> Addresses { get; set; }
     public DbSet<IdempotencyKey> IdempotencyKeys { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        var assembly = Assembly.GetAssembly(typeof(ProductMapping));
+        var assembly = Assembly.GetAssembly(typeof(ProductConfiguration));
         modelBuilder.ApplyConfigurationsFromAssembly(assembly);
         base.OnModelCreating(modelBuilder);
     }

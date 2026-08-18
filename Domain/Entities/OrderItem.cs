@@ -7,6 +7,7 @@ public class OrderItem
     public Guid Id { get; private set; }
 
     public Guid ProductId { get; private set; }
+    public Guid ProductVariantId { get; private set; }
     public string ProductTitle { get; private set; } = null!;
 
     public long UnitPrice { get; private set; }
@@ -22,6 +23,7 @@ public class OrderItem
 
     public OrderItem(
         Guid productId,
+        Guid productVariantId,
         Guid orderId,
         int quantity,
         long unitPrice,
@@ -30,6 +32,9 @@ public class OrderItem
         string productTitle)
     {
         if (productId == Guid.Empty)
+            throw new BusinessException("شناسه محصول نامعتبر است.");
+
+        if (productVariantId == Guid.Empty)
             throw new BusinessException("شناسه محصول نامعتبر است.");
 
         if (orderId == Guid.Empty)
@@ -49,6 +54,7 @@ public class OrderItem
 
         Id = Guid.NewGuid();
         ProductId = productId;
+        ProductVariantId = productVariantId;
         OrderId = orderId;
         Quantity = quantity;
         UnitPrice = unitPrice;

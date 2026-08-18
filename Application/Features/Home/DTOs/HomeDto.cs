@@ -14,8 +14,10 @@ public class HomeNewestProducts
 {
     public Guid Id { get; set; }
     public string Title { get; set; } = null!;
-    public long Price { get; set; }
-    public long FinalPrice { get; set; }
+    public long MinPrice { get; set; }
+    public long MaxPrice { get; set; }
+    public long FinalMinPrice { get; set; }
+    public long FinalMaxPrice { get; set; }
     public string? DiscountType { get; set; }
     public decimal? DiscountPercentage { get; set; }
     public long? DiscountAmount { get; set; }
@@ -32,10 +34,12 @@ public class HomeBrandsDto
 public class HomeProductOffersDto
 {
     public Guid Id { get; set; }
-    public string Title { get; set; } = null!;
-    public long Price { get; set; }
-    public long FinalPrice { get; set; }
-    public string? DiscountType { get; set; }
+    public string Title { get; set; }
+    public long MinPrice { get; set; }
+    public long MaxPrice { get; set; }
+    public long FinalMinPrice { get; set; }
+    public long FinalMaxPrice { get; set; }
+    public DiscountType? DiscountType { get; set; }
     public decimal? DiscountPercentage { get; set; }
     public long? DiscountAmount { get; set; }
     public string? ProductImage { get; set; }

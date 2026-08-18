@@ -5,11 +5,11 @@ namespace Application.Features.Inventory.Interfaces;
 public interface InventoryServiceContract
 {
     public Task<List<ViewInventoryItemDto>> GetAllInventoryAsync();
-    public Task<ViewInventoryItemDto> GetInventoryByProductIdAsync(Guid productId);
-    public Task<ViewInventoryItemDto> ReserveStockAsync(Guid productId, int quantity, string orderReference);
+    public Task<ViewInventoryItemDto> GetInventoryByProductVariantIdAsync(Guid productVariantId);
+    public Task<ViewInventoryItemDto> ReserveStockAsync(Guid productVariantId, int quantity, string orderReference);
     public Task ReserveAllItemStockAsync(List<Domain.Entities.CartItem> items);
-    public Task<ViewInventoryItemDto> ConfirmReservationAsync(Guid productId, int quantity, string orderReference);
-    public Task<ViewInventoryItemDto> CancelReservationAsync(Guid productId, int quantity, string orderReference);
-    public Task<ViewInventoryItemDto> AddStockAsync(Guid productId, int quantity, string description);
+    public Task<ViewInventoryItemDto> ConfirmReservationAsync(Guid productVariantId, int quantity, string orderReference);
+    public Task<ViewInventoryItemDto> CancelReservationAsync(Guid productVariantId, int quantity, string orderReference);
+    public Task<ViewInventoryItemDto> AddStockAsync(Guid productVariantId, int quantity, string description);
     
 }

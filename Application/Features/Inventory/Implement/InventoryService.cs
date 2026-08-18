@@ -11,32 +11,29 @@ namespace Application.Features.Inventory.Implement;
 public class InventoryService : InventoryServiceContract
 {
     private readonly InventoryRepositoryContract _inventoryRepositoryContract;
-    private readonly InventoryTransactionRepositoryContract _inventoryTransactionRepositoryContract;
     private readonly UnitOfWorkContract _unitOfWorkContract;
     private readonly InventoryTransactionRepositoryContract _repositoryTransactionContract;
 
     public InventoryService(
         InventoryRepositoryContract inventoryRepositoryContract,
-        UnitOfWorkContract unitOfWorkContract, InventoryTransactionRepositoryContract repositoryTransactionContract,
-        InventoryTransactionRepositoryContract inventoryTransactionRepositoryContract)
+        UnitOfWorkContract unitOfWorkContract, InventoryTransactionRepositoryContract repositoryTransactionContract)
     {
         _inventoryRepositoryContract = inventoryRepositoryContract;
         _unitOfWorkContract = unitOfWorkContract;
         _repositoryTransactionContract = repositoryTransactionContract;
-        _inventoryTransactionRepositoryContract = inventoryTransactionRepositoryContract;
     }
 
-    public async Task<ViewInventoryItemDto> GetInventoryByProductIdAsync(Guid productId)
+    public async Task<ViewInventoryItemDto> GetInventoryByProductVariantIdAsync(Guid productVariantId)
     {
-        var inventory = await _inventoryRepositoryContract.GetByProductIdAsync(productId);
+        var inventory = await _inventoryRepositoryContract.GetByProductVariantIdAsync(productVariantId);
 
         if (inventory == null)
-            throw new NotFoundException($"موجودی برای {productId}پیدا نشد");
+            throw new NotFoundException($"موجودی برای {productVariantId}پیدا نشد");
 
         return MapToDto(inventory);
     }
 
-    public async Task<ViewInventoryItemDto> ReserveStockAsync(Guid productId, int quantity, string orderReference)
+    public async Task<ViewInventoryItemDto> ReserveStockAsync(Guid productVariantId, int quantity, string orderReference)
     {
         // Todo : Concurrency fix 
         const int maxRetries = 3;
@@ -45,20 +42,20 @@ public class InventoryService : InventoryServiceContract
         {
             try
             {
-                var inventory = await _inventoryRepositoryContract.GetByProductId(productId);
+                var inventory = await _inventoryRepositoryContract.GetByProductVariantId(productVariantId);
 
                 if (inventory == null)
-                    throw new NotFoundException($"موجودی برای {productId} پیدا نشد");
+                    throw new NotFoundException($"موجودی برای {productVariantId} پیدا نشد");
 
                 if (inventory.StockQuantity - inventory.ReservedQuantity < quantity)
-                    throw new InsufficientStockException($"موجودی ناکافی برای محصول {productId}");
+                    throw new InsufficientStockException($"موجودی ناکافی برای محصول {productVariantId}");
 
                 var transaction = new Domain.Entities.InventoryTransaction(
                     inventoryItemId: inventory.InventoryId,
                     transactionType: TransactionType.Reservation,
                     quantity: quantity,
                     reference: orderReference,
-                    description: $"محصول {productId} با شماره سفارش {orderReference} رزرو شد"
+                    description: $"محصول {productVariantId} با شماره سفارش {orderReference} رزرو شد"
                 );
 
                 inventory.Reserve(quantity);
@@ -84,21 +81,22 @@ public class InventoryService : InventoryServiceContract
 
     public async Task ReserveAllItemStockAsync(List<Domain.Entities.CartItem> items)
     {
-        var productIds = items.Select(i => i.ProductId).Distinct().ToList();
-        var inventories = await _inventoryRepositoryContract.GetByProductIdsAsync(productIds);
+        var productVariantIds = items.Select(i => i.ProductVariantId).Distinct().ToList();
+        
+        var inventories = await _inventoryRepositoryContract.GetByProductVariantIdsAsync(productVariantIds);
 
         foreach (var item in items)
         {
-            var inventory = inventories?.SingleOrDefault(x => x.ProductId == item.ProductId);
+            var inventory = inventories?.SingleOrDefault(x => x.ProductVariantId == item.ProductVariantId);
             if (inventory is null)
-                throw new NotFoundException("موجودی محصوب پیدا نشد");
+                throw new NotFoundException("موجودی محصول پیدا نشد");
 
             var transaction = new Domain.Entities.InventoryTransaction(
                 inventoryItemId: inventory.InventoryId,
                 transactionType: TransactionType.Reservation,
                 quantity: item.Quantity,
                 reference: "رزرو",
-                description: $"محصول {item.ProductId} رزرو شد"
+                description: $"محصول {item.ProductVariantId} رزرو شد"
             );
 
             inventory.Reserve(item.Quantity);
@@ -106,12 +104,12 @@ public class InventoryService : InventoryServiceContract
         }
     }
 
-    public async Task<ViewInventoryItemDto> ConfirmReservationAsync(Guid productId, int quantity, string orderReference)
+    public async Task<ViewInventoryItemDto> ConfirmReservationAsync(Guid productVariantId, int quantity, string orderReference)
     {
-        var inventory = await _inventoryRepositoryContract.GetByProductId(productId);
+        var inventory = await _inventoryRepositoryContract.GetByProductVariantId(productVariantId);
 
         if (inventory == null)
-            throw new NotFoundException($"محصول {productId} یافت نشد ");
+            throw new NotFoundException($"محصول {productVariantId} یافت نشد ");
 
         if (inventory.ReservedQuantity < quantity)
             throw new InvalidOperationException(
@@ -122,7 +120,7 @@ public class InventoryService : InventoryServiceContract
             transactionType: TransactionType.Confirmation,
             quantity: quantity,
             reference: orderReference,
-            description: $"محصول {productId} با شماره سفارش {orderReference} قبول شد"
+            description: $"محصول {productVariantId} با شماره سفارش {orderReference} قبول شد"
         );
 
         inventory.CommitReserve(quantity);
@@ -133,12 +131,12 @@ public class InventoryService : InventoryServiceContract
         return MapToDto(inventory);
     }
 
-    public async Task<ViewInventoryItemDto> CancelReservationAsync(Guid productId, int quantity, string orderReference)
+    public async Task<ViewInventoryItemDto> CancelReservationAsync(Guid productVariantId, int quantity, string orderReference)
     {
-        var inventory = await _inventoryRepositoryContract.GetByProductId(productId);
+        var inventory = await _inventoryRepositoryContract.GetByProductVariantId(productVariantId);
 
         if (inventory == null)
-            throw new NotFoundException($"محصول {productId} یافت نشد ");
+            throw new NotFoundException($"محصول {productVariantId} یافت نشد ");
 
         if (inventory.ReservedQuantity < quantity)
             throw new InvalidOperationException(
@@ -149,7 +147,7 @@ public class InventoryService : InventoryServiceContract
             transactionType: TransactionType.Cancellation,
             quantity: quantity,
             reference: orderReference,
-            description: $"محصول {productId} با شماره سفارش {orderReference} کنسل شد"
+            description: $"محصول {productVariantId} با شماره سفارش {orderReference} کنسل شد"
         );
 
         inventory.CancelReserve(quantity);
@@ -160,14 +158,14 @@ public class InventoryService : InventoryServiceContract
         return MapToDto(inventory);
     }
 
-    public async Task<ViewInventoryItemDto> AddStockAsync(Guid productId, int quantity, string description)
+    public async Task<ViewInventoryItemDto> AddStockAsync(Guid productVariantId, int quantity, string description)
     {
-        var inventory = await _inventoryRepositoryContract.GetByProductId(productId);
+        var inventory = await _inventoryRepositoryContract.GetByProductVariantId(productVariantId);
 
         if (inventory == null)
         {
             inventory = new InventoryItem(
-                productId: productId,
+                productVariantId: productVariantId,
                 stockQuantity: 0,
                 reservedQuantity: 0
             );
@@ -196,23 +194,51 @@ public class InventoryService : InventoryServiceContract
 
     private ViewInventoryItemDto MapToDto(InventoryItem item)
     {
+        var variant = item.ProductVariant;
+
         return new ViewInventoryItemDto
         {
             InventoryId = item.InventoryId,
-            ProductId = item.ProductId,
-            ProductName = item.Product?.Title,
+
+            ProductVariantId = item.ProductVariantId,
+
+            ProductId = variant.ProductId,
+
+            ProductTitle = variant.Product.Title,
+
+            VariantSku = variant.Sku,
+
+            Price = variant.Price,
+
             StockQuantity = item.StockQuantity,
+
             ReservedQuantity = item.ReservedQuantity,
-            AvailableQuantity = item.StockQuantity - item.ReservedQuantity,
+
+            AvailableQuantity = item.AvailableQuantity,
+
             LastUpdated = item.LastUpdated,
-            RecentTransactions = item.Transactions?.Take(10).Select(t => new ViewTransactionDto
-            {
-                Id = t.InventoryTransactionId,
-                Type = t.Type.ToString(),
-                Quantity = t.Quantity,
-                Description = t.Description,
-                CreatedAt = t.CreatedAt
-            }).ToList()
+
+            Options = variant.Options
+                .Select(option => new ViewInventoryVariantOptionDto
+                {
+                    Name = option.ProductOption.Name,
+
+                    Value = option.ProductOptionValue.Value
+                })
+                .ToList(),
+
+            RecentTransactions = item.Transactions
+                .OrderByDescending(t => t.CreatedAt)
+                .Take(10)
+                .Select(t => new ViewTransactionDto
+                {
+                    Id = t.InventoryTransactionId,
+                    Type = t.Type.ToString(),
+                    Quantity = t.Quantity,
+                    Description = t.Description,
+                    CreatedAt = t.CreatedAt
+                })
+                .ToList()
         };
     }
 }

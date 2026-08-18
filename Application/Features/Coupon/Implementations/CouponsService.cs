@@ -225,14 +225,85 @@ public class CouponService : CouponsServiceContract
                 "نمی‌توانید بیش از حد مجاز از این کد تخفیف استفاده کنید.");
         }
 
-        var userCart = await _cartRepositoryContract
-            .GetCartByUserIdAsync(userId);
+        var cart = await _cartRepositoryContract
+            .GetCartWithProductsByUserIdAsync(userId);
 
-        if (userCart is null || !userCart.CartItems.Any())
+        if (cart is null || !cart.CartItems.Any())
             throw new NotFoundException(
                 "سبد خریدی برای کاربر یافت نشد.");
 
-        var cartTotalPrice = userCart.CartItems.Sum(item => item.Product.Price * item.Quantity);
+        // مبلغ کالاها بعد از تخفیف Product/Variant
+        long cartTotalPrice = 0;
+
+        foreach (var item in cart.CartItems)
+        {
+            var variant = item.ProductVariant;
+
+            if (variant is null)
+                throw new NotFoundException(
+                    "Variant محصول یافت نشد.");
+
+            if (variant.IsDeleted)
+                throw new BusinessException(
+                    "یکی از Variantهای سبد خرید دیگر قابل خرید نیست.");
+
+            var unitPrice = variant.Price;
+
+            var variantDiscount = variant.DiscountVariants
+                .Select(dv => dv.Discount)
+                .FirstOrDefault(d =>
+                    !d.IsDeleted &&
+                    d.IsActive &&
+                    d.StartsAt <= now &&
+                    d.EndsAt > now);
+
+            var productDiscount = variant.Product
+                .DiscountProducts
+                .Select(dp => dp.Discount)
+                .FirstOrDefault(d =>
+                    !d.IsDeleted &&
+                    d.IsActive &&
+                    d.StartsAt <= now &&
+                    d.EndsAt > now);
+
+            // Variant Discount اولویت دارد
+            var activeDiscount =
+                variantDiscount ?? productDiscount;
+
+            long discountAmount = 0;
+
+            if (activeDiscount is not null)
+            {
+                if (activeDiscount.DiscountType ==
+                    DiscountType.Percentage)
+                {
+                    discountAmount = (long)(
+                        unitPrice *
+                        activeDiscount.Value /
+                        100);
+
+                    if (activeDiscount.MaxDiscountAmount.HasValue)
+                    {
+                        discountAmount = Math.Min(
+                            discountAmount,
+                            (long)activeDiscount.MaxDiscountAmount.Value);
+                    }
+                }
+                else if (activeDiscount.DiscountType ==
+                         DiscountType.FixedAmount)
+                {
+                    discountAmount = Math.Min(
+                        (long)activeDiscount.Value,
+                        unitPrice);
+                }
+            }
+
+            var finalUnitPrice =
+                Math.Max(0, unitPrice - discountAmount);
+
+            cartTotalPrice +=
+                finalUnitPrice * item.Quantity;
+        }
 
         if (coupon.MinimumOrderAmount.HasValue &&
             cartTotalPrice < coupon.MinimumOrderAmount.Value)
@@ -242,15 +313,20 @@ public class CouponService : CouponsServiceContract
                 $"{coupon.MinimumOrderAmount.Value:N0} است.");
         }
 
-        long discountAmount;
+        long discountAmountByCoupon;
 
         if (coupon.DiscountType == DiscountType.Percentage)
         {
-            discountAmount = (long)(cartTotalPrice * coupon.Value / 100);
+            discountAmountByCoupon = (long)(
+                cartTotalPrice *
+                coupon.Value /
+                100);
         }
-        else if (coupon.DiscountType == DiscountType.FixedAmount)
+        else if (coupon.DiscountType ==
+                 DiscountType.FixedAmount)
         {
-            discountAmount = (long)coupon.Value;
+            discountAmountByCoupon =
+                (long)coupon.Value;
         }
         else
         {
@@ -258,22 +334,25 @@ public class CouponService : CouponsServiceContract
                 "نوع تخفیف نامعتبر است.");
         }
 
-        if (coupon.MaxDiscountAmount.HasValue &&
-            discountAmount > coupon.MaxDiscountAmount.Value)
+        if (coupon.MaxDiscountAmount.HasValue)
         {
-            discountAmount = (long)coupon.MaxDiscountAmount.Value;
+            discountAmountByCoupon = Math.Min(
+                discountAmountByCoupon,
+                (long)coupon.MaxDiscountAmount.Value);
         }
 
-        if (discountAmount > cartTotalPrice)
-            discountAmount = cartTotalPrice;
+        discountAmountByCoupon = Math.Min(
+            discountAmountByCoupon,
+            cartTotalPrice);
 
-        var finalPrice = cartTotalPrice - discountAmount;
+        var finalPrice =
+            cartTotalPrice - discountAmountByCoupon;
 
         return new ValidateCouponResponseDto
         {
             CouponId = coupon.Id,
             Code = coupon.Code,
-            DiscountAmount = discountAmount,
+            DiscountAmount = discountAmountByCoupon,
             CartTotalPrice = cartTotalPrice,
             FinalPrice = finalPrice
         };

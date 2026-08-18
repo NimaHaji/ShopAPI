@@ -17,6 +17,7 @@ using Application.Features.Payment.Interfaces;
 using Application.Features.Product.Interfaces;
 using Application.Features.Review.interfaces;
 using Application.Features.Wishlist.Interfaces;
+using Domain.Entities;
 using Domain.Services;
 using Infrastructure.Email;
 using Infrastructure.Persistence;
@@ -56,6 +57,7 @@ public static class InfrastructureServices
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IPasswordHasher, IdentityPasswordHasher>();
+        services.AddScoped<IHasher, Sha256Hasher>();
         services.AddScoped<IUSerContext, UserContext>();
         services.AddScoped<InventoryRepositoryContract, InventoryRepository>();
         services.AddScoped<InventoryTransactionRepositoryContract, InventoryTransactionRepository>();
@@ -74,6 +76,17 @@ public static class InfrastructureServices
         services.AddScoped<CouponUsageRepositoryContract, CouponUsageRepository>();
         services.AddScoped<AddressRepositoryContract, AddressRepository>();
         services.AddScoped<IdempotencyRepositoryContract,IdempotencyRepository>();
+        services.AddScoped<JsonSeedReader>();
+        services.AddScoped<CategorySeeder>();
+        services.AddScoped<BrandSeeder>();
+        services.AddScoped<ProductSeeder>();
+        services.AddScoped<DiscountSeeder>();
+        services.AddScoped<CouponSeeder>();
+        services.AddScoped<UserSeeder>();
+        services.AddScoped<ReviewSeeder>();
+        services.AddScoped<CartSeeder>();
+        services.AddScoped<WishlistSeeder>();
+        services.AddScoped<OrderSeeder>();
         
         return services;
     }

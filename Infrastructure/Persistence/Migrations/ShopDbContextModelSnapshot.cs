@@ -113,7 +113,7 @@ namespace Infrastructure.Migrations
                     b.Property<Guid>("CartId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("ProductId")
+                    b.Property<Guid>("ProductVariantId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<int>("Quantity")
@@ -123,9 +123,9 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("CartId");
 
-                    b.HasIndex("ProductId");
+                    b.HasIndex("ProductVariantId");
 
-                    b.HasIndex("CartId", "ProductId")
+                    b.HasIndex("CartId", "ProductVariantId")
                         .IsUnique();
 
                     b.ToTable("CartItems", (string)null);
@@ -270,6 +270,8 @@ namespace Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("IsActive", "IsDeleted", "StartsAt", "EndsAt");
+
                     b.ToTable("Discounts", (string)null);
                 });
 
@@ -289,6 +291,21 @@ namespace Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("DiscountProducts", (string)null);
+                });
+
+            modelBuilder.Entity("Domain.Entities.DiscountVariant", b =>
+                {
+                    b.Property<Guid>("DiscountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ProductVariantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("DiscountId", "ProductVariantId");
+
+                    b.HasIndex("ProductVariantId");
+
+                    b.ToTable("DiscountVariants", (string)null);
                 });
 
             modelBuilder.Entity("Domain.Entities.IdempotencyKey", b =>
@@ -335,9 +352,12 @@ namespace Infrastructure.Migrations
                     b.Property<DateTime>("LastUpdated")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid>("ProductId")
+                    b.Property<Guid>("ProductVariantId")
                         .HasColumnType("uniqueidentifier")
-                        .HasColumnName("ProductId");
+                        .HasColumnName("ProductVariantId");
+
+                    b.Property<Guid?>("ProductVariantId1")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<int>("ReservedQuantity")
                         .ValueGeneratedOnAdd()
@@ -359,8 +379,12 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("LastUpdated");
 
-                    b.HasIndex("ProductId")
+                    b.HasIndex("ProductVariantId")
                         .IsUnique();
+
+                    b.HasIndex("ProductVariantId1")
+                        .IsUnique()
+                        .HasFilter("[ProductVariantId1] IS NOT NULL");
 
                     b.ToTable("InventoryItems", "dbo");
                 });
@@ -489,6 +513,9 @@ namespace Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<Guid>("ProductVariantId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<int>("Quantity")
                         .HasColumnType("int");
 
@@ -603,18 +630,11 @@ namespace Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
-                    b.Property<long>("Price")
-                        .HasColumnType("bigint");
-
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
                         .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("rowversion");
-
-                    b.Property<string>("Sku")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -630,8 +650,7 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("CategoryId");
 
-                    b.HasIndex("Sku")
-                        .IsUnique();
+                    b.HasIndex("IsDeleted", "AddedAt");
 
                     b.ToTable("Products", (string)null);
                 });
@@ -716,6 +735,145 @@ namespace Infrastructure.Migrations
                     b.HasIndex("ProductId");
 
                     b.ToTable("ProductImages", (string)null);
+                });
+
+            modelBuilder.Entity("Domain.Entities.ProductOption", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId", "Name")
+                        .IsUnique();
+
+                    b.ToTable("ProductOptions", (string)null);
+                });
+
+            modelBuilder.Entity("Domain.Entities.ProductOptionValue", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ProductOptionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductOptionId", "Value")
+                        .IsUnique();
+
+                    b.ToTable("ProductOptionValues", (string)null);
+                });
+
+            modelBuilder.Entity("Domain.Entities.ProductVariant", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("AddedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<long>("Price")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Sku")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Sku")
+                        .IsUnique();
+
+                    b.HasIndex("ProductId", "IsDeleted");
+
+                    b.ToTable("ProductVariants", (string)null);
+                });
+
+            modelBuilder.Entity("Domain.Entities.ProductVariantImage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsPrimary")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("ProductVariantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductVariantId");
+
+                    b.ToTable("ProductVariantImages");
+                });
+
+            modelBuilder.Entity("Domain.Entities.ProductVariantOption", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ProductOptionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ProductOptionValueId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ProductVariantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductOptionId");
+
+                    b.HasIndex("ProductOptionValueId");
+
+                    b.HasIndex("ProductVariantId", "ProductOptionId")
+                        .IsUnique();
+
+                    b.HasIndex("ProductVariantId", "ProductOptionValueId")
+                        .IsUnique();
+
+                    b.ToTable("ProductVariantOptions", (string)null);
                 });
 
             modelBuilder.Entity("Domain.Entities.RefreshToken", b =>
@@ -920,15 +1078,15 @@ namespace Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Domain.Entities.Product", "Product")
+                    b.HasOne("Domain.Entities.ProductVariant", "ProductVariant")
                         .WithMany()
-                        .HasForeignKey("ProductId")
+                        .HasForeignKey("ProductVariantId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Cart");
 
-                    b.Navigation("Product");
+                    b.Navigation("ProductVariant");
                 });
 
             modelBuilder.Entity("Domain.Entities.CouponUsage", b =>
@@ -977,6 +1135,25 @@ namespace Infrastructure.Migrations
                     b.Navigation("Product");
                 });
 
+            modelBuilder.Entity("Domain.Entities.DiscountVariant", b =>
+                {
+                    b.HasOne("Domain.Entities.Discount", "Discount")
+                        .WithMany("DiscountVariants")
+                        .HasForeignKey("DiscountId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.ProductVariant", "ProductVariant")
+                        .WithMany("DiscountVariants")
+                        .HasForeignKey("ProductVariantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Discount");
+
+                    b.Navigation("ProductVariant");
+                });
+
             modelBuilder.Entity("Domain.Entities.IdempotencyKey", b =>
                 {
                     b.HasOne("Domain.Entities.User", "User")
@@ -990,13 +1167,17 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Domain.Entities.InventoryItem", b =>
                 {
-                    b.HasOne("Domain.Entities.Product", "Product")
-                        .WithOne("InventoryItem")
-                        .HasForeignKey("Domain.Entities.InventoryItem", "ProductId")
+                    b.HasOne("Domain.Entities.ProductVariant", "ProductVariant")
+                        .WithOne()
+                        .HasForeignKey("Domain.Entities.InventoryItem", "ProductVariantId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("Product");
+                    b.HasOne("Domain.Entities.ProductVariant", null)
+                        .WithOne("InventoryItem")
+                        .HasForeignKey("Domain.Entities.InventoryItem", "ProductVariantId1");
+
+                    b.Navigation("ProductVariant");
                 });
 
             modelBuilder.Entity("Domain.Entities.InventoryTransaction", b =>
@@ -1046,7 +1227,8 @@ namespace Infrastructure.Migrations
                 {
                     b.HasOne("Domain.Entities.ProductBrand", "Brand")
                         .WithMany("Products")
-                        .HasForeignKey("BrandId");
+                        .HasForeignKey("BrandId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("Domain.Entities.ProductCategory", "Category")
                         .WithMany("Products")
@@ -1068,6 +1250,77 @@ namespace Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("Domain.Entities.ProductOption", b =>
+                {
+                    b.HasOne("Domain.Entities.Product", "Product")
+                        .WithMany("Options")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("Domain.Entities.ProductOptionValue", b =>
+                {
+                    b.HasOne("Domain.Entities.ProductOption", "ProductOption")
+                        .WithMany("Values")
+                        .HasForeignKey("ProductOptionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ProductOption");
+                });
+
+            modelBuilder.Entity("Domain.Entities.ProductVariant", b =>
+                {
+                    b.HasOne("Domain.Entities.Product", "Product")
+                        .WithMany("Variants")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("Domain.Entities.ProductVariantImage", b =>
+                {
+                    b.HasOne("Domain.Entities.ProductVariant", "ProductVariant")
+                        .WithMany("Images")
+                        .HasForeignKey("ProductVariantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ProductVariant");
+                });
+
+            modelBuilder.Entity("Domain.Entities.ProductVariantOption", b =>
+                {
+                    b.HasOne("Domain.Entities.ProductOption", "ProductOption")
+                        .WithMany()
+                        .HasForeignKey("ProductOptionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.ProductOptionValue", "ProductOptionValue")
+                        .WithMany()
+                        .HasForeignKey("ProductOptionValueId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.ProductVariant", "ProductVariant")
+                        .WithMany("Options")
+                        .HasForeignKey("ProductVariantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ProductOption");
+
+                    b.Navigation("ProductOptionValue");
+
+                    b.Navigation("ProductVariant");
                 });
 
             modelBuilder.Entity("Domain.Entities.RefreshToken", b =>
@@ -1143,6 +1396,8 @@ namespace Infrastructure.Migrations
             modelBuilder.Entity("Domain.Entities.Discount", b =>
                 {
                     b.Navigation("DiscountProducts");
+
+                    b.Navigation("DiscountVariants");
                 });
 
             modelBuilder.Entity("Domain.Entities.InventoryItem", b =>
@@ -1163,10 +1418,11 @@ namespace Infrastructure.Migrations
 
                     b.Navigation("Images");
 
-                    b.Navigation("InventoryItem")
-                        .IsRequired();
+                    b.Navigation("Options");
 
                     b.Navigation("Reviews");
+
+                    b.Navigation("Variants");
                 });
 
             modelBuilder.Entity("Domain.Entities.ProductBrand", b =>
@@ -1177,6 +1433,23 @@ namespace Infrastructure.Migrations
             modelBuilder.Entity("Domain.Entities.ProductCategory", b =>
                 {
                     b.Navigation("Products");
+                });
+
+            modelBuilder.Entity("Domain.Entities.ProductOption", b =>
+                {
+                    b.Navigation("Values");
+                });
+
+            modelBuilder.Entity("Domain.Entities.ProductVariant", b =>
+                {
+                    b.Navigation("DiscountVariants");
+
+                    b.Navigation("Images");
+
+                    b.Navigation("InventoryItem")
+                        .IsRequired();
+
+                    b.Navigation("Options");
                 });
 
             modelBuilder.Entity("Domain.Entities.User", b =>

@@ -1,0 +1,14 @@
+[
+  {
+    "userKey": "user1",
+    "productKeys": ["macbook-pro", "sony-headphones", "chanel-coco"]
+  },
+  {
+    "userKey": "user2",
+    "productKeys": ["iphone-15", "calvin-dress", "annibale-bed"]
+  },
+  {
+    "userKey": "admin",
+    "productKeys": ["asus-zenbook"]
+  }
+]

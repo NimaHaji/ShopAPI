@@ -1,0 +1,26 @@
+[
+  {
+    "key": "welcome-10",
+    "code": "WELCOME10",
+    "discountType": "Percentage",
+    "value": 10,
+    "minimumOrderAmount": 1000000,
+    "maxDiscountAmount": 3000000,
+    "usageLimit": 100,
+    "userUsageLimit": 1,
+    "startsAt": "2025-01-01T00:00:00Z",
+    "endAt": "2027-12-31T23:59:59Z"
+  },
+  {
+    "key": "flat-500k",
+    "code": "FLAT500K",
+    "discountType": "FixedAmount",
+    "value": 500000,
+    "minimumOrderAmount": 5000000,
+    "maxDiscountAmount": null,
+    "usageLimit": 50,
+    "userUsageLimit": 2,
+    "startsAt": "2025-01-01T00:00:00Z",
+    "endAt": "2027-12-31T23:59:59Z"
+  }
+]

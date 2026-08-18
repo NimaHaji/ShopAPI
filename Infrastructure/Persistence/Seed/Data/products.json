@@ -1,0 +1,328 @@
+[
+  {
+    "key": "iphone-15",
+    "title": "آیفون ۱۵",
+    "description": "گوشی هوشمند اپل با چیپ A16 و دوربین پیشرفته",
+    "categoryKey": "smartphones",
+    "brandKey": "apple",
+    "images": [
+      { "url": "https://cdn.dummyjson.com/product-images/smartphones/iphone-15/1.webp", "isPrimary": true, "sortOrder": 0 },
+      { "url": "https://cdn.dummyjson.com/product-images/smartphones/iphone-15/2.webp", "isPrimary": false, "sortOrder": 1 }
+    ],
+    "options": [
+      { "name": "رنگ", "values": ["مشکی", "آبی"] },
+      { "name": "حافظه", "values": ["128GB", "256GB"] }
+    ],
+    "variants": [
+      {
+        "key": "iphone-15-black-128",
+        "price": 52000000,
+        "stock": 25,
+        "optionSelections": { "رنگ": "مشکی", "حافظه": "128GB" },
+        "images": []
+      },
+      {
+        "key": "iphone-15-blue-256",
+        "price": 58000000,
+        "stock": 15,
+        "optionSelections": { "رنگ": "آبی", "حافظه": "256GB" },
+        "images": []
+      }
+    ]
+  },
+  {
+    "key": "samsung-s24",
+    "title": "سامسونگ گلکسی S24",
+    "description": "گوشی پرچمدار سامسونگ با نمایشگر Dynamic AMOLED",
+    "categoryKey": "smartphones",
+    "brandKey": "samsung",
+    "images": [
+      { "url": "https://cdn.dummyjson.com/product-images/smartphones/galaxy-s24/1.webp", "isPrimary": true, "sortOrder": 0 }
+    ],
+    "options": [
+      { "name": "رنگ", "values": ["خاکستری", "بنفش"] }
+    ],
+    "variants": [
+      {
+        "key": "samsung-s24-gray",
+        "price": 45000000,
+        "stock": 30,
+        "optionSelections": { "رنگ": "خاکستری" },
+        "images": []
+      },
+      {
+        "key": "samsung-s24-purple",
+        "price": 45500000,
+        "stock": 20,
+        "optionSelections": { "رنگ": "بنفش" },
+        "images": []
+      }
+    ]
+  },
+  {
+    "key": "macbook-pro",
+    "title": "مک‌بوک پرو ۱۴ اینچ",
+    "description": "لپ‌تاپ حرفه‌ای اپل با پردازنده M3",
+    "categoryKey": "laptops",
+    "brandKey": "apple",
+    "images": [
+      { "url": "https://cdn.dummyjson.com/product-images/laptops/apple-macbook-pro-14-inch-space-grey/1.webp", "isPrimary": true, "sortOrder": 0 }
+    ],
+    "options": [],
+    "variants": [
+      {
+        "key": "macbook-pro-default",
+        "price": 95000000,
+        "stock": 10,
+        "optionSelections": {},
+        "images": []
+      }
+    ]
+  },
+  {
+    "key": "asus-zenbook",
+    "title": "ایسوس ZenBook 14",
+    "description": "لپ‌تاپ سبک و قدرتمند برای کار روزمره",
+    "categoryKey": "laptops",
+    "brandKey": "asus",
+    "images": [
+      { "url": "https://cdn.dummyjson.com/product-images/laptops/asus-zenbook-14/1.webp", "isPrimary": true, "sortOrder": 0 }
+    ],
+    "options": [],
+    "variants": [
+      {
+        "key": "asus-zenbook-default",
+        "price": 42000000,
+        "stock": 18,
+        "optionSelections": {},
+        "images": []
+      }
+    ]
+  },
+  {
+    "key": "dior-sauvage",
+    "title": "عطر دیور ساواج",
+    "description": "ادکلن مردانه با رایحه تازه و ماندگار",
+    "categoryKey": "fragrances",
+    "brandKey": "dior",
+    "images": [
+      { "url": "https://cdn.dummyjson.com/product-images/fragrances/dior-sauvage/1.webp", "isPrimary": true, "sortOrder": 0 }
+    ],
+    "options": [],
+    "variants": [
+      {
+        "key": "dior-sauvage-default",
+        "price": 3500000,
+        "stock": 50,
+        "optionSelections": {},
+        "images": []
+      }
+    ]
+  },
+  {
+    "key": "chanel-coco",
+    "title": "عطر شنل کوکو",
+    "description": "ادکلن زنانه کلاسیک و لوکس",
+    "categoryKey": "fragrances",
+    "brandKey": "chanel",
+    "images": [
+      { "url": "https://cdn.dummyjson.com/product-images/fragrances/chanel-coco-noir-eau-de/1.webp", "isPrimary": true, "sortOrder": 0 }
+    ],
+    "options": [],
+    "variants": [
+      {
+        "key": "chanel-coco-default",
+        "price": 4200000,
+        "stock": 35,
+        "optionSelections": {},
+        "images": []
+      }
+    ]
+  },
+  {
+    "key": "skincare-set",
+    "title": "ست مراقبت پوست",
+    "description": "مجموعه کرم و سرم مراقبت از پوست",
+    "categoryKey": "skincare",
+    "brandKey": "dolce-gabbana",
+    "images": [
+      { "url": "https://cdn.dummyjson.com/product-images/skin-care/attitude-super-leaves-hand-soap/1.webp", "isPrimary": true, "sortOrder": 0 }
+    ],
+    "options": [],
+    "variants": [
+      {
+        "key": "skincare-set-default",
+        "price": 890000,
+        "stock": 100,
+        "optionSelections": {},
+        "images": []
+      }
+    ]
+  },
+  {
+    "key": "organic-honey",
+    "title": "عسل ارگانیک",
+    "description": "عسل طبیعی و خالص",
+    "categoryKey": "groceries",
+    "brandKey": null,
+    "images": [
+      { "url": "https://cdn.dummyjson.com/product-images/groceries/beef-steak/1.webp", "isPrimary": true, "sortOrder": 0 }
+    ],
+    "options": [],
+    "variants": [
+      {
+        "key": "organic-honey-default",
+        "price": 450000,
+        "stock": 200,
+        "optionSelections": {},
+        "images": []
+      }
+    ]
+  },
+  {
+    "key": "annibale-bed",
+    "title": "تخت خواب مدرن",
+    "description": "تخت خواب با طراحی مینیمال",
+    "categoryKey": "furniture",
+    "brandKey": null,
+    "images": [
+      { "url": "https://cdn.dummyjson.com/product-images/furniture/annibale-colombo-bed/1.webp", "isPrimary": true, "sortOrder": 0 }
+    ],
+    "options": [],
+    "variants": [
+      {
+        "key": "annibale-bed-default",
+        "price": 18000000,
+        "stock": 8,
+        "optionSelections": {},
+        "images": []
+      }
+    ]
+  },
+  {
+    "key": "calvin-dress",
+    "title": "لباس مجلسی کلوین کلین",
+    "description": "لباس زنانه شیک و رسمی",
+    "categoryKey": "womens-dresses",
+    "brandKey": "calvin-klein",
+    "images": [
+      { "url": "https://cdn.dummyjson.com/product-images/womens-dresses/calvin-klein-heather-grey/1.webp", "isPrimary": true, "sortOrder": 0 }
+    ],
+    "options": [
+      { "name": "سایز", "values": ["S", "M", "L"] }
+    ],
+    "variants": [
+      {
+        "key": "calvin-dress-s",
+        "price": 2800000,
+        "stock": 12,
+        "optionSelections": { "سایز": "S" },
+        "images": []
+      },
+      {
+        "key": "calvin-dress-m",
+        "price": 2800000,
+        "stock": 15,
+        "optionSelections": { "سایز": "M" },
+        "images": []
+      },
+      {
+        "key": "calvin-dress-l",
+        "price": 2900000,
+        "stock": 10,
+        "optionSelections": { "سایز": "L" },
+        "images": []
+      }
+    ]
+  },
+  {
+    "key": "sony-headphones",
+    "title": "هدفون سونی WH-1000XM5",
+    "description": "هدفون بی‌سیم با نویزکنسلینگ پیشرفته",
+    "categoryKey": "electronics",
+    "brandKey": "sony",
+    "images": [
+      { "url": "https://cdn.dummyjson.com/product-images/mobile-accessories/iphone-12-silicone-case/1.webp", "isPrimary": true, "sortOrder": 0 }
+    ],
+    "options": [],
+    "variants": [
+      {
+        "key": "sony-headphones-default",
+        "price": 12500000,
+        "stock": 22,
+        "optionSelections": {},
+        "images": []
+      }
+    ]
+  },
+  {
+    "key": "chanel-coco",
+    "title": "عطر شنل کوکو",
+    "description": "ادکلن زنانه کلاسیک و لوکس",
+    "categoryKey": "fragrances",
+    "brandKey": "chanel",
+
+    "images": [
+      {
+        "url": "https://cdn.dummyjson.com/product-images/fragrances/chanel-coco-noir-eau-de/1.webp",
+        "isPrimary": true,
+        "sortOrder": 0
+      },
+      {
+        "url": "https://cdn.dummyjson.com/product-images/fragrances/chanel-coco-noir-eau-de/2.webp",
+        "isPrimary": false,
+        "sortOrder": 1
+      }
+    ],
+
+    "options": [
+      {
+        "name": "حجم",
+        "values": [
+          "50ml",
+          "100ml"
+        ]
+      }
+    ],
+
+    "variants": [
+      {
+        "key": "chanel-coco-50ml",
+        "sku": "CHANEL-COCO-50",
+        "price": 4200000,
+        "stock": 35,
+
+        "optionSelections": {
+          "حجم": "50ml"
+        },
+
+        "images": [
+          {
+            "url": "https://cdn.dummyjson.com/product-images/fragrances/chanel-coco-noir-eau-de/1.webp",
+            "isPrimary": true,
+            "sortOrder": 0
+          }
+        ]
+      },
+
+      {
+        "key": "chanel-coco-100ml",
+        "sku": "CHANEL-COCO-100",
+        "price": 6500000,
+        "stock": 20,
+
+        "optionSelections": {
+          "حجم": "100ml"
+        },
+
+        "images": [
+          {
+            "url": "https://cdn.dummyjson.com/product-images/fragrances/chanel-coco-noir-eau-de/2.webp",
+            "isPrimary": true,
+            "sortOrder": 0
+          }
+        ]
+      }
+    ]
+  }
+]

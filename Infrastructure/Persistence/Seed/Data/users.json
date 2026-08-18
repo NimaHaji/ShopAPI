@@ -1,0 +1,81 @@
+[
+  {
+    "key": "admin",
+    "fullName": "مدیر سیستم",
+    "email": "admin@shop.local",
+    "phoneNumber": "09120000001",
+    "password": "Admin@123",
+    "role": "Admin",
+    "addresses": [
+      {
+        "title": "دفتر",
+        "receiverName": "مدیر سیستم",
+        "phoneNumber": "09120000001",
+        "province": "تهران",
+        "city": "تهران",
+        "addressLine": "خیابان ولیعصر، پلاک ۱۰",
+        "postalCode": "1234567890",
+        "isDefault": true
+      }
+    ]
+  },
+  {
+    "key": "user1",
+    "fullName": "علی محمدی",
+    "email": "ali@shop.local",
+    "phoneNumber": "09121234567",
+    "password": "User@123",
+    "role": "User",
+    "addresses": [
+      {
+        "title": "منزل",
+        "receiverName": "علی محمدی",
+        "phoneNumber": "09121234567",
+        "province": "اصفهان",
+        "city": "اصفهان",
+        "addressLine": "خیابان چهارباغ، کوچه ۵",
+        "postalCode": "8173951234",
+        "isDefault": true
+      }
+    ]
+  },
+  {
+    "key": "user2",
+    "fullName": "سارا احمدی",
+    "email": "sara@shop.local",
+    "phoneNumber": "09129876543",
+    "password": "User@123",
+    "role": "User",
+    "addresses": [
+      {
+        "title": "منزل",
+        "receiverName": "سارا احمدی",
+        "phoneNumber": "09129876543",
+        "province": "فارس",
+        "city": "شیراز",
+        "addressLine": "بلوار زند، ساختمان ۲۰",
+        "postalCode": "7135789012",
+        "isDefault": true
+      }
+    ]
+  },{
+  "key": "admin2",
+  "fullName": "نیما حاجی",
+  "email": "nimahaji1395@gmail.com",
+  "phoneNumber": "09926265125",
+  "password": "Nima.1395",
+  "role": "SuperAdmin",
+  "addresses": [
+    {
+      "title": "منزل",
+      "receiverName": "نیما حاجی",
+      "phoneNumber": "09926265125",
+      "province": "مازندران",
+      "city": "قائمشهر",
+      "addressLine": "خیابان ساری",
+      "postalCode": "8173951234",
+      "isDefault": true
+    }
+  ]
+}
+]
