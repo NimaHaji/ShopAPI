@@ -18,7 +18,7 @@ public class CartItemMapping : IEntityTypeConfiguration<CartItem>
         builder.Property(x => x.CartId)
             .IsRequired();
 
-        builder.Property(x => x.ProductId)
+        builder.Property(x => x.ProductVariantId)
             .IsRequired();
 
         builder.Property(x => x.Quantity)
@@ -26,10 +26,10 @@ public class CartItemMapping : IEntityTypeConfiguration<CartItem>
 
         builder.HasIndex(x => x.CartId);
 
-        builder.HasIndex(x => x.ProductId);
+        builder.HasIndex(x => x.ProductVariantId);
         
 
-        builder.HasIndex(x => new { x.CartId, x.ProductId })
+        builder.HasIndex(x => new { x.CartId, x.ProductVariantId })
             .IsUnique();
 
         builder.HasOne(x => x.Cart)
@@ -37,9 +37,9 @@ public class CartItemMapping : IEntityTypeConfiguration<CartItem>
             .HasForeignKey(x => x.CartId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasOne(x => x.Product)
+        builder.HasOne(x => x.ProductVariant)
             .WithMany()
-            .HasForeignKey(x => x.ProductId)
+            .HasForeignKey(x => x.ProductVariantId)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

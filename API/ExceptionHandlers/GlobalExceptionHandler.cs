@@ -6,48 +6,45 @@ namespace ShopApi.ExceptionHandlers;
 
 public class GlobalExceptionHandler : IExceptionHandler
 {
-    public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception,
+    public async ValueTask<bool> TryHandleAsync(
+        HttpContext httpContext,
+        Exception exception,
         CancellationToken cancellationToken)
     {
-        switch (exception)
+        var statusCode = exception switch
         {
-            case DuplicateNameException:
-                httpContext.Response.StatusCode = StatusCodes.Status409Conflict;
-                break;
+            DuplicateNameException => StatusCodes.Status409Conflict,
+            BusinessException => StatusCodes.Status400BadRequest,
+            InsufficientStockException => StatusCodes.Status409Conflict,
+            ForbiddenAccessException => StatusCodes.Status403Forbidden,
+            NotFoundException => StatusCodes.Status404NotFound,
+            CartEmptyException => StatusCodes.Status400BadRequest,
+            InvalidQuantityException => StatusCodes.Status400BadRequest,
+            UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
+            _ => StatusCodes.Status500InternalServerError
+        };
 
-            case BusinessException:
-                httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
-                break;
-            
-            case InsufficientStockException:
-                httpContext.Response.StatusCode = StatusCodes.Status409Conflict;
-                break;
-            
-            case ForbiddenAccessException:
-                httpContext.Response.StatusCode = StatusCodes.Status403Forbidden;
-                break;
-            
-            case NotFoundException:
-                httpContext.Response.StatusCode = StatusCodes.Status404NotFound;
-                break;
-            
-            case CartEmptyException:
-                httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
-                break;
-            
-            case InvalidQuantityException:
-                httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
-                break;
-            
-            default:
-                httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
-                break;
-        }
+        var message = exception switch
+        {
+            DuplicateNameException => exception.Message,
+            BusinessException => exception.Message,
+            InsufficientStockException => exception.Message,
+            ForbiddenAccessException => exception.Message,
+            NotFoundException => exception.Message,
+            CartEmptyException => exception.Message,
+            InvalidQuantityException => exception.Message,
+            UnauthorizedAccessException => exception.Message,
+            _ => "خطای غیرمنتظره‌ای در سرور رخ داده است. لطفاً بعداً دوباره تلاش کنید."
+        };
 
-        await httpContext.Response.WriteAsJsonAsync(new
+        httpContext.Response.StatusCode = statusCode;
+
+        await httpContext.Response.WriteAsJsonAsync(
+            new
             {
-                message = exception.Message
-            }
+                message
+            },
+            cancellationToken
         );
 
         return true;

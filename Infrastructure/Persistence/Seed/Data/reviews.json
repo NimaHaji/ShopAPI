@@ -1,0 +1,44 @@
+[
+  {
+    "userKey": "user1",
+    "productKey": "iphone-15",
+    "starsCount": 5,
+    "comment": "گوشی عالیه، کیفیت ساخت فوق‌العاده است.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "iphone-15",
+    "starsCount": 4,
+    "comment": "خوبه ولی قیمتش بالاست.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "samsung-s24",
+    "starsCount": 5,
+    "comment": "بهترین گوشی اندرویدی که داشتم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "macbook-pro",
+    "starsCount": 5,
+    "comment": "برای کار گرافیکی عالیه.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "dior-sauvage",
+    "starsCount": 4,
+    "comment": "رایحه ماندگار و جذاب.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "calvin-dress",
+    "starsCount": 3,
+    "comment": "کیفیت پارچه خوبه ولی سایزبندی کمی کوچک بود.",
+    "status": "Pending"
+  }
+]

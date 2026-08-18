@@ -1,0 +1,35 @@
+[
+  {
+    "key": "winter-sale",
+    "title": "حراج زمستانه",
+    "discountType": "Percentage",
+    "value": 15,
+    "maxDiscountAmount": 5000000,
+    "startsAt": "2025-01-01T00:00:00Z",
+    "endsAt": "2027-12-31T23:59:59Z",
+    "productKeys": ["iphone-15", "samsung-s24"],
+    "variantKeys": []
+  },
+  {
+    "key": "laptop-deal",
+    "title": "تخفیف لپ‌تاپ",
+    "discountType": "FixedAmount",
+    "value": 2000000,
+    "maxDiscountAmount": null,
+    "startsAt": "2025-01-01T00:00:00Z",
+    "endsAt": "2027-12-31T23:59:59Z",
+    "productKeys": [],
+    "variantKeys": ["macbook-pro-default", "asus-zenbook-default"]
+  },
+  {
+    "key": "fragrance-special",
+    "title": "تخفیف ویژه عطر",
+    "discountType": "Percentage",
+    "value": 10,
+    "maxDiscountAmount": 500000,
+    "startsAt": "2025-01-01T00:00:00Z",
+    "endsAt": "2027-12-31T23:59:59Z",
+    "productKeys": [],
+    "variantKeys": ["dior-sauvage-default", "chanel-coco-default"]
+  }
+]

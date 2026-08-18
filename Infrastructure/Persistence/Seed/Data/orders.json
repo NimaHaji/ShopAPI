@@ -1,0 +1,86 @@
+[
+  {
+    "key": "order-pending",
+    "userKey": "user1",
+    "status": "Pending",
+    "receiverName": "علی محمدی",
+    "phoneNumber": "09121234567",
+    "province": "اصفهان",
+    "city": "اصفهان",
+    "addressLine": "خیابان چهارباغ، کوچه ۵",
+    "postalCode": "8173951234",
+    "couponKey": null,
+    "couponDiscountAmount": null,
+    "items": [
+      {
+        "variantKey": "organic-honey-default",
+        "quantity": 2,
+        "unitPrice": 450000,
+        "discountAmount": 0
+      }
+    ],
+    "payment": {
+      "gateway": "ZarinPal",
+      "status": "pending",
+      "description": "پرداخت سفارش در انتظار"
+    }
+  },
+  {
+    "key": "order-paid",
+    "userKey": "user2",
+    "status": "Paid",
+    "receiverName": "سارا احمدی",
+    "phoneNumber": "09129876543",
+    "province": "فارس",
+    "city": "شیراز",
+    "addressLine": "بلوار زند، ساختمان ۲۰",
+    "postalCode": "7135789012",
+    "couponKey": "welcome-10",
+    "couponDiscountAmount": 3000000,
+    "items": [
+      {
+        "variantKey": "samsung-s24-gray",
+        "quantity": 1,
+        "unitPrice": 45000000,
+        "discountAmount": 0
+      }
+    ],
+    "payment": {
+      "gateway": "ZarinPal",
+      "status": "Success",
+      "description": "پرداخت موفق سفارش"
+    }
+  },
+  {
+    "key": "order-delivered",
+    "userKey": "user1",
+    "status": "Delivered",
+    "receiverName": "علی محمدی",
+    "phoneNumber": "09121234567",
+    "province": "اصفهان",
+    "city": "اصفهان",
+    "addressLine": "خیابان چهارباغ، کوچه ۵",
+    "postalCode": "8173951234",
+    "couponKey": null,
+    "couponDiscountAmount": null,
+    "items": [
+      {
+        "variantKey": "dior-sauvage-default",
+        "quantity": 1,
+        "unitPrice": 3500000,
+        "discountAmount": 350000
+      },
+      {
+        "variantKey": "skincare-set-default",
+        "quantity": 1,
+        "unitPrice": 890000,
+        "discountAmount": 0
+      }
+    ],
+    "payment": {
+      "gateway": "Saman",
+      "status": "Success",
+      "description": "پرداخت موفق سفارش تحویل‌شده"
+    }
+  }
+]

@@ -28,6 +28,9 @@ public class WishlistRepository:WishlistRepositoryContract
             .Include(w => w.WishlistItems)
             .ThenInclude(wi => wi.Product)
             .ThenInclude(p=>p.Images)
+            .Include(w=>w.WishlistItems)
+            .ThenInclude(wi => wi.Product)
+            .ThenInclude(p=>p.Variants)
             .Where(w => w.UserId == userId)
             .FirstOrDefaultAsync();
     }

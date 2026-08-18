@@ -18,9 +18,12 @@ public class CheckoutsController : ControllerBase
 
     [HttpPost]
     [Authorize]
-    public async Task<IActionResult> Checkout([FromBody]CheckoutDto dto,[FromHeader(Name = "Idempotency-Key")]string idempotencyKey)
+    public async Task<IActionResult> Checkout([FromBody]CheckoutDto dto)
     {
-        var orderId = await _checkoutServiceContract.CheckoutAsync(dto,idempotencyKey);
+        var idempotencyKey = Request.Headers["Idempotency-Key"].FirstOrDefault()
+                             ?? Guid.NewGuid().ToString();
+
+        var orderId = await _checkoutServiceContract.CheckoutAsync(dto, idempotencyKey);
         return Ok(orderId);
     }
 }

@@ -39,7 +39,7 @@ public class Cart
                 "تعداد باید بیشتر از صفر باشد.");
 
         var item = CartItems
-            .FirstOrDefault(x => x.ProductId == productId);
+            .FirstOrDefault(x => x.ProductVariantId == productId);
 
         if (item is null)
             throw new NotFoundException(

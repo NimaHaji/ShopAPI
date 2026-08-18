@@ -112,7 +112,7 @@ public class CheckoutService : CheckoutServiceContract
                 {
                     Items = cart.CartItems.Select(x => new OrderItemDto
                     {
-                        ProductId = x.ProductId,
+                        ProductVariantId = x.ProductVariantId,
                         Quantity = x.Quantity
                     }).ToList(),
                     CouponCode = couponResult?.Code,

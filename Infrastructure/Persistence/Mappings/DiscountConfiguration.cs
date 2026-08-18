@@ -56,5 +56,12 @@ public class DiscountConfiguration:IEntityTypeConfiguration<Discount>
             .Property(d=>d.IsDeleted)
             .IsRequired();
         
+        builder.HasIndex(x => new
+        {
+            x.IsActive,
+            x.IsDeleted,
+            x.StartsAt,
+            x.EndsAt
+        });
     }
 }
