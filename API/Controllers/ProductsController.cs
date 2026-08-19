@@ -1,3 +1,4 @@
+using Application.Features.Discount.Interfaces;
 using Application.Features.Product.DTOs;
 using Application.Features.Product.Interfaces;
 using Application.Features.Review.DTOs;
@@ -11,10 +12,11 @@ namespace ShopApi.Controllers;
 public class ProductsController : ControllerBase
 {
     private readonly ProductServicesContract _productServicesContract;
-
-    public ProductsController(ProductServicesContract productServicesContract)
+    private readonly DiscountServiceContract _discountServiceContract;
+    public ProductsController(ProductServicesContract productServicesContract, DiscountServiceContract discountServiceContract)
     {
         _productServicesContract = productServicesContract;
+        _discountServiceContract = discountServiceContract;
     }
 
     [HttpGet]
@@ -101,5 +103,12 @@ public class ProductsController : ControllerBase
         {
             message = result
         });
+    }
+    
+    [HttpGet("{productId}/discounts")]
+    public async Task<IActionResult> GetDiscountByProductId([FromRoute]Guid productId)
+    {
+        var discount=await _discountServiceContract.GetDiscountByProductId(productId);
+        return Ok(discount);
     }
 }

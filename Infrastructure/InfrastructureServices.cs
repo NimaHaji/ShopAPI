@@ -9,6 +9,7 @@ using Application.Features.Coupon.Interfaces;
 using Application.Features.CouponUsage.Interfaces;
 using Application.Features.Discount.Interfaces;
 using Application.Features.DiscountProduct.Interfaces;
+using Application.Features.DiscountVariant.Interfaces;
 using Application.Features.IdempotencyKey.Interfaces;
 using Application.Features.Inventory.Interfaces;
 using Application.Features.InventoryTransaction.Interfaces;
@@ -76,6 +77,7 @@ public static class InfrastructureServices
         services.AddScoped<CouponUsageRepositoryContract, CouponUsageRepository>();
         services.AddScoped<AddressRepositoryContract, AddressRepository>();
         services.AddScoped<IdempotencyRepositoryContract,IdempotencyRepository>();
+        services.AddScoped<DiscountVariantRepositoryContract, DiscountVariantRepository>();
         services.AddScoped<JsonSeedReader>();
         services.AddScoped<CategorySeeder>();
         services.AddScoped<BrandSeeder>();

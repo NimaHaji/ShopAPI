@@ -1,5 +1,7 @@
 using Domain.Enums;
 
+namespace Application.Features.Home.DTOs;
+
 public class HomeProductPriceResult
 {
     public long MinPrice { get; set; }

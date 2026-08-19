@@ -12,4 +12,5 @@ public class ProductQueryDto
     public long? MinPrice { get; set; }
     public long? MaxPrice { get; set; }
     public SortByType? SortBy { get; set; }
+    public bool HasDiscount { get; set; }
 }

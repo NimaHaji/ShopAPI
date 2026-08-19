@@ -8,30 +8,66 @@ public class ViewOrderListDto
 public class ViewOrderDto
 {
     public Guid Id { get; set; }
-    public List<ViewOrderItemsDto> Items { get; set; } = [];
-    public long TotalPrice { get; set; }
-    public long TotalDiscountAmount { get; set; }
-    public string? OrderStatus { get; set; }
-    public DateTime? CreatedAt { get; set; }
-    public Guid? CouponId { get; set; }
-    public string? CouponCode { get; set; }
+
+    public List<ViewOrderItemDto> Items { get; set; } = [];
+
+    public long Subtotal { get; set; }
+
+    public long ProductDiscountAmount { get; set; }
+
     public long CouponDiscountAmount { get; set; }
+
+    public long TotalPrice { get; set; }
+
+    public string? OrderStatus { get; set; }
+
+    public DateTime? CreatedAt { get; set; }
+
+    public Guid? CouponId { get; set; }
+
+    public string? CouponCode { get; set; }
+
     public string ReceiverName { get; set; } = null!;
+
     public string PhoneNumber { get; set; } = null!;
+
     public string Province { get; set; } = null!;
+
     public string City { get; set; } = null!;
+
     public string AddressLine { get; set; } = null!;
+
     public string PostalCode { get; set; } = null!;
 }
 
-public class ViewOrderItemsDto
+public class ViewOrderItemDto
 {
     public Guid ProductId { get; set; }
+
+    public Guid ProductVariantId { get; set; }
+
     public string ProductTitle { get; set; } = null!;
 
-    public int ProductQuantity { get; set; }
+    public string? ProductImage { get; set; }
+
+    public string? VariantImage { get; set; }
+
+    public int Quantity { get; set; }
+
     public long UnitPrice { get; set; }
+
     public long DiscountAmount { get; set; }
+
     public long FinalUnitPrice { get; set; }
+
     public long TotalPrice { get; set; }
+
+    public List<ViewOrderItemOptionDto> Options { get; set; } = [];
+}
+
+public class ViewOrderItemOptionDto
+{
+    public string OptionName { get; set; } = null!;
+
+    public string Value { get; set; } = null!;
 }

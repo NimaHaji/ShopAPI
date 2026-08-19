@@ -24,7 +24,7 @@ public class InventoriesController : ControllerBase
     }
 
     [HttpGet("{productVariantId}")]
-    public async Task<ActionResult> GetByProductId(Guid productVariantId)
+    public async Task<ActionResult> GetByProductVariantId(Guid productVariantId)
     {
         var result = await _inventoryServiceContract.GetInventoryByProductVariantIdAsync(productVariantId);
         return Ok(result);
@@ -36,7 +36,7 @@ public class InventoriesController : ControllerBase
         try
         {
             var result = await _inventoryServiceContract.ReserveStockAsync(
-                request.ProductId,
+                request.ProductVariantId,
                 request.Quantity,
                 request.OrderReference);
 
@@ -52,7 +52,7 @@ public class InventoriesController : ControllerBase
     public async Task<ActionResult<ViewInventoryItemDto>> ConfirmReservation([FromBody] StockReserveRequestDto request)
     {
         var result = await _inventoryServiceContract.ConfirmReservationAsync(
-            request.ProductId,
+            request.ProductVariantId,
             request.Quantity,
             request.OrderReference);
 
@@ -63,7 +63,7 @@ public class InventoriesController : ControllerBase
     public async Task<ActionResult<ViewInventoryItemDto>> CancelReservation([FromBody] StockReserveRequestDto request)
     {
         var result = await _inventoryServiceContract.CancelReservationAsync(
-            request.ProductId,
+            request.ProductVariantId,
             request.Quantity,
             request.OrderReference);
 
@@ -74,7 +74,7 @@ public class InventoriesController : ControllerBase
     public async Task<ActionResult<ViewInventoryItemDto>> AddStock([FromBody] StockAddRequestDto request)
     {
         var result = await _inventoryServiceContract.AddStockAsync(
-            request.ProductId,
+            request.ProductVariantId,
             request.Quantity,
             request.Description);
 
