@@ -1,3 +1,5 @@
+namespace Application.Features.Product.DTOs;
+
 public class EditProductVariantDto
 {
     public Guid Id { get; set; }

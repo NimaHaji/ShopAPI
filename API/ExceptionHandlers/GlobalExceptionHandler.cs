@@ -1,5 +1,6 @@
 using System.Data;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Shared.Exceptions;
 
 namespace ShopApi.ExceptionHandlers;
@@ -21,6 +22,8 @@ public class GlobalExceptionHandler : IExceptionHandler
             CartEmptyException => StatusCodes.Status400BadRequest,
             InvalidQuantityException => StatusCodes.Status400BadRequest,
             UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
+            ConflictException => StatusCodes.Status409Conflict,
+            InvalidOperationException => StatusCodes.Status400BadRequest,
             _ => StatusCodes.Status500InternalServerError
         };
 
@@ -34,6 +37,8 @@ public class GlobalExceptionHandler : IExceptionHandler
             CartEmptyException => exception.Message,
             InvalidQuantityException => exception.Message,
             UnauthorizedAccessException => exception.Message,
+            ConflictException => exception.Message,
+            InvalidOperationException => exception.Message,
             _ => "خطای غیرمنتظره‌ای در سرور رخ داده است. لطفاً بعداً دوباره تلاش کنید."
         };
 

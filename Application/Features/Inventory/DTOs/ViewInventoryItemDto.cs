@@ -1,4 +1,4 @@
-using Application.Features.Inventory.DTOs;
+namespace Application.Features.Inventory.DTOs;
 
 public class ViewInventoryItemDto
 {

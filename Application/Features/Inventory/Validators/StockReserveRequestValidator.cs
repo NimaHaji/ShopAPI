@@ -8,7 +8,7 @@ public class StockReserveRequestValidator : AbstractValidator<StockReserveReques
     public StockReserveRequestValidator()
     {
         
-        RuleFor(x => x.ProductId)
+        RuleFor(x => x.ProductVariantId)
             .NotEmpty().WithMessage("شناسه محصول نمی‌تواند خالی باشد.")
             .Must(id => id != Guid.Empty).WithMessage("شناسه محصول معتبر نیست.");
 

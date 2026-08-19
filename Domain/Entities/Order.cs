@@ -15,7 +15,7 @@ public class Order
     public DateTime CreatedAt { get; private set; }
     public DateTime UpdatedAt { get; private set; }
 
-    public List<OrderItem> OrderItems { get; private set; } = new();
+    public List<OrderItem> OrderItems { get; private set; } = [];
     public Guid? CouponId { get; private set; }
     public Coupon? Coupon { get; private set; }
     
@@ -28,7 +28,7 @@ public class Order
     
     public string? CouponCode { get; private set; }
     public long CouponDiscountAmount { get; private set; }
-    public List<Payment> Payments { get; private set; }
+    public List<Payment> Payments { get; private set; } = [];
 
     private Order()
     {

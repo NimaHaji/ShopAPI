@@ -24,10 +24,12 @@ public class DiscountConfiguration:IEntityTypeConfiguration<Discount>
         
         builder
             .Property(d=>d.Value)
+            .HasPrecision(18,2)
             .IsRequired();
 
         builder
-            .Property(d => d.MaxDiscountAmount);
+            .Property(d => d.MaxDiscountAmount)
+            .HasPrecision(18,2);
         
         builder
             .Property(d=>d.StartsAt)

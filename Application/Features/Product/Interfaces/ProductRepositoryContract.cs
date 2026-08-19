@@ -45,7 +45,8 @@ public interface ProductRepositoryContract
     Task AddProductVariantAsync(ProductVariant variant);
     Task<ProductVariant?> GetProductVariantByIdAsync(Guid dtoId);
     Task<List<Domain.Entities.ProductVariant>?> GetVariantsWithDiscountAsync(List<Guid> productVariantIds);
-
+    Task<List<Domain.Entities.ProductVariant>> GetProductVariantsByIdsAsync(List<Guid> productVariantIds);
+    
     #endregion
 
 }
