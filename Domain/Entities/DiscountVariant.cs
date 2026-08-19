@@ -18,7 +18,7 @@ public class DiscountVariant
     {
     }
 
-    private DiscountVariant(
+    public DiscountVariant(
         Guid discountId,
         Guid productVariantId)
     {

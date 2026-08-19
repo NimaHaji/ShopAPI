@@ -36,8 +36,8 @@ public class ProductRepository : ProductRepositoryContract
             .Include(x => x.Reviews)
             .Include(x => x.DiscountProducts)
             .ThenInclude(x => x.Discount)
-            .Include(p=>p.Variants)
-            .ThenInclude(v=>v.InventoryItem)
+            .Include(p => p.Variants)
+            .ThenInclude(v => v.InventoryItem)
             .Include(p => p.Variants)
             .ThenInclude(v => v.Images)
             .Include(p => p.Variants)
@@ -100,6 +100,18 @@ public class ProductRepository : ProductRepositoryContract
             }
         }
 
+        if (query.HasDiscount)
+        {
+            var now = DateTime.UtcNow;
+            products = products.Where(p =>
+                !p.IsDeleted &&
+                p.DiscountProducts.Any(dp =>
+                    !dp.Discount.IsDeleted &&
+                    dp.Discount.IsActive &&
+                    dp.Discount.StartsAt <= now &&
+                    dp.Discount.EndsAt > now));
+        }
+
         query.Page = Math.Max(query.Page, 1);
         query.PageSize = Math.Clamp(query.PageSize, 1, 100);
 
@@ -121,18 +133,18 @@ public class ProductRepository : ProductRepositoryContract
     {
         return await _context
             .Products
-            .Include(p=>p.Reviews)
+            .Include(p => p.Reviews)
             .Include(x => x.Category)
             .Include(x => x.Brand)
             .Include(x => x.Images)
             .Include(x => x.Variants)
-            .ThenInclude(v=>v.InventoryItem)
-            .Include(p=>p.Options)
-            .ThenInclude(o=>o.Values)
-            .Include(p=>p.Variants)
-            .ThenInclude(v=>v.Options)
-            .Include(p=>p.Variants)
-            .ThenInclude(v=>v.Images)
+            .ThenInclude(v => v.InventoryItem)
+            .Include(p => p.Options)
+            .ThenInclude(o => o.Values)
+            .Include(p => p.Variants)
+            .ThenInclude(v => v.Options)
+            .Include(p => p.Variants)
+            .ThenInclude(v => v.Images)
             .Where(p => !p.IsDeleted && p.Id == productId)
             .FirstOrDefaultAsync();
     }
@@ -167,16 +179,16 @@ public class ProductRepository : ProductRepositoryContract
         return await _context.Products
             .Where(p =>
                 !p.IsDeleted &&
-                p.DiscountProducts.Any(dp =>
-                    !dp.Discount.IsDeleted &&
-                    dp.Discount.IsActive &&
-                    dp.Discount.StartsAt <= now &&
-                    dp.Discount.EndsAt > now))
-            .Include(p => p.DiscountProducts)
-            .ThenInclude(dp => dp.Discount)
-            .Include(p=>p.Variants)
-            .ThenInclude(v=>v.DiscountVariants)
-            .ThenInclude(dv=>dv.Discount)
+                p.Variants.Any(v =>
+                    !v.IsDeleted &&
+                    v.DiscountVariants.Any(dv =>
+                        !dv.Discount.IsDeleted &&
+                        dv.Discount.IsActive &&
+                        dv.Discount.StartsAt <= now &&
+                        dv.Discount.EndsAt > now)))
+            .Include(p => p.Variants)
+            .ThenInclude(v => v.DiscountVariants)
+            .ThenInclude(dv => dv.Discount)
             .Include(p => p.Images)
             .OrderByDescending(p => p.AddedAt)
             .Take(10)
@@ -192,7 +204,7 @@ public class ProductRepository : ProductRepositoryContract
             .ThenInclude(dp => dp.Discount)
             .Where(p => !p.IsDeleted)
             .OrderByDescending(p => p.AddedAt)
-            .Include(p=>p.Variants)
+            .Include(p => p.Variants)
             .Take(10)
             .ToListAsync();
     }
@@ -314,16 +326,41 @@ public class ProductRepository : ProductRepositoryContract
     public async Task<List<ProductVariant>?> GetVariantsWithDiscountAsync(
         List<Guid> productVariantIds)
     {
-        return await _context
-            .Variants
-            .Include(v => v.Product)
-            .Include(v => v.DiscountVariants)
-            .ThenInclude(dv => dv.Discount)
+        var now = DateTime.UtcNow;
+
+        return await _context.Variants
             .Where(v =>
                 productVariantIds.Contains(v.Id) &&
-                !v.IsDeleted)
+                !v.IsDeleted &&
+                !v.Product.IsDeleted)
+
+            .Include(v => v.Product)
+            .ThenInclude(p => p.Images)
+
+            .Include(v => v.Product)
+            .ThenInclude(p => p.DiscountProducts)
+            .ThenInclude(dp => dp.Discount)
+
+            .Include(v => v.Images)
+
+            .Include(v => v.Options)
+            .ThenInclude(vo => vo.ProductOption)
+
+            .Include(v => v.Options)
+            .ThenInclude(vo => vo.ProductOptionValue)
+
+            .Include(v => v.DiscountVariants)
+            .ThenInclude(dv => dv.Discount)
+
             .ToListAsync();
     }
-
+    
+    public async Task<List<ProductVariant>> GetProductVariantsByIdsAsync(List<Guid> productVariantIds)
+    {
+        return await _context
+            .Variants
+            .Where(p => !p.IsDeleted && productVariantIds.Contains(p.Id))
+            .ToListAsync();
+    }
     #endregion
 }

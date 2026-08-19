@@ -44,7 +44,7 @@ public class InventoryItemMapping
         builder.HasIndex(i => i.LastUpdated);
 
         builder.HasOne(i => i.ProductVariant)
-            .WithOne()
+            .WithOne(v=>v.InventoryItem)
             .HasForeignKey<InventoryItem>(
                 i => i.ProductVariantId)
             .OnDelete(DeleteBehavior.Restrict);
