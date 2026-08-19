@@ -101,7 +101,7 @@ public class OrderService : OrderServicesContract
                 {
                     discountAmount = (long)(
                         unitPrice *
-                        (activeDiscount.Value / 100));
+                        (activeDiscount.Value / 100m));
 
                     if (activeDiscount.MaxDiscountAmount.HasValue)
                     {
@@ -129,7 +129,12 @@ public class OrderService : OrderServicesContract
                 unitPrice: unitPrice,
                 discountAmount: discountAmount,
                 finalUnitPrice: finalUnitPrice,
-                productTitle: product.Title
+                productTitle: product.Title,
+                productImage: product.Images.Where(i => i.IsPrimary)
+                    .Select(i => i.ImageLink).FirstOrDefault(),
+                variantImage: variant.Images.Where(i => i.IsPrimary)
+                    .Select(i => i.ImageUrl).FirstOrDefault(),
+                options: variant.Options.Select(x => (x.ProductOption.Name, x.ProductOptionValue.Value)).ToList()
             );
 
             order.AddItem(orderItem);
@@ -160,55 +165,51 @@ public class OrderService : OrderServicesContract
             };
         }
 
-        var dto = new ViewOrderListDto
+        return new ViewOrderListDto
         {
             OrderList = orders.Select(order => new ViewOrderDto
-                {
-                    Id = order.Id,
-
-                    Items = order.OrderItems
-                        .Select(item => new ViewOrderItemsDto
-                        {
-                            ProductId = item.ProductId,
-                            ProductTitle = item.ProductTitle,
-
-                            ProductQuantity = item.Quantity,
-
-                            UnitPrice = item.UnitPrice,
-
-                            DiscountAmount = item.DiscountAmount,
-
-                            FinalUnitPrice = item.FinalUnitPrice,
-
-                            TotalPrice = item.FinalUnitPrice * item.Quantity
-                        })
-                        .ToList(),
-
-                    TotalPrice = order.TotalPrice,
-
-                    TotalDiscountAmount =
-                        order.OrderItems.Sum(item =>
-                            item.DiscountAmount * item.Quantity)
-                        + order.CouponDiscountAmount,
-
-                    OrderStatus = order.OrderStatus.ToString(),
-
-                    CreatedAt = order.CreatedAt,
-                    CouponId = order.CouponId,
-                    CouponCode = order.CouponCode,
-                    CouponDiscountAmount = order.CouponDiscountAmount,
-
-                    ReceiverName = order.ReceiverName,
-                    PhoneNumber = order.PhoneNumber,
-                    Province = order.Province,
-                    City = order.City,
-                    AddressLine = order.AddressLine,
-                    PostalCode = order.PostalCode
-                })
-                .ToList()
+            {
+                Id = order.Id,
+                Items = order.OrderItems
+                    .Select(item => new ViewOrderItemDto
+                    {
+                        ProductId = item.ProductId,
+                        ProductVariantId = item.ProductVariantId,
+                        ProductTitle = item.ProductTitle,
+                        ProductImage = item.ProductImage,
+                        VariantImage = item.VariantImage,
+                        Quantity = item.Quantity,
+                        UnitPrice = item.UnitPrice,
+                        DiscountAmount = item.DiscountAmount,
+                        FinalUnitPrice = item.FinalUnitPrice,
+                        TotalPrice = item.TotalPrice,
+                        Options = item.Options
+                            .Select(option => new ViewOrderItemOptionDto
+                            {
+                                OptionName = option.OptionName,
+                                Value = option.Value
+                            })
+                            .ToList()
+                    })
+                    .ToList(),
+                Subtotal = order.OrderItems.Sum(item =>
+                    item.UnitPrice * item.Quantity),
+                ProductDiscountAmount = order.OrderItems.Sum(item =>
+                    item.DiscountAmount * item.Quantity),
+                CouponDiscountAmount = order.CouponDiscountAmount,
+                TotalPrice = order.TotalPrice,
+                OrderStatus = order.OrderStatus.ToString(),
+                CreatedAt = order.CreatedAt,
+                CouponId = order.CouponId,
+                CouponCode = order.CouponCode,
+                ReceiverName = order.ReceiverName,
+                PhoneNumber = order.PhoneNumber,
+                Province = order.Province,
+                City = order.City,
+                AddressLine = order.AddressLine,
+                PostalCode = order.PostalCode
+            }).ToList()
         };
-
-        return dto;
     }
 
     public async Task<ViewOrderListDto> GetAllUserOrdersAsync()
@@ -227,55 +228,51 @@ public class OrderService : OrderServicesContract
             };
         }
 
-        var dto = new ViewOrderListDto
+        return new ViewOrderListDto
         {
             OrderList = orders.Select(order => new ViewOrderDto
-                {
-                    Id = order.Id,
-
-                    Items = order.OrderItems
-                        .Select(item => new ViewOrderItemsDto
-                        {
-                            ProductId = item.ProductId,
-                            ProductTitle = item.ProductTitle,
-
-                            ProductQuantity = item.Quantity,
-
-                            UnitPrice = item.UnitPrice,
-
-                            DiscountAmount = item.DiscountAmount,
-
-                            FinalUnitPrice = item.FinalUnitPrice,
-
-                            TotalPrice = item.FinalUnitPrice * item.Quantity
-                        })
-                        .ToList(),
-
-                    TotalPrice = order.TotalPrice,
-
-                    TotalDiscountAmount =
-                        order.OrderItems.Sum(item =>
-                            item.DiscountAmount * item.Quantity)
-                        + order.CouponDiscountAmount,
-
-                    OrderStatus = order.OrderStatus.ToString(),
-
-                    CreatedAt = order.CreatedAt,
-                    CouponId = order.CouponId,
-                    CouponCode = order.CouponCode,
-                    CouponDiscountAmount = order.CouponDiscountAmount,
-
-                    ReceiverName = order.ReceiverName,
-                    PhoneNumber = order.PhoneNumber,
-                    Province = order.Province,
-                    City = order.City,
-                    AddressLine = order.AddressLine,
-                    PostalCode = order.PostalCode
-                })
-                .ToList()
+            {
+                Id = order.Id,
+                Items = order.OrderItems
+                    .Select(item => new ViewOrderItemDto
+                    {
+                        ProductId = item.ProductId,
+                        ProductVariantId = item.ProductVariantId,
+                        ProductTitle = item.ProductTitle,
+                        ProductImage = item.ProductImage,
+                        VariantImage = item.VariantImage,
+                        Quantity = item.Quantity,
+                        UnitPrice = item.UnitPrice,
+                        DiscountAmount = item.DiscountAmount,
+                        FinalUnitPrice = item.FinalUnitPrice,
+                        TotalPrice = item.TotalPrice,
+                        Options = item.Options
+                            .Select(option => new ViewOrderItemOptionDto
+                            {
+                                OptionName = option.OptionName,
+                                Value = option.Value
+                            })
+                            .ToList()
+                    })
+                    .ToList(),
+                Subtotal = order.OrderItems.Sum(item =>
+                    item.UnitPrice * item.Quantity),
+                ProductDiscountAmount = order.OrderItems.Sum(item =>
+                    item.DiscountAmount * item.Quantity),
+                CouponDiscountAmount = order.CouponDiscountAmount,
+                TotalPrice = order.TotalPrice,
+                OrderStatus = order.OrderStatus.ToString(),
+                CreatedAt = order.CreatedAt,
+                CouponId = order.CouponId,
+                CouponCode = order.CouponCode,
+                ReceiverName = order.ReceiverName,
+                PhoneNumber = order.PhoneNumber,
+                Province = order.Province,
+                City = order.City,
+                AddressLine = order.AddressLine,
+                PostalCode = order.PostalCode
+            }).ToList()
         };
-
-        return dto;
     }
 
     public async Task<ViewOrderDto> GetOrderByIdAsync(Guid orderId)
@@ -293,40 +290,38 @@ public class OrderService : OrderServicesContract
         var dto = new ViewOrderDto
         {
             Id = order.Id,
-
             Items = order.OrderItems
-                .Select(item => new ViewOrderItemsDto
+                .Select(item => new ViewOrderItemDto
                 {
                     ProductId = item.ProductId,
+                    ProductVariantId = item.ProductVariantId,
                     ProductTitle = item.ProductTitle,
-
-                    ProductQuantity = item.Quantity,
-
+                    ProductImage = item.ProductImage,
+                    VariantImage = item.VariantImage,
+                    Quantity = item.Quantity,
                     UnitPrice = item.UnitPrice,
-
                     DiscountAmount = item.DiscountAmount,
-
                     FinalUnitPrice = item.FinalUnitPrice,
-
-                    TotalPrice = item.FinalUnitPrice * item.Quantity
+                    TotalPrice = item.TotalPrice,
+                    Options = item.Options
+                        .Select(option => new ViewOrderItemOptionDto
+                        {
+                            OptionName = option.OptionName,
+                            Value = option.Value
+                        })
+                        .ToList()
                 })
                 .ToList(),
-
+            Subtotal = order.OrderItems.Sum(item =>
+                item.UnitPrice * item.Quantity),
+            ProductDiscountAmount = order.OrderItems.Sum(item =>
+                item.DiscountAmount * item.Quantity),
+            CouponDiscountAmount = order.CouponDiscountAmount,
             TotalPrice = order.TotalPrice,
-
-            TotalDiscountAmount =
-                order.OrderItems.Sum(item =>
-                    item.DiscountAmount * item.Quantity)
-                + order.CouponDiscountAmount,
-
             OrderStatus = order.OrderStatus.ToString(),
-
             CreatedAt = order.CreatedAt,
-
             CouponId = order.CouponId,
             CouponCode = order.CouponCode,
-            CouponDiscountAmount = order.CouponDiscountAmount,
-
             ReceiverName = order.ReceiverName,
             PhoneNumber = order.PhoneNumber,
             Province = order.Province,

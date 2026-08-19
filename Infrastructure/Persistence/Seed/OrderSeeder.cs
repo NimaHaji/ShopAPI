@@ -46,7 +46,6 @@ public class OrderSeeder
                 orderDto.PostalCode);
 
 
-
             foreach (var itemDto in orderDto.Items)
             {
                 if (!seedContext.Variants.TryGetValue(
@@ -65,28 +64,39 @@ public class OrderSeeder
                         $"Variant entity not found: {itemDto.VariantKey}");
 
 
-
                 var product =
                     await _context.Products
                         .FindAsync(variant.ProductId);
 
 
-
                 var orderItem = new OrderItem(
-                    variant.ProductId,
-                    variant.Id,
-                    order.Id,
-                    itemDto.Quantity,
-                    itemDto.UnitPrice,
-                    itemDto.DiscountAmount,
-                    itemDto.UnitPrice - itemDto.DiscountAmount,
-                    product?.Title ?? "محصول");
-
+                    productId: variant.ProductId,
+                    productVariantId: variant.Id,
+                    orderId: order.Id,
+                    quantity: itemDto.Quantity,
+                    unitPrice: itemDto.UnitPrice,
+                    discountAmount: itemDto.DiscountAmount,
+                    finalUnitPrice: itemDto.UnitPrice - itemDto.DiscountAmount,
+                    productTitle: product?.Title ?? "محصول",
+                    
+                    productImage: variant.Product.Images
+                        .Where(pi => pi.IsPrimary)
+                        .Select(pi => pi.ImageLink)
+                        .FirstOrDefault(),
+                    
+                    variantImage: variant.Images
+                        .Where(pi => pi.IsPrimary)
+                        .Select(pi => pi.ImageUrl)
+                        .FirstOrDefault(),
+                    
+                    options: variant.Options
+                        .Select(pvo=>(pvo.ProductOption.Name,pvo.ProductOptionValue.Value))
+                        .ToList()
+                    );
 
 
                 order.AddItem(orderItem);
             }
-
 
 
             if (!string.IsNullOrWhiteSpace(orderDto.CouponKey))
@@ -113,10 +123,8 @@ public class OrderSeeder
             }
 
 
-
             order.ChangeOrderStatusTo(
                 ParseOrderStatus(orderDto.Status));
-
 
 
             seedContext.Orders[orderDto.Key] =
@@ -124,7 +132,6 @@ public class OrderSeeder
 
 
             await _context.Orders.AddAsync(order);
-
 
 
             if (orderDto.Payment is not null)
@@ -137,7 +144,6 @@ public class OrderSeeder
                     order.Id);
 
 
-
                 payment.GenerateOrderNumber();
 
                 ApplyPaymentStatus(
@@ -147,7 +153,6 @@ public class OrderSeeder
 
                 await _context.Payments.AddAsync(payment);
             }
-
 
 
             if (orderDto.CouponDiscountAmount.HasValue &&
@@ -167,7 +172,6 @@ public class OrderSeeder
     }
 
 
-
     private static OrderStatus ParseOrderStatus(string value)
     {
         if (!Enum.TryParse<OrderStatus>(
@@ -183,7 +187,6 @@ public class OrderSeeder
     }
 
 
-
     private static PaymentGateway ParsePaymentGateway(string value)
     {
         if (!Enum.TryParse<PaymentGateway>(
@@ -197,7 +200,6 @@ public class OrderSeeder
 
         return gateway;
     }
-
 
 
     private static void ApplyPaymentStatus(

@@ -2,6 +2,7 @@ using Application.Common.Interfaces;
 using Application.Features.Discount.DTOs;
 using Application.Features.Discount.Interfaces;
 using Application.Features.DiscountProduct.Interfaces;
+using Application.Features.DiscountVariant.Interfaces;
 using Application.Features.Product.Interfaces;
 using Shared.Exceptions;
 
@@ -11,17 +12,19 @@ public class DiscountService : DiscountServiceContract
 {
     private readonly DiscountRepositoryContract _discountRepositoryContract;
     private readonly DiscountProductRepositoryContract _discountProductRepositoryContract;
+    private readonly DiscountVariantRepositoryContract _discountVariantRepositoryContract;
     private readonly ProductRepositoryContract _productRepositoryContract;
     private readonly UnitOfWorkContract _unitOfWorkContract;
 
     public DiscountService(DiscountRepositoryContract discountRepositoryContract, UnitOfWorkContract unitOfWorkContract,
         ProductRepositoryContract productRepositoryContract,
-        DiscountProductRepositoryContract discountProductRepositoryContract)
+        DiscountProductRepositoryContract discountProductRepositoryContract, DiscountVariantRepositoryContract discountVariantRepositoryContract)
     {
         _discountRepositoryContract = discountRepositoryContract;
         _unitOfWorkContract = unitOfWorkContract;
         _productRepositoryContract = productRepositoryContract;
         _discountProductRepositoryContract = discountProductRepositoryContract;
+        _discountVariantRepositoryContract = discountVariantRepositoryContract;
     }
 
     public async Task<ViewDiscountDto> GetAllDiscountsAsync()
@@ -230,8 +233,67 @@ public class DiscountService : DiscountServiceContract
         
         return "تخفیف با موفقیت به محصولات اضافه شد.";
     }
+    
+    public async Task<string> SetDiscountForProductVariantAsync(Guid discountId, AddProductVariantToDiscountDto dto)
+    {
+        
+        if (discountId == Guid.Empty)
+            throw new BusinessException("شناسه تخفیف نامعتبر است.");
 
-    public async Task<string> DeleteDiscountFoProduct(Guid discountId, Guid productId)
+        if (dto.ProductVariantIds is null || !dto.ProductVariantIds.Any())
+            throw new BusinessException("حداقل یک محصول باید انتخاب شود.");
+
+        var discount = await _discountRepositoryContract
+            .GetDiscountByIdAsync(discountId);
+
+        if (discount is null)
+            throw new NotFoundException("تخفیف یافت نشد.");
+
+        var variants = await _productRepositoryContract
+            .GetProductsByIdsAsync(dto.ProductVariantIds);
+
+        if (variants is null || !variants.Any())
+            throw new NotFoundException("محصولی یافت نشد.");
+        
+        var existingProductVariantIds =
+            await _discountVariantRepositoryContract
+                .GetExistingDiscountVariantsAsync(discountId, dto.ProductVariantIds);
+        
+        if (existingProductVariantIds.Any())
+        {
+            throw new BusinessException(
+                "برخی محصولات قبلا این تخفیف را دارند."
+            );
+        }
+        
+        await _unitOfWorkContract.BeginTransactionAsync();
+        try
+        {
+            foreach (var product in variants)
+            {
+                var discountVariant = new Domain.Entities.DiscountVariant(
+                    discountId,
+                    product.Id
+                );
+
+                await _discountVariantRepositoryContract
+                    .AddProductToDiscountAsync(discountVariant);
+            }
+            await _unitOfWorkContract.SaveAsync();
+            await _unitOfWorkContract.CommitTransactionAsync();
+        }
+        catch 
+        {
+            await _unitOfWorkContract.RollbackTransactionAsync();
+            _unitOfWorkContract.ClearChangeTracker();
+             
+            throw;
+        }
+        
+        return "تخفیف با موفقیت به محصولات اضافه شد.";
+    }
+
+    public async Task<string> DeleteDiscountForProduct(Guid discountId, Guid productId)
     {
         if (discountId == Guid.Empty)
             throw new BusinessException("شناسه تخفیف نامعتبر است.");
@@ -264,13 +326,70 @@ public class DiscountService : DiscountServiceContract
         await _unitOfWorkContract.SaveAsync();
         return "تخفیف با موفقیت از محصول برداشته شد .";
     }
+    
+    public async Task<string> DeleteDiscountForProductVariant(Guid discountId, Guid productVariantId)
+    {
+        if (discountId == Guid.Empty)
+            throw new BusinessException("شناسه تخفیف نامعتبر است.");
+        
+        if (productVariantId == Guid.Empty)
+            throw new BusinessException("شناسه محصول نامعتبر است.");
+        
+        var discount = await _discountRepositoryContract
+            .GetDiscountByIdAsync(discountId);
 
+        if (discount is null)
+            throw new NotFoundException("تخفیف یافت نشد.");
+
+        var product = await _productRepositoryContract.GetProductByIdAsync(productVariantId);
+
+        if (product is null)
+            throw new NotFoundException("محصول یافت نشد .");
+        
+        var discountVariant =await _discountVariantRepositoryContract.GetDiscountProductAsync(discountId, productVariantId);
+
+        if (discountVariant is null)
+            throw new NotFoundException(
+                "این تخفیف برای محصول موردنظر وجود ندارد.");
+
+        await _discountVariantRepositoryContract
+            .RemoveAsync(discountVariant);
+
+        await _unitOfWorkContract.SaveAsync();
+        return "تخفیف با موفقیت از محصول برداشته شد .";
+    }
+    
     public async Task<ViewDiscountItemsDto> GetDiscountByProductId(Guid productId)
     {
         if (productId == Guid.Empty)
             throw new BusinessException("شناسه محصول نامعتبر است .");
 
         var discount = await _discountProductRepositoryContract.GetDiscountByProductIdAsync(productId);
+
+        if (discount is null)
+            throw new NotFoundException("تخفیفی برای محصول پیدا نشد .");
+        
+        return new ViewDiscountItemsDto
+        {
+            Id = discount.Id,
+            Title = discount.Title,
+            DiscountType = discount.DiscountType.ToString(),
+            Value = discount.Value,
+            MaxDiscountAmount = discount.MaxDiscountAmount,
+            StartsAt = discount.StartsAt,
+            EndsAt = discount.EndsAt,
+            IsActive = discount.IsActive,
+            CreatedAt = discount.CreatedAt,
+            UpdatedAt = discount.UpdatedAt
+        };
+    }
+    
+    public async Task<ViewDiscountItemsDto> GetDiscountByProductVariantId(Guid productVariantId)
+    {
+        if (productVariantId == Guid.Empty)
+            throw new BusinessException("شناسه محصول نامعتبر است .");
+
+        var discount = await _discountVariantRepositoryContract.GetDiscountByProductVariantIdAsync(productVariantId);
 
         if (discount is null)
             throw new NotFoundException("تخفیفی برای محصول پیدا نشد .");

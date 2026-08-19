@@ -7,4 +7,5 @@ public interface DiscountProductRepositoryContract
     Task<Domain.Entities.DiscountProduct?> GetDiscountProductAsync(Guid discountId, Guid productId);
     Task RemoveAsync(Domain.Entities.DiscountProduct discountProduct);
     Task<Domain.Entities.Discount?> GetDiscountByProductIdAsync(Guid productId);
+    
 }

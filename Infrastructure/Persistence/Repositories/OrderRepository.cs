@@ -19,6 +19,7 @@ public class OrderRepository : OrderRepositoryContract
         return await _context
             .Orders
             .Include(o => o.OrderItems)
+            .ThenInclude(oi => oi.Options)
             .Where(o => o.Id == orderId && o.UserId == userId)
             .FirstOrDefaultAsync();
     }
@@ -33,15 +34,18 @@ public class OrderRepository : OrderRepositoryContract
         return await _context
             .Orders
             .Include(o => o.OrderItems)
+            .ThenInclude(oi => oi.Options)
+            .OrderByDescending(o => o.CreatedAt)
             .ToListAsync();
     }
 
     public async Task<List<Order>?> GetOrderByUserIdAsync(Guid userId)
     {
-        return await _context
-            .Orders
+        return await _context.Orders
             .Include(o => o.OrderItems)
+            .ThenInclude(oi => oi.Options)
             .Where(o => o.UserId == userId)
+            .OrderByDescending(o => o.CreatedAt)
             .ToListAsync();
     }
 
