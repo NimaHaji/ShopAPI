@@ -1,5 +1,6 @@
-using Domain.Entities;
 using Shared.Exceptions;
+
+namespace Domain.Entities;
 
 public class OrderItemOption
 {

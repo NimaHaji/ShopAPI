@@ -1,5 +1,4 @@
 using Domain.Entities;
-using Domain.Enums;
 using Domain.Services;
 using Infrastructure.Persistence.Contexts;
 using Infrastructure.Persistence.Seed.Models;

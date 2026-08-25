@@ -24,7 +24,7 @@ public class UserContext : IUSerContext
 
             return Guid.TryParse(value, out var id)
                 ? id
-                : Guid.Empty;
+                : null;
         }
     }
 
@@ -34,16 +34,16 @@ public class UserContext : IUSerContext
         .Identity?
         .IsAuthenticated ?? false;
 
-    public string? Email => _httpContextAccessor.HttpContext
-        .User
+    public string? Email => _httpContextAccessor.HttpContext?
+        .User?
         .FindFirstValue(ClaimTypes.Email);
 
     public UserRole Role
     {
         get
         {
-            var value = _httpContextAccessor.HttpContext
-                .User
+            var value = _httpContextAccessor.HttpContext?
+                .User?
                 .FindFirstValue(ClaimTypes.Role);
             return Enum.TryParse<UserRole>(value, out var role)
                 ? role
