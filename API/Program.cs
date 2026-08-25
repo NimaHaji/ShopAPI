@@ -7,21 +7,32 @@ using Infrastructure;
 using Infrastructure.Persistence.Contexts;
 using Infrastructure.Persistence.Seed;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using ShopApi.ExceptionHandlers;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
+using Serilog;
+using ShopApi.HealthChecks;
+using ShopApi.Middlewares;
 using AssemblyReference = Application.Validator.AssemblyReference;
 
 var builder = WebApplication.CreateBuilder(args);
-
+builder.Host
+    .UseSerilog((context, services, configuration) =>
+    {
+        configuration
+            .ReadFrom.Configuration(context.Configuration)
+            .ReadFrom.Services(services)
+            .Enrich.FromLogContext();
+    });
 builder.Services
     .AddControllers()
-    .AddFluentValidation(x =>
-    {
-        x.AutomaticValidationEnabled = true;
-    });
+    .AddFluentValidation(x => { x.AutomaticValidationEnabled = true; });
 
 builder.Services.AddEndpointsApiExplorer();
 
@@ -105,6 +116,45 @@ builder.Services.AddApplication();
 builder.Services.AddInfrastructureServices(
     builder.Configuration);
 
+builder.Services.AddHealthChecks()
+    .AddCheck(
+        "application",
+        () => HealthCheckResult.Healthy(),
+        tags: ["live"])
+    .AddDbContextCheck<ShopDbContext>(
+        "database",
+        tags: ["ready"]
+    );
+
+builder.Services
+    .AddOpenTelemetry()
+    .ConfigureResource(resource =>
+    {
+        resource
+            .AddService(
+                serviceName: "shopApi"
+                , serviceVersion: "1.0.0"
+            );
+    })
+    .WithMetrics(metrics =>
+    {
+        metrics
+            .AddAspNetCoreInstrumentation()
+            .AddRuntimeInstrumentation()
+            .AddPrometheusExporter();
+    })
+    .WithTracing(tracing =>
+    {
+        tracing
+            .AddSource("shopApi")
+            .AddAspNetCoreInstrumentation()
+            .AddEntityFrameworkCoreInstrumentation()
+            .AddHttpClientInstrumentation()
+            .AddOtlpExporter(options =>
+            {
+                options.Endpoint = new Uri(builder.Configuration["Otlp:Endpoint"]);
+            });
+    });
 
 builder.Services.AddValidatorsFromAssemblyContaining<AssemblyReference>();
 
@@ -138,26 +188,45 @@ using (var scope = app.Services.CreateScope())
     var db =
         scope.ServiceProvider
             .GetRequiredService<ShopDbContext>();
-    
+
     await db.Database.MigrateAsync();
-    
+
     var seedEnabled =
         builder.Configuration
             .GetValue<bool>("Seed:Enabled");
-    
+
     if (seedEnabled)
     {
         var seeder =
             scope.ServiceProvider
                 .GetRequiredService<DatabaseSeeder>();
-        
+
         await seeder.SeedAsync();
     }
 }
 
 app.UseHttpsRedirection();
-app.UseExceptionHandler();
 app.UseAuthentication();
+app.UseExceptionHandler();
+app.UseMiddleware<RequestLoggingMiddleware>();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHealthChecks("/health"
+    ,new HealthCheckOptions
+    {
+        ResponseWriter = HealthCheckResponseWriter.WriteResponseAsync
+    });
+app.MapHealthChecks(
+    "health/live",
+    new HealthCheckOptions
+    {
+        Predicate = check => check.Tags.Contains("live"),
+    });
+app.MapHealthChecks(
+    "health/ready",
+    new HealthCheckOptions
+    {
+        Predicate = check => check.Tags.Contains("ready"),
+    });
+app.MapPrometheusScrapingEndpoint();
 app.Run();
