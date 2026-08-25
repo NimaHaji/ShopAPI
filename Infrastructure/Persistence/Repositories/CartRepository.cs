@@ -35,6 +35,7 @@ public class CartRepository : CartRepositoryContract
                 .ThenInclude(c => c.ProductVariant)
                     .ThenInclude(x=>x.DiscountVariants)
                         .ThenInclude(x=>x.Discount)
+            .AsSplitQuery()
             .FirstOrDefaultAsync(c => c.UserId == userId);
     }
 

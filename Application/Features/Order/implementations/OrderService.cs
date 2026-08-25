@@ -1,4 +1,6 @@
+using System.Diagnostics;
 using Application.Common.Interfaces;
+using Application.Common.Observability;
 using Application.Features.Order.DTOs;
 using Application.Features.Order.Interfaces;
 using Application.Features.Product.Interfaces;
@@ -26,6 +28,13 @@ public class OrderService : OrderServicesContract
 
     public async Task<Guid> CreateOrderAsync(CreateOrderDto orderDto, Domain.Entities.Address userAddress)
     {
+        using var activity =
+            ActivitySources.ShopApi.StartActivity("Order.Create");
+
+        activity?.SetTag(
+            "order.items_count",
+            orderDto.Items.Count);
+        
         var userId = _userContext.UserId
                      ?? throw new UnauthorizedAccessException(
                          "کاربر احراز هویت نشده است.");
@@ -56,7 +65,7 @@ public class OrderService : OrderServicesContract
 
         var variantMap = variants.ToDictionary(x => x.Id);
 
-        foreach (var item in orderDto.Items)
+        foreach (var item in orderDto.Items)    
         {
             if (item.Quantity <= 0)
                 throw new BusinessException(
@@ -139,7 +148,11 @@ public class OrderService : OrderServicesContract
 
             order.AddItem(orderItem);
         }
-
+        
+        activity?.SetTag(
+            "order.items_created",
+            orderDto.Items.Count);
+        
         if (orderDto.CouponId.HasValue)
         {
             order.ApplyCoupon(
@@ -149,7 +162,14 @@ public class OrderService : OrderServicesContract
         }
 
         await _orderRepository.CreateOrderAsync(order);
+        
+        activity?.SetTag(
+            "order.id",
+            order.Id.ToString());
 
+        activity?.SetStatus(
+            ActivityStatusCode.Ok);
+        
         return order.Id;
     }
 

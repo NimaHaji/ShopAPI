@@ -1,12 +1,22 @@
 using System.Data;
+using System.Diagnostics;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Diagnostics;
-using Microsoft.AspNetCore.Http.HttpResults;
+using Serilog.Context;
 using Shared.Exceptions;
 
-namespace ShopApi.ExceptionHandlers;
+namespace ShopApi.Middlewares;
 
 public class GlobalExceptionHandler : IExceptionHandler
 {
+    private readonly ILogger<GlobalExceptionHandler> _logger;
+
+    public GlobalExceptionHandler(
+        ILogger<GlobalExceptionHandler> logger)
+    {
+        _logger = logger;
+    }
+
     public async ValueTask<bool> TryHandleAsync(
         HttpContext httpContext,
         Exception exception,
@@ -42,6 +52,52 @@ public class GlobalExceptionHandler : IExceptionHandler
             _ => "خطای غیرمنتظره‌ای در سرور رخ داده است. لطفاً بعداً دوباره تلاش کنید."
         };
 
+        var traceId =
+            Activity.Current?.TraceId.ToString()
+            ?? httpContext.TraceIdentifier;
+
+        var userId =
+            httpContext.User.FindFirstValue(
+                ClaimTypes.NameIdentifier)
+            ?? "Anonymous";
+
+        var method = httpContext.Request.Method;
+        var path = httpContext.Request.Path;
+
+        using var traceScope =
+            LogContext.PushProperty("TraceId", traceId);
+
+        using var methodScope =
+            LogContext.PushProperty("Method", method);
+
+        using var pathScope =
+            LogContext.PushProperty("Path", path);
+
+        using var userScope =
+            LogContext.PushProperty("UserId", userId);
+
+        if (statusCode >= 500)
+        {
+            _logger.LogError(
+                exception,
+                "Unhandled exception occurred. " +
+                "ExceptionType: {ExceptionType}, " +
+                "StatusCode: {StatusCode}",
+                exception.GetType().Name,
+                statusCode);
+        }
+        else
+        {
+            _logger.LogWarning(
+                "Request failed. " +
+                "ExceptionType: {ExceptionType}, " +
+                "StatusCode: {StatusCode}, " +
+                "Message: {Message}",
+                exception.GetType().Name,
+                statusCode,
+                exception.Message);
+        }
+
         httpContext.Response.StatusCode = statusCode;
 
         await httpContext.Response.WriteAsJsonAsync(
@@ -49,8 +105,7 @@ public class GlobalExceptionHandler : IExceptionHandler
             {
                 message
             },
-            cancellationToken
-        );
+            cancellationToken);
 
         return true;
     }
