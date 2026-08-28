@@ -44,5 +44,7 @@ public class UserMapping : IEntityTypeConfiguration<User>
             "CK_Role_Valid_Values",
             "[Role] IN (0,1,2)"
         );
+
+        builder.HasIndex(u => u.Email).IsUnique();
     }
 }
