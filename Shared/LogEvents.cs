@@ -75,4 +75,49 @@ public static class LogEvents
         public static readonly EventId Unhandled =
             new(5002, nameof(Unhandled));
     }
+
+    public static class RefreshToken
+    {
+        public static readonly EventId Started = new(6001, nameof(Started));
+        public static readonly EventId Generating = new(6002, nameof(Generating));
+        public static readonly EventId Invalid = new(6003, nameof(Invalid));
+        public static readonly EventId Failed = new(6004, nameof(Failed));
+        public static readonly EventId Revoked = new(6005, nameof(Revoked));
+        public static readonly EventId Expired = new(6006, nameof(Expired));
+        public static readonly EventId Rotated = new(6007, nameof(Rotated));
+        public static readonly EventId Succeeded = new(6008, nameof(Succeeded));
+        public static readonly EventId ConcurrencyConflict = new(6009, nameof(ConcurrencyConflict));
+    }
+
+    public static class UserRegistration
+    {
+        public static readonly EventId Started = new(7001, nameof(Started));
+        public static readonly EventId DuplicateEmail = new(7002, nameof(DuplicateEmail));
+        public static readonly EventId Succeeded = new(7003, nameof(Succeeded));
+    }
+
+    public static class UserLogin
+    {
+        public static readonly EventId Started = new(8001, nameof(Started));
+        public static readonly EventId InvalidCredentials = new(8002, nameof(InvalidCredentials));
+        public static readonly EventId Succeeded = new(8003, nameof(Succeeded));
+    }
+    public static class UserRoleChange
+    {
+        public static readonly EventId Started = new(9001, nameof(Started));
+        public static readonly EventId UserNotFound = new(9002, nameof(UserNotFound));
+        public static readonly EventId Succeeded = new(9003, nameof(Succeeded));
+    }
+    
+    public static class UserLogout
+    {
+        public static readonly EventId Started = new(1101, nameof(Started));
+        public static readonly EventId Succeeded = new(1102, nameof(Succeeded));
+    }
+    
+    public static class Profile
+    {
+        public static readonly EventId UpdateStarted = new(1201, nameof(UpdateStarted));
+        public static readonly EventId UpdateSucceeded = new(1202, nameof(UpdateSucceeded));
+    }
 }
