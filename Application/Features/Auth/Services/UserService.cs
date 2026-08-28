@@ -5,6 +5,9 @@ using Application.Features.Auth.DTOs;
 using Application.Features.Auth.Interfaces;
 using Domain.Entities;
 using Domain.Enums;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Shared;
 using Shared.Exceptions;
 
 namespace Application.Features.Auth.Services;
@@ -17,10 +20,12 @@ public class UserService : IUserService
     private readonly IJwtTokenService _jwtTokenService;
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly IUSerContext _userContext;
+    private readonly UnitOfWorkContract _unitOfWorkContract;
+    private readonly ILogger<UserService> _logger;
 
     public UserService(IUserRepository repository, IJwtTokenService jwtTokenGenerator,
         IRefreshTokenRepository refreshTokenRepository, IHasher hasher, IPasswordHasher passwordHasher,
-        IUSerContext userContext)
+        IUSerContext userContext, UnitOfWorkContract unitOfWorkContract, ILogger<UserService> logger)
     {
         _userRepository = repository;
         _jwtTokenService = jwtTokenGenerator;
@@ -28,126 +33,296 @@ public class UserService : IUserService
         _hasher = hasher;
         _passwordHasher = passwordHasher;
         _userContext = userContext;
+        _unitOfWorkContract = unitOfWorkContract;
+        _logger = logger;
     }
 
     public async Task<string> RegisterUserAsync(RegisterUserRequestDto registerUserRequestDto)
     {
-        var password = _passwordHasher.Hash(registerUserRequestDto.Password);
+        _logger.LogInformation(
+            LogEvents.UserRegistration.Started,
+            "User registration started.");
 
         if (await _userRepository.IsUserExistsByEmailAsync(registerUserRequestDto.Email))
-            throw new DuplicateUserException("Email already exists");
-
-        var user = new User(registerUserRequestDto.FullName, registerUserRequestDto.Email,
-            registerUserRequestDto.PhoneNumber, password);
-        await _userRepository.RegisterUserAsync(user);
-        return $"{user.FullName} Registred";
-    }
-
-    public async Task<LoginUserResponseDto> LoginUserAsync(LoginUserRequestDto loginUserRequestDto)
-    {
-        var users = await _userRepository.GetUsersByEmailAsync(loginUserRequestDto.Email);
-
-        if (users == null)
-            throw new UnauthorizedAccessException("Invalid email or password");
-
-        var matchedUsers = users?
-            .Where(us => _passwordHasher.Verify(us.Password, loginUserRequestDto.Password))
-            .ToList();
-        if (matchedUsers.Count == 0)
-            throw new UnauthorizedAccessException("Invalid email or password");
-
-        if (matchedUsers.Count == 1)
         {
-            var user = matchedUsers.First();
+            _logger.LogWarning(
+                LogEvents.UserRegistration.DuplicateEmail,
+                "User registration failed because email already exists.");
 
-            var token = _jwtTokenService.GenerateJwtToken(user);
-            var refreshTokenValue = _jwtTokenService.GenerateRefreshToken();
-            var refreshTokenHash = _hasher.Hash(refreshTokenValue);
-            var refreshToken = new RefreshToken
-            {
-                Id = Guid.NewGuid(),
-                Token = refreshTokenHash,
-                UserId = user.Id,
-                ExpiresAt = DateTime.UtcNow.AddDays(7)
-            };
-
-            await _refreshTokenRepository.AddAsync(refreshToken);
-            await _refreshTokenRepository.SaveChangesAsync();
-
-            return new LoginUserResponseDto(token, refreshTokenValue);
+            throw new DuplicateUserException("این ایمیل از قبل وجود دارد .");
         }
 
-        //Todo: challenge token
+        var password = _passwordHasher.Hash(registerUserRequestDto.Password);
 
-        return new LoginUserResponseDto(null, null);
+        var user = new User(
+            registerUserRequestDto.FullName,
+            registerUserRequestDto.Email,
+            registerUserRequestDto.PhoneNumber,
+            password);
+
+        await _userRepository.RegisterUserAsync(user);
+        await _unitOfWorkContract.SaveAsync();
+
+        _logger.LogInformation(
+            LogEvents.UserRegistration.Succeeded,
+            "User registration completed successfully.");
+
+        return $"{user.FullName} با موفقیت ثبت نام شد ";
+    }
+
+    public async Task<LoginUserResponseDto> LoginUserAsync(
+        LoginUserRequestDto loginUserRequestDto)
+    {
+        _logger.LogInformation(
+            LogEvents.UserLogin.Started,
+            "User login started.");
+
+        var user = await _userRepository.GetUserByEmailAsync(loginUserRequestDto.Email);
+
+        if (user == null)
+        {
+            _logger.LogWarning(
+                LogEvents.UserLogin.InvalidCredentials,
+                "User login failed due to invalid credentials.");
+
+            throw new UnauthorizedAccessException("ایمیل یا رمز عبور نامعتبر است .");
+        }
+
+        var isUserValid = _passwordHasher.Verify(
+            user.Password,
+            loginUserRequestDto.Password);
+
+        if (!isUserValid)
+        {
+            _logger.LogWarning(
+                LogEvents.UserLogin.InvalidCredentials,
+                "User login failed due to invalid credentials.");
+
+            throw new UnauthorizedAccessException("ایمیل یا رمز عبور نامعتبر است .");
+        }
+
+        var token = _jwtTokenService.GenerateJwtToken(user);
+        var refreshTokenValue = _jwtTokenService.GenerateRefreshToken();
+
+        var refreshTokenHash = _hasher.Hash(refreshTokenValue);
+
+        var refreshToken = new RefreshToken
+        {
+            Id = Guid.NewGuid(),
+            Token = refreshTokenHash,
+            UserId = user.Id,
+            ExpiresAt = DateTime.UtcNow.AddDays(7)
+        };
+
+        await _refreshTokenRepository.AddAsync(refreshToken);
+        await _unitOfWorkContract.SaveAsync();
+
+        _logger.LogInformation(
+            LogEvents.UserLogin.Succeeded,
+            "User login completed successfully.");
+
+        return new LoginUserResponseDto(token, refreshTokenValue);
     }
 
     public async Task ChangeRoleTo(UserRole role)
     {
-        var userId = _userContext.UserId ?? throw new UnauthorizedAccessException("کاربر احراز هویت نشده است.");
+        _logger.LogInformation(
+            LogEvents.UserRoleChange.Started,
+            "User role change started.");
+
+        var userId = _userContext.UserId
+                     ?? throw new UnauthorizedAccessException("کاربر احراز هویت نشده است.");
+
         var user = await _userRepository.GetUserByIdAsync(userId);
-        user?.ChangeRoleTo(role);
+
+        if (user is null)
+        {
+            _logger.LogWarning(
+                LogEvents.UserRoleChange.UserNotFound,
+                "User role change failed because user was not found.");
+
+            throw new NotFoundException("کاربر یافت نشد.");
+        }
+
+        user.ChangeRoleTo(role);
+
+        await _unitOfWorkContract.SaveAsync();
+
+        _logger.LogInformation(
+            LogEvents.UserRoleChange.Succeeded,
+            "User role changed successfully. NewRole: {NewRole}",
+            role);
     }
 
     public async Task<string> LogoutUserAsync()
     {
-        var userId = _userContext.UserId ?? throw new UnauthorizedAccessException("کاربر احراز هویت نشده است.");
-        var refreshTokens = await _refreshTokenRepository.GetRefreshTokensByIdAsync(userId);
+        _logger.LogInformation(
+            LogEvents.UserLogout.Started,
+            "User logout started.");
+
+        var userId = _userContext.UserId
+                     ?? throw new UnauthorizedAccessException(
+                         "کاربر احراز هویت نشده است.");
+
+        var refreshTokens =
+            await _refreshTokenRepository.GetRefreshTokensByIdAsync(userId);
+
         foreach (var token in refreshTokens)
         {
             token.IsRevoked = true;
         }
 
-        await _refreshTokenRepository.SaveChangesAsync();
+        await _unitOfWorkContract.SaveAsync();
+
+        _logger.LogInformation(
+            LogEvents.UserLogout.Succeeded,
+            "User logout completed successfully. RevokedRefreshTokens: {Count}",
+            refreshTokens.Count);
+
         return "User Logged out .";
     }
 
     public async Task<LoginUserResponseDto> RefreshTokenAsync(string refreshToken)
     {
+        _logger.LogInformation(
+            LogEvents.RefreshToken.Started,
+            "Refresh token operation started.");
+
+        int attempts = 0;
+        const int maxAttempts = 4;
+
         var hashedToken = _hasher.Hash(refreshToken);
 
-        var storedToken = await _refreshTokenRepository.GetAsync(hashedToken)
-                          ?? throw new Exception("Invalid refresh token");
-
-        if (storedToken.IsRevoked)
-            throw new Exception("Refresh token already used");
-
-        if (storedToken.ExpiresAt <= DateTime.UtcNow)
-            throw new Exception("Refresh token expired");
-
-        var newAccessToken = _jwtTokenService.GenerateJwtToken(storedToken.User);
-
-        var rotateWindow = TimeSpan.FromMinutes(5);
-
-        string? newRefreshTokenValue = null;
-
-        if (storedToken.ExpiresAt - DateTime.UtcNow <= rotateWindow)
+        while (attempts < maxAttempts)
         {
-            storedToken.IsRevoked = true;
-
-            newRefreshTokenValue = _jwtTokenService.GenerateRefreshToken();
-
-            await _refreshTokenRepository.AddAsync(new RefreshToken
+            try
             {
-                Id = Guid.NewGuid(),
-                Token = _hasher.Hash(newRefreshTokenValue),
-                UserId = storedToken.UserId,
-                ExpiresAt = DateTime.UtcNow.AddDays(7),
-                IsRevoked = false
-            });
+                await _unitOfWorkContract.BeginTransactionAsync();
+                
+                var storedToken = await _refreshTokenRepository.GetAsync(hashedToken);
+
+                if (storedToken is null)
+                {
+                    _logger.LogWarning(
+                        LogEvents.RefreshToken.Invalid,
+                        "Refresh token was not found.");
+
+                    throw new UnauthorizedAccessException("Invalid refresh token.");
+                }
+
+                if (storedToken.IsRevoked)
+                {
+                    _logger.LogWarning(
+                        LogEvents.RefreshToken.Revoked,
+                        "Refresh token was already revoked. ");
+
+                    throw new UnauthorizedAccessException("Refresh token already used.");
+                }
+
+                if (storedToken.ExpiresAt <= DateTime.UtcNow)
+                {
+                    _logger.LogWarning(
+                        LogEvents.RefreshToken.Expired,
+                        "Refresh token expired. ExpiresAt: {ExpiresAt}",
+                        storedToken.ExpiresAt);
+
+                    throw new UnauthorizedAccessException("Refresh token expired.");
+                }
+                
+                _logger.LogInformation(
+                    LogEvents.RefreshToken.Generating,
+                    "Generating new access token.");
+
+                var newAccessToken =
+                    _jwtTokenService.GenerateJwtToken(storedToken.User);
+
+                var rotateWindow = TimeSpan.FromMinutes(5);
+
+                string? newRefreshTokenValue = null;
+                bool rotated = false;
+
+                if (storedToken.ExpiresAt - DateTime.UtcNow <= rotateWindow)
+                {
+                    storedToken.IsRevoked = true;
+
+                    _logger.LogInformation(
+                        LogEvents.RefreshToken.Rotated,
+                        "Refresh token rotation triggered.");
+
+                    newRefreshTokenValue =
+                        _jwtTokenService.GenerateRefreshToken();
+
+                    await _refreshTokenRepository.AddAsync(new RefreshToken
+                    {
+                        Id = Guid.NewGuid(),
+                        Token = _hasher.Hash(newRefreshTokenValue),
+                        UserId = storedToken.UserId,
+                        ExpiresAt = DateTime.UtcNow.AddDays(7),
+                        IsRevoked = false
+                    });
+
+                    rotated = true;
+                }
+
+                await _unitOfWorkContract.SaveAsync();
+
+                _logger.LogInformation(
+                    LogEvents.RefreshToken.Succeeded,
+                    "Refresh token operation completed successfully. Rotated: {Rotated}",
+                    rotated);
+
+                return new LoginUserResponseDto(
+                    newAccessToken,
+                    newRefreshTokenValue ?? refreshToken);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                attempts++;
+
+                await _unitOfWorkContract.RollbackTransactionAsync();
+                _unitOfWorkContract.ClearChangeTracker();
+
+                _logger.LogWarning(
+                    LogEvents.RefreshToken.ConcurrencyConflict,
+                    "Refresh token concurrency conflict. Attempt: {Attempt}, MaxAttempts: {MaxAttempts}",
+                    attempts,
+                    maxAttempts);
+
+                if (attempts == maxAttempts)
+                {
+                    _logger.LogError(
+                        LogEvents.RefreshToken.Failed,
+                        "Refresh token operation failed after maximum concurrency retries. Attempts: {Attempts}",
+                        attempts);
+
+                    throw new ConflictException(
+                        "توکن در حال تغییر است. لطفاً دوباره تلاش کنید.");
+                }
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWorkContract.RollbackTransactionAsync();
+
+                _logger.LogError(
+                    LogEvents.RefreshToken.Failed,
+                    ex,
+                    "Unexpected error occurred during refresh token operation.");
+
+                throw;
+            }
         }
 
-        await _refreshTokenRepository.SaveChangesAsync();
-        return new LoginUserResponseDto(
-            newAccessToken,
-            newRefreshTokenValue ?? refreshToken
-        );
+        throw new InvalidOperationException("خطای غیر منتظره");
     }
 
     public async Task<ProfileResponseDto> ViewProfileAsync()
     {
         var userId = _userContext.UserId ?? throw new UnauthorizedAccessException("کاربر احراز هویت نشده است.");
         var user = await _userRepository.GetUserByIdAsync(userId);
+
+        if (user is null)
+            throw new NotFoundException("کاربر یافت نشد .");
+        
         return new ProfileResponseDto
         {
             Id = user.Id,
@@ -158,17 +333,29 @@ public class UserService : IUserService
         };
     }
 
-    public async Task<ProfileResponseDto> UpdateProfileAsync(UpdateProfileRequestDto dto)
+    public async Task<ProfileResponseDto> UpdateProfileAsync(
+        UpdateProfileRequestDto dto)
     {
-        var userId = _userContext.UserId ?? throw new UnauthorizedAccessException("کاربر احراز هویت نشده است.");
+        _logger.LogInformation(
+            LogEvents.Profile.UpdateStarted,
+            "User profile update started.");
+
+        var userId = _userContext.UserId
+                     ?? throw new UnauthorizedAccessException(
+                         "کاربر احراز هویت نشده است.");
+
         var user = await _userRepository.GetUserByIdAsync(userId)
-                   ?? throw new UnauthorizedAccessException("Invalid user id");
+                   ?? throw new NotFoundException("کاربر یافت نشد .");
 
         user.UpdateProfile(dto.FullName, dto.PhoneNumber);
 
-        await _userRepository.SaveChangesAsync();
+        await _unitOfWorkContract.SaveAsync();
 
-        return new ProfileResponseDto()
+        _logger.LogInformation(
+            LogEvents.Profile.UpdateSucceeded,
+            "User profile updated successfully.");
+
+        return new ProfileResponseDto
         {
             Id = user.Id,
             FullName = user.FullName,
