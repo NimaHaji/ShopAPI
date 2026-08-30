@@ -58,24 +58,5 @@
         "isDefault": true
       }
     ]
-  },{
-  "key": "REMOVED",
-  "fullName": "REMOVED",
-  "email": "REMOVED",
-  "phoneNumber": "REMOVED",
-  "password": "REMOVED",
-  "role": "SuperAdmin",
-  "addresses": [
-    {
-      "title": "منزل",
-      "receiverName": "REMOVED",
-      "phoneNumber": "REMOVED",
-      "province": "مازندران",
-      "city": "قائمشهر",
-      "addressLine": "خیابان ساری",
-      "postalCode": "8173951234",
-      "isDefault": true
-    }
-  ]
-}
+  }
 ]
