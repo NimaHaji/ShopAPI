@@ -55,14 +55,20 @@ public class CheckoutService : CheckoutServiceContract
         string idempotencyKey)
     {
         using var activity =
-            ActivitySources.ShopApi.StartActivity(nameof(Checkout));
-        
+            ActivitySources.ShopApi.StartActivity(nameof(CheckoutAsync));
+
         int attempts = 0;
         const int maxAttempts = 4;
 
         var userId = _userContext.UserId
                      ?? throw new UnauthorizedAccessException(
                          "کاربر احراز هویت نشده است.");
+
+        activity?.SetTag("user.id", userId);
+        activity?.SetTag("address.id", dto.AddressId);
+        activity?.SetTag(
+            "checkout.has_coupon",
+            !string.IsNullOrWhiteSpace(dto.CouponCode));
 
         _logger.LogInformation(
             LogEvents.Checkout.Started,
@@ -166,7 +172,8 @@ public class CheckoutService : CheckoutServiceContract
                 await _unitOfWork.SaveAsync();
 
                 using var reserveStockActivity =
-                    ActivitySources.ShopApi.StartActivity("Checkout.ReserveStock");
+                    ActivitySources.ShopApi.StartActivity(
+                        "Checkout.ReserveStock");
 
                 reserveStockActivity?.SetTag(
                     "checkout.items_count",
@@ -198,7 +205,7 @@ public class CheckoutService : CheckoutServiceContract
 
                     throw;
                 }
-                
+
                 var createOrderDto = new CreateOrderDto
                 {
                     Items = cart.CartItems

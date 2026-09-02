@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using Application.Common.Observability;
 using Application.Features.Home.DTOs;
 using Application.Features.Home.Interfaces;
 using Application.Features.Product.Interfaces;
@@ -18,82 +20,127 @@ public class HomeService : HomeServiceContract
 
     public async Task<HomeDto> GetHomeAsync()
     {
+        using var activity =
+            ActivitySources.ShopApi.StartActivity(
+                nameof(GetHomeAsync));
+
         var now = DateTime.UtcNow;
 
-        var categories = await _productRepositoryContract.GetAllProductCategories();
+        var categories =
+            await _productRepositoryContract
+                .GetAllProductCategories();
 
-        var productOffers = await _productRepositoryContract.GetDiscountedProducts();
+        var productOffers =
+            await _productRepositoryContract
+                .GetDiscountedProducts();
 
-        var brands = await _productRepositoryContract.GetAllBrandAsync();
+        var brands =
+            await _productRepositoryContract
+                .GetAllBrandAsync();
 
-        var newestProducts = await _productRepositoryContract.GetNewestProducts();
+        var newestProducts =
+            await _productRepositoryContract
+                .GetNewestProducts();
+
+        activity?.SetTag(
+            "home.categories_count",
+            categories.Count);
+
+        activity?.SetTag(
+            "home.brands_count",
+            brands.Count);
+
+        activity?.SetTag(
+            "home.product_offers_count",
+            productOffers.Count);
+
+        activity?.SetTag(
+            "home.newest_products_count",
+            newestProducts.Count);
+
+        activity?.SetStatus(
+            ActivityStatusCode.Ok);
 
         return new HomeDto
         {
-            Categories = categories.Select(x => new HomeCategoriesDto
+            Categories = categories
+                .Select(x => new HomeCategoriesDto
                 {
                     Id = x.Id,
                     CategoryName = x.Title
                 })
                 .ToList(),
 
-            Brands = brands.Select(x => new HomeBrandsDto
-            {
-                Id = x.Id,
-                BrandName = x.Title
-            }).ToList(),
-
-            ProductOffers = productOffers.Select(p =>
-            {
-                var price = CalculateProductPrice(p, now);
-
-                return new HomeProductOffersDto
+            Brands = brands
+                .Select(x => new HomeBrandsDto
                 {
-                    Id = p.Id,
-                    Title = p.Title,
+                    Id = x.Id,
+                    BrandName = x.Title
+                })
+                .ToList(),
 
-                    MinPrice = price.MinPrice,
-                    MaxPrice = price.MaxPrice,
-
-                    FinalMinPrice = price.FinalMinPrice,
-                    FinalMaxPrice = price.FinalMaxPrice,
-                    
-                    DiscountType = price.DiscountType,
-                    DiscountPercentage = price.DiscountPercentage,
-                    DiscountAmount = price.DiscountAmount,
-
-                    ProductImage = p.Images
-                        .OrderBy(x => x.SortOrder)
-                        .Select(x => x.ImageLink)
-                        .FirstOrDefault()
-                };
-            }).ToList(),
-
-            NewestProducts = newestProducts.Select(p =>
-            {
-                var price = CalculateProductPrice(p, now);
-
-                return new HomeNewestProducts
+            ProductOffers = productOffers
+                .Select(p =>
                 {
-                    Id = p.Id,
-                    Title = p.Title,
+                    var price =
+                        CalculateProductPrice(p, now);
 
-                    MinPrice = price.MinPrice,
-                    MaxPrice = price.MaxPrice,
+                    return new HomeProductOffersDto
+                    {
+                        Id = p.Id,
+                        Title = p.Title,
 
-                    FinalMinPrice = price.FinalMinPrice,
-                    FinalMaxPrice = price.FinalMaxPrice,
+                        MinPrice = price.MinPrice,
+                        MaxPrice = price.MaxPrice,
 
-                    DiscountType = price.DiscountType.ToString(),
-                    DiscountPercentage = price.DiscountPercentage,
-                    DiscountAmount = price.DiscountAmount,
+                        FinalMinPrice = price.FinalMinPrice,
+                        FinalMaxPrice = price.FinalMaxPrice,
 
-                    ProductImage = p.Images
-                        .OrderBy(x => x.SortOrder)
-                        .Select(x => x.ImageLink)
-                        .FirstOrDefault()
-                };
-            }).ToList()
+                        DiscountType = price.DiscountType,
+                        DiscountPercentage =
+                            price.DiscountPercentage,
+                        DiscountAmount =
+                            price.DiscountAmount,
+
+                        ProductImage = p.Images
+                            .OrderBy(x => x.SortOrder)
+                            .Select(x => x.ImageLink)
+                            .FirstOrDefault()
+                    };
+                })
+                .ToList(),
+
+            NewestProducts = newestProducts
+                .Select(p =>
+                {
+                    var price =
+                        CalculateProductPrice(p, now);
+
+                    return new HomeNewestProducts
+                    {
+                        Id = p.Id,
+                        Title = p.Title,
+
+                        MinPrice = price.MinPrice,
+                        MaxPrice = price.MaxPrice,
+
+                        FinalMinPrice = price.FinalMinPrice,
+                        FinalMaxPrice = price.FinalMaxPrice,
+
+                        DiscountType =
+                            price.DiscountType?.ToString(),
+                        DiscountPercentage =
+                            price.DiscountPercentage,
+                        DiscountAmount =
+                            price.DiscountAmount,
+
+                        ProductImage = p.Images
+                            .OrderBy(x => x.SortOrder)
+                            .Select(x => x.ImageLink)
+                            .FirstOrDefault()
+                    };
+                })
+                .ToList()
         };
     }
 

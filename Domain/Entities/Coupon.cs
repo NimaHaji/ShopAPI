@@ -218,8 +218,6 @@ public class Coupon
 
     public void Deactivate()
     {
-        if (!IsDeleted)
-            throw new BusinessException("کد تخفیف حذف نشده است و وجود دارد .");
         
         if (!IsActive)
             throw new BusinessException("کد تخفیف غیر فعال است .");

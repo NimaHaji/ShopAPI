@@ -1,5 +1,6 @@
 using System.Data;
 using Application.Common.Interfaces;
+using Application.Common.Observability;
 using Application.Features.Inventory.Interfaces;
 using Application.Features.Product.DTOs;
 using Application.Features.Product.Interfaces;
@@ -9,6 +10,8 @@ using Domain.Entities;
 using Domain.Enums;
 using Domain.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Shared;
 using Shared.Exceptions;
 
 namespace Application.Features.Product.implementations;
@@ -21,11 +24,12 @@ public class ProductService : ProductServicesContract
     private readonly SkuGeneratorContract _skuGeneratorContract;
     private readonly ReviewsRepositoryContract _reviewsRepositoryContract;
     private readonly IUSerContext _userContext;
+    private readonly ILogger<ProductService> _logger;
 
     public ProductService(ProductRepositoryContract productRepositoryContract,
         InventoryServiceContract inventoryServiceContract, UnitOfWorkContract unitOfWorkContract,
         SkuGeneratorContract skuGeneratorContract, ReviewsRepositoryContract reviewsRepositoryContract,
-        IUSerContext userContext)
+        IUSerContext userContext, ILogger<ProductService> logger)
     {
         _productRepositoryContract = productRepositoryContract;
         _inventoryServiceContract = inventoryServiceContract;
@@ -33,16 +37,29 @@ public class ProductService : ProductServicesContract
         _skuGeneratorContract = skuGeneratorContract;
         _reviewsRepositoryContract = reviewsRepositoryContract;
         _userContext = userContext;
+        _logger = logger;
     }
 
     #region product
 
     public async Task<ViewProductDto> GetAllProducts(ProductQueryDto query)
     {
-        var products = await _productRepositoryContract.GetProductList(query);
+        using var activity =
+            ActivitySources.ShopApi.StartActivity(nameof(GetAllProducts));
+
+        _logger.LogInformation(
+            LogEvents.Product.GetAllStarted,
+            "Getting products.");
+
+        var products =
+            await _productRepositoryContract.GetProductList(query);
 
         if (products is null)
         {
+            _logger.LogInformation(
+                LogEvents.Product.GetAllCompleted,
+                "No products found.");
+
             return new ViewProductDto
             {
                 Items = []
@@ -66,64 +83,55 @@ public class ProductService : ProductServicesContract
                     d.EndsAt > now);
 
             var variantDtos = variants.Select(v =>
+            {
+                var activeVariantDiscount = v.DiscountVariants
+                    .Select(dp => dp.Discount)
+                    .FirstOrDefault(d =>
+                        !d.IsDeleted &&
+                        d.IsActive &&
+                        d.StartsAt <= now &&
+                        d.EndsAt > now);
+
+                var discount = activeVariantDiscount ?? activeProductDiscount;
+
+                var priceInfo = CalculatePrice(v.Price, discount);
+
+                return new ViewProductVariantDto
                 {
-                    var activeVariantDiscount = v.DiscountVariants
-                        .Select(dp => dp.Discount)
-                        .FirstOrDefault(d =>
-                            !d.IsDeleted &&
-                            d.IsActive &&
-                            d.StartsAt <= now &&
-                            d.EndsAt > now);
+                    Id = v.Id,
+                    Sku = v.Sku,
+                    Price = v.Price,
+                    FinalPrice = priceInfo.FinalPrice,
 
-                    var discount = activeVariantDiscount ?? activeProductDiscount;
+                    Stock = v.InventoryItem?.AvailableQuantity ?? 0,
 
-                    var priceInfo = CalculatePrice(v.Price, discount);
+                    DiscountType = priceInfo.DiscountType,
+                    DiscountPercentage = priceInfo.DiscountPercentage,
+                    DiscountAmount = priceInfo.DiscountAmount,
 
-                    return new ViewProductVariantDto
-                    {
-                        Id = v.Id,
-                        Sku = v.Sku,
-                        Price = v.Price,
-                        FinalPrice = priceInfo.FinalPrice,
+                    Options = v.Options
+                        .Select(pvo => new ViewProductVariantOptionDto
+                        {
+                            Id = pvo.Id,
+                            ProductOptionId = pvo.ProductOptionId,
+                            OptionName = pvo.ProductOption.Name,
+                            ProductOptionValueId = pvo.ProductOptionValueId,
+                            Value = pvo.ProductOptionValue.Value
+                        })
+                        .ToList(),
 
-                        Stock = v.InventoryItem?.AvailableQuantity ?? 0,
-                        
-                        DiscountType = priceInfo.DiscountType,
-                        DiscountPercentage = priceInfo.DiscountPercentage,
-                        DiscountAmount = priceInfo.DiscountAmount,
-                        
-                        Options = v.Options
-                            .Select(pvo => new ViewProductVariantOptionDto
-                            {
-                                Id = pvo.Id,
-                                ProductOptionId = pvo.ProductOptionId,
-                                OptionName = pvo.ProductOption.Name,
-                                ProductOptionValueId = pvo.ProductOptionValueId,
-                                Value = pvo.ProductOptionValue.Value
-                            })
-                            .ToList(),
-
-                        Images = v.Images
-                            .OrderBy(i => i.SortOrder)
-                            .Select(i => new ViewProductImageDto
-                            {
-                                Id = i.Id,
-                                Url = i.ImageUrl,
-                                IsPrimary = i.IsPrimary,
-                                SortOrder = i.SortOrder
-                            })
-                            .ToList()
-                    };
-                })
-                .ToList();
-
-            var prices = variantDtos
-                .Select(v => v.Price)
-                .ToList();
-
-            var finalPrices = variantDtos
-                .Select(v => v.FinalPrice)
-                .ToList();
+                    Images = v.Images
+                        .OrderBy(i => i.SortOrder)
+                        .Select(i => new ViewProductImageDto
+                        {
+                            Id = i.Id,
+                            Url = i.ImageUrl,
+                            IsPrimary = i.IsPrimary,
+                            SortOrder = i.SortOrder
+                        })
+                        .ToList()
+                };
+            }).ToList();
 
             return new ViewProductItemDto
             {
@@ -132,14 +140,27 @@ public class ProductService : ProductServicesContract
                 Description = p.Description,
                 Brand = p.Brand?.Title ?? "بدون برند",
                 Category = p.Category.Title,
-                
-                MinPrice = prices.DefaultIfEmpty(0).Min(),
-                MaxPrice = prices.DefaultIfEmpty(0).Max(),
 
-                FinalMinPrice = finalPrices.DefaultIfEmpty(0).Min(),
-                FinalMaxPrice = finalPrices.DefaultIfEmpty(0).Max(),
+                MinPrice = variantDtos
+                    .Select(v => v.Price)
+                    .DefaultIfEmpty(0)
+                    .Min(),
 
-                
+                MaxPrice = variantDtos
+                    .Select(v => v.Price)
+                    .DefaultIfEmpty(0)
+                    .Max(),
+
+                FinalMinPrice = variantDtos
+                    .Select(v => v.FinalPrice)
+                    .DefaultIfEmpty(0)
+                    .Min(),
+
+                FinalMaxPrice = variantDtos
+                    .Select(v => v.FinalPrice)
+                    .DefaultIfEmpty(0)
+                    .Max(),
+
                 Stock = variants
                     .Sum(v => v.InventoryItem?.AvailableQuantity ?? 0),
 
@@ -186,6 +207,13 @@ public class ProductService : ProductServicesContract
             };
         }).ToList();
 
+        activity?.SetTag("products.count", dto.Count);
+
+        _logger.LogInformation(
+            LogEvents.Product.GetAllCompleted,
+            "Products retrieved successfully. ProductCount: {ProductCount}",
+            dto.Count);
+
         return new ViewProductDto
         {
             Items = dto
@@ -194,19 +222,35 @@ public class ProductService : ProductServicesContract
 
     public async Task<string> AddProductAsync(CreateProductDto dto)
     {
-        var isExist = await _productRepositoryContract.IsExistingProduct(dto.Title);
-        if (isExist)
-            throw new DuplicateNameException("این محصول از قبل وجود دارد");
+        using var activity =
+            ActivitySources.ShopApi.StartActivity(nameof(AddProductAsync));
 
-        
+        _logger.LogInformation(
+            LogEvents.Product.CreateStarted,
+            "Creating product.");
+
+        var isExist =
+            await _productRepositoryContract.IsExistingProduct(dto.Title);
+
+        if (isExist)
+        {
+            _logger.LogWarning(
+                LogEvents.Product.Duplicate,
+                "Product creation rejected because the product already exists.");
+
+            throw new DuplicateNameException(
+                "این محصول از قبل وجود دارد");
+        }
+
         var product = Domain.Entities.Product.Create(
             title: dto.Title,
             description: dto.Description,
             categoryId: dto.CategoryId,
             brandId: dto.BrandId ?? null
         );
+
         await _productRepositoryContract.CreateProductAsync(product);
-        
+
         var sku = _skuGeneratorContract.GenerateSku();
 
         var variant = ProductVariant.Create(
@@ -216,36 +260,72 @@ public class ProductService : ProductServicesContract
         );
 
         await _productRepositoryContract.AddProductVariantAsync(variant);
-        
-        await _inventoryServiceContract.AddStockAsync(product.Id, dto.Quantity, product.Description);
+
+        await _inventoryServiceContract.AddStockAsync(
+            product.Id,
+            dto.Quantity,
+            product.Description);
 
         await _unitOfWorkContract.SaveAsync();
+
+        activity?.SetTag("product.id", product.Id);
+        activity?.SetTag("product.variant_id", variant.Id);
+
+        _logger.LogInformation(
+            LogEvents.Product.CreateCompleted,
+            "Product created successfully. ProductId: {ProductId}, VariantId: {VariantId}",
+            product.Id,
+            variant.Id);
 
         return $"محصول {product.Title} ساخته شد";
     }
 
     public async Task<SearchProductResultDto> SearchProductByTitle(string query)
     {
+        using var activity =
+            ActivitySources.ShopApi.StartActivity(nameof(SearchProductByTitle));
+
         if (string.IsNullOrEmpty(query))
+        {
             return new SearchProductResultDto
             {
                 Items = []
             };
+        }
 
-        var productList = await _productRepositoryContract.SearchProductWithTitle(query);
+        _logger.LogInformation(
+            LogEvents.Product.SearchStarted,
+            "Searching products by title.");
+
+        var productList =
+            await _productRepositoryContract.SearchProductWithTitle(query);
 
         if (productList is null)
+        {
+            _logger.LogInformation(
+                LogEvents.Product.SearchCompleted,
+                "Product search completed with no results.");
+
             return new SearchProductResultDto
             {
                 Items = []
             };
+        }
 
-        var dto = productList.Select(x => new SearchProductItemsResultDto
-        {
-            Title = x.Title,
-            Category = x.Category.Title,
-        }).ToList();
+        var dto = productList
+            .Select(x => new SearchProductItemsResultDto
+            {
+                Title = x.Title,
+                Category = x.Category.Title,
+            })
+            .ToList();
 
+        activity?.SetTag("products.count", dto.Count);
+
+        _logger.LogInformation(
+            LogEvents.Product.SearchCompleted,
+            "Product search completed successfully. ResultCount: {ResultCount}",
+            dto.Count);
 
         return new SearchProductResultDto
         {
@@ -255,15 +335,26 @@ public class ProductService : ProductServicesContract
 
     public async Task<ViewProductItemDto> GetProductById(Guid productId)
     {
-        if (productId == Guid.Empty)
-            throw new BusinessException("شناسه محصول خالی است.");
+        using var activity =
+            ActivitySources.ShopApi.StartActivity(nameof(GetProductById));
 
-        var product = await _productRepositoryContract.GetProductByIdAsync(productId);
+        activity?.SetTag("product.id", productId);
+
+        var product =
+            await _productRepositoryContract.GetProductByIdAsync(productId);
 
         if (product is null)
-            throw new NotFoundException("محصول یافت نشد.");
+        {
+            _logger.LogWarning(
+                LogEvents.Product.NotFound,
+                "Product not found. ProductId: {ProductId}",
+                productId);
 
-        var (rating, reviewCount) = await _reviewsRepositoryContract.GetProductRatingAsync(productId);
+            throw new NotFoundException("محصول یافت نشد.");
+        }
+
+        var (rating, reviewCount) =
+            await _reviewsRepositoryContract.GetProductRatingAsync(productId);
 
         var now = DateTime.UtcNow;
 
@@ -280,57 +371,56 @@ public class ProductService : ProductServicesContract
                 d.EndsAt > now);
 
         var variantDto = variants.Select(v =>
+        {
+            var activeVariantDiscount = v.DiscountVariants
+                .Select(dp => dp.Discount)
+                .FirstOrDefault(d =>
+                    !d.IsDeleted &&
+                    d.IsActive &&
+                    d.StartsAt <= now &&
+                    d.EndsAt > now);
+
+            var discount = activeVariantDiscount ?? activeProductDiscount;
+
+            var priceInfo = CalculatePrice(v.Price, discount);
+
+            return new ViewProductVariantDto
             {
-                var activeVariantDiscount = v.DiscountVariants
-                    .Select(dp => dp.Discount)
-                    .FirstOrDefault(d =>
-                        !d.IsDeleted &&
-                        d.IsActive &&
-                        d.StartsAt <= now &&
-                        d.EndsAt > now);
+                Id = v.Id,
+                Sku = v.Sku,
+                Price = v.Price,
+                FinalPrice = priceInfo.FinalPrice,
 
-                var discount = activeVariantDiscount ?? activeProductDiscount;
+                Stock = v.InventoryItem?.AvailableQuantity ?? 0,
 
-                var priceInfo = CalculatePrice(v.Price, discount);
+                DiscountType = priceInfo.DiscountType,
+                DiscountPercentage = priceInfo.DiscountPercentage,
+                DiscountAmount = priceInfo.DiscountAmount,
 
-                return new ViewProductVariantDto
-                {
-                    Id = v.Id,
-                    Sku = v.Sku,
-                    Price = v.Price,
-                    FinalPrice = priceInfo.FinalPrice,
+                Options = v.Options
+                    .Select(pvo => new ViewProductVariantOptionDto
+                    {
+                        Id = pvo.Id,
+                        ProductOptionId = pvo.ProductOptionId,
+                        OptionName = pvo.ProductOption.Name,
+                        ProductOptionValueId = pvo.ProductOptionValueId,
+                        Value = pvo.ProductOptionValue.Value
+                    })
+                    .ToList(),
 
-                    Stock = v.InventoryItem?.AvailableQuantity ?? 0,
-                    
-                    DiscountType = priceInfo.DiscountType,
-                    DiscountPercentage = priceInfo.DiscountPercentage,
-                    DiscountAmount = priceInfo.DiscountAmount,
-                    
-                    Options = v.Options
-                        .Select(pvo => new ViewProductVariantOptionDto
-                        {
-                            Id = pvo.Id,
-                            ProductOptionId = pvo.ProductOptionId,
-                            OptionName = pvo.ProductOption.Name,
-                            ProductOptionValueId = pvo.ProductOptionValueId,
-                            Value = pvo.ProductOptionValue.Value
-                        })
-                        .ToList(),
+                Images = v.Images
+                    .OrderBy(i => i.SortOrder)
+                    .Select(i => new ViewProductImageDto
+                    {
+                        Id = i.Id,
+                        Url = i.ImageUrl,
+                        IsPrimary = i.IsPrimary,
+                        SortOrder = i.SortOrder
+                    })
+                    .ToList()
+            };
+        }).ToList();
 
-                    Images = v.Images
-                        .OrderBy(i => i.SortOrder)
-                        .Select(i => new ViewProductImageDto
-                        {
-                            Id = i.Id,
-                            Url = i.ImageUrl,
-                            IsPrimary = i.IsPrimary,
-                            SortOrder = i.SortOrder
-                        })
-                        .ToList()
-                };
-            })
-            .ToList();
-        
         var prices = variantDto
             .Select(v => v.Price)
             .ToList();
@@ -338,7 +428,16 @@ public class ProductService : ProductServicesContract
         var finalPrices = variantDto
             .Select(v => v.FinalPrice)
             .ToList();
-        
+
+        activity?.SetTag("product.variant_count", variantDto.Count);
+        activity?.SetTag("product.rating", rating);
+        activity?.SetTag("product.review_count", reviewCount);
+
+        _logger.LogInformation(
+            LogEvents.Product.GetByIdCompleted,
+            "Product retrieved successfully. ProductId: {ProductId}",
+            productId);
+
         return new ViewProductItemDto
         {
             Id = product.Id,
@@ -346,13 +445,13 @@ public class ProductService : ProductServicesContract
             Description = product.Description,
             Brand = product.Brand?.Title ?? "بدون برند",
             Category = product.Category.Title,
-            
+
             MinPrice = prices.DefaultIfEmpty(0).Min(),
             MaxPrice = prices.DefaultIfEmpty(0).Max(),
 
             FinalMinPrice = finalPrices.DefaultIfEmpty(0).Min(),
             FinalMaxPrice = finalPrices.DefaultIfEmpty(0).Max(),
-            
+
             Stock = variants
                 .Sum(v => v.InventoryItem?.AvailableQuantity ?? 0),
 
@@ -401,25 +500,57 @@ public class ProductService : ProductServicesContract
 
     public async Task<string> EditProductAsync(EditProductDto dto)
     {
+        using var activity =
+            ActivitySources.ShopApi.StartActivity(nameof(EditProductAsync));
+
+        activity?.SetTag("product.id", dto.Id);
+
         if (dto.Title is null &&
             dto.Description is null)
-            throw new BusinessException("برای ویرایش محصول، حداقل یک فیلد را تغییر دهید .");
+        {
+            _logger.LogWarning(
+                LogEvents.Product.EditRejected,
+                "Product edit rejected because no field was provided. ProductId: {ProductId}",
+                dto.Id);
+
+            throw new BusinessException(
+                "برای ویرایش محصول، حداقل یک فیلد را تغییر دهید.");
+        }
 
         int attempt = 0;
         const int maxAttempts = 5;
 
+        _logger.LogInformation(
+            LogEvents.Product.EditStarted,
+            "Editing product. ProductId: {ProductId}",
+            dto.Id);
+
         while (maxAttempts > attempt)
         {
-            var product = await _productRepositoryContract.GetProductByIdAsync(dto.Id);
+            var product =
+                await _productRepositoryContract.GetProductByIdAsync(dto.Id);
 
             if (product is null)
-                throw new NotFoundException("محصولی یافت نشد !");
+            {
+                _logger.LogWarning(
+                    LogEvents.Product.NotFound,
+                    "Product not found for edit. ProductId: {ProductId}",
+                    dto.Id);
+
+                throw new NotFoundException("محصولی یافت نشد!");
+            }
 
             try
             {
                 product.Edit(dto.Title, dto.Description);
 
                 await _unitOfWorkContract.SaveAsync();
+
+                _logger.LogInformation(
+                    LogEvents.Product.EditCompleted,
+                    "Product edited successfully. ProductId: {ProductId}",
+                    dto.Id);
+
                 return "محصول با موفقیت تغییر کرد";
             }
             catch (DbUpdateConcurrencyException)
@@ -428,8 +559,24 @@ public class ProductService : ProductServicesContract
 
                 _unitOfWorkContract.ClearChangeTracker();
 
+                _logger.LogWarning(
+                    LogEvents.Product.ConcurrencyConflict,
+                    "Product edit concurrency conflict. ProductId: {ProductId}, Attempt: {Attempt}, MaxAttempts: {MaxAttempts}",
+                    dto.Id,
+                    attempt,
+                    maxAttempts);
+
                 if (attempt == maxAttempts)
-                    throw new ConflictException("محصول در حال تغییر است . لطفا دوباره تلاش کنید");
+                {
+                    _logger.LogError(
+                        LogEvents.Product.Failed,
+                        "Product edit failed after maximum concurrency retry attempts. ProductId: {ProductId}, Attempts: {Attempts}",
+                        dto.Id,
+                        attempt);
+
+                    throw new ConflictException(
+                        "محصول در حال تغییر است. لطفا دوباره تلاش کنید");
+                }
             }
         }
 
@@ -438,21 +585,45 @@ public class ProductService : ProductServicesContract
 
     public async Task<string> DeleteProductAsync(Guid productId)
     {
+        using var activity =
+            ActivitySources.ShopApi.StartActivity(nameof(DeleteProductAsync));
+
+        activity?.SetTag("product.id", productId);
+
         int attempt = 0;
         const int maxAttempts = 5;
 
+        _logger.LogInformation(
+            LogEvents.Product.DeleteStarted,
+            "Deleting product. ProductId: {ProductId}",
+            productId);
+
         while (maxAttempts > attempt)
         {
-            var product = await _productRepositoryContract.GetProductByIdAsync(productId);
+            var product =
+                await _productRepositoryContract.GetProductByIdAsync(productId);
 
             if (product is null)
-                throw new NotFoundException("محصولی یافت نشد !");
+            {
+                _logger.LogWarning(
+                    LogEvents.Product.NotFound,
+                    "Product not found for deletion. ProductId: {ProductId}",
+                    productId);
+
+                throw new NotFoundException("محصولی یافت نشد!");
+            }
 
             try
             {
                 product.Delete();
 
                 await _unitOfWorkContract.SaveAsync();
+
+                _logger.LogInformation(
+                    LogEvents.Product.DeleteCompleted,
+                    "Product deleted successfully. ProductId: {ProductId}",
+                    productId);
+
                 return "محصول با موفقیت حذف شد";
             }
             catch (DbUpdateConcurrencyException)
@@ -461,8 +632,24 @@ public class ProductService : ProductServicesContract
 
                 _unitOfWorkContract.ClearChangeTracker();
 
+                _logger.LogWarning(
+                    LogEvents.Product.ConcurrencyConflict,
+                    "Product deletion concurrency conflict. ProductId: {ProductId}, Attempt: {Attempt}, MaxAttempts: {MaxAttempts}",
+                    productId,
+                    attempt,
+                    maxAttempts);
+
                 if (attempt == maxAttempts)
-                    throw new ConflictException("محصول در حال تغییر است . لطفا دوباره تلاش کنید");
+                {
+                    _logger.LogError(
+                        LogEvents.Product.Failed,
+                        "Product deletion failed after maximum concurrency retry attempts. ProductId: {ProductId}, Attempts: {Attempts}",
+                        productId,
+                        attempt);
+
+                    throw new ConflictException(
+                        "محصول در حال تغییر است. لطفا دوباره تلاش کنید");
+                }
             }
         }
 
@@ -471,21 +658,45 @@ public class ProductService : ProductServicesContract
 
     public async Task<string> RestoreProductAsync(Guid productId)
     {
+        using var activity =
+            ActivitySources.ShopApi.StartActivity(nameof(RestoreProductAsync));
+
+        activity?.SetTag("product.id", productId);
+
         int attempt = 0;
         const int maxAttempts = 5;
 
+        _logger.LogInformation(
+            LogEvents.Product.RestoreStarted,
+            "Restoring product. ProductId: {ProductId}",
+            productId);
+
         while (maxAttempts > attempt)
         {
-            var product = await _productRepositoryContract.GetProductByIdAsync(productId);
+            var product =
+                await _productRepositoryContract.GetProductByIdAsync(productId);
 
             if (product is null)
-                throw new NotFoundException("محصولی یافت نشد !");
+            {
+                _logger.LogWarning(
+                    LogEvents.Product.NotFound,
+                    "Product not found for restore. ProductId: {ProductId}",
+                    productId);
+
+                throw new NotFoundException("محصولی یافت نشد!");
+            }
 
             try
             {
                 product.Restore();
 
                 await _unitOfWorkContract.SaveAsync();
+
+                _logger.LogInformation(
+                    LogEvents.Product.RestoreCompleted,
+                    "Product restored successfully. ProductId: {ProductId}",
+                    productId);
+
                 return "محصول با موفقیت بازیابی شد";
             }
             catch (DbUpdateConcurrencyException)
@@ -494,8 +705,24 @@ public class ProductService : ProductServicesContract
 
                 _unitOfWorkContract.ClearChangeTracker();
 
+                _logger.LogWarning(
+                    LogEvents.Product.ConcurrencyConflict,
+                    "Product restore concurrency conflict. ProductId: {ProductId}, Attempt: {Attempt}, MaxAttempts: {MaxAttempts}",
+                    productId,
+                    attempt,
+                    maxAttempts);
+
                 if (attempt == maxAttempts)
-                    throw new ConflictException("محصول در حال تغییر است . لطفا دوباره تلاش کنید");
+                {
+                    _logger.LogError(
+                        LogEvents.Product.Failed,
+                        "Product restore failed after maximum concurrency retry attempts. ProductId: {ProductId}, Attempts: {Attempts}",
+                        productId,
+                        attempt);
+
+                    throw new ConflictException(
+                        "محصول در حال تغییر است. لطفا دوباره تلاش کنید");
+                }
             }
         }
 
@@ -554,21 +781,47 @@ public class ProductService : ProductServicesContract
 
     public async Task<string> DeleteProductCategoryAsync(Guid productCategoryId)
     {
+        using var activity =
+            ActivitySources.ShopApi.StartActivity(nameof(DeleteProductCategoryAsync));
+
+        activity?.SetTag("product_category.id", productCategoryId);
+
         int attempt = 0;
         const int maxAttempts = 5;
 
+        _logger.LogInformation(
+            LogEvents.ProductCategory.DeleteStarted,
+            "Product category deletion started. ProductCategoryId: {ProductCategoryId}",
+            productCategoryId);
+
         while (maxAttempts > attempt)
         {
-            var productCategory = await _productRepositoryContract.GetProductCategoryById(productCategoryId);
+            var productCategory =
+                await _productRepositoryContract
+                    .GetProductCategoryById(productCategoryId);
 
             if (productCategory is null)
-                throw new NotFoundException("دسته بندی محصولی یافت نشد !");
+            {
+                _logger.LogWarning(
+                    LogEvents.ProductCategory.NotFound,
+                    "Product category was not found. ProductCategoryId: {ProductCategoryId}",
+                    productCategoryId);
+
+                throw new NotFoundException(
+                    "دسته بندی محصولی یافت نشد !");
+            }
 
             try
             {
                 productCategory.Delete();
 
                 await _unitOfWorkContract.SaveAsync();
+
+                _logger.LogInformation(
+                    LogEvents.ProductCategory.DeleteCompleted,
+                    "Product category deleted successfully. ProductCategoryId: {ProductCategoryId}",
+                    productCategoryId);
+
                 return "دسته بندی محصول با موفقیت حذف شد";
             }
             catch (DbUpdateConcurrencyException)
@@ -577,8 +830,24 @@ public class ProductService : ProductServicesContract
 
                 _unitOfWorkContract.ClearChangeTracker();
 
+                _logger.LogWarning(
+                    LogEvents.ProductCategory.ConcurrencyConflict,
+                    "Product category deletion concurrency conflict. ProductCategoryId: {ProductCategoryId}, Attempt: {Attempt}, MaxAttempts: {MaxAttempts}",
+                    productCategoryId,
+                    attempt,
+                    maxAttempts);
+
                 if (attempt == maxAttempts)
-                    throw new ConflictException("دسته بندی محصول در حال تغییر است . لطفا دوباره تلاش کنید");
+                {
+                    _logger.LogError(
+                        LogEvents.ProductCategory.Failed,
+                        "Product category deletion failed after maximum concurrency retry attempts. ProductCategoryId: {ProductCategoryId}, Attempts: {Attempts}",
+                        productCategoryId,
+                        attempt);
+
+                    throw new ConflictException(
+                        "دسته بندی محصول در حال تغییر است . لطفا دوباره تلاش کنید");
+                }
             }
         }
 
@@ -587,21 +856,47 @@ public class ProductService : ProductServicesContract
 
     public async Task<string> RestoreProductCategoryAsync(Guid productCategoryId)
     {
+        using var activity =
+            ActivitySources.ShopApi.StartActivity(nameof(RestoreProductCategoryAsync));
+
+        activity?.SetTag("product_category.id", productCategoryId);
+
         int attempt = 0;
         const int maxAttempts = 5;
 
+        _logger.LogInformation(
+            LogEvents.ProductCategory.RestoreStarted,
+            "Product category restore started. ProductCategoryId: {ProductCategoryId}",
+            productCategoryId);
+
         while (maxAttempts > attempt)
         {
-            var productCategory = await _productRepositoryContract.GetProductCategoryById(productCategoryId);
+            var productCategory =
+                await _productRepositoryContract
+                    .GetProductCategoryById(productCategoryId);
 
             if (productCategory is null)
-                throw new NotFoundException("دسته بندی محصولی یافت نشد !");
+            {
+                _logger.LogWarning(
+                    LogEvents.ProductCategory.NotFound,
+                    "Product category was not found. ProductCategoryId: {ProductCategoryId}",
+                    productCategoryId);
+
+                throw new NotFoundException(
+                    "دسته بندی محصولی یافت نشد !");
+            }
 
             try
             {
                 productCategory.Restore();
 
                 await _unitOfWorkContract.SaveAsync();
+
+                _logger.LogInformation(
+                    LogEvents.ProductCategory.RestoreCompleted,
+                    "Product category restored successfully. ProductCategoryId: {ProductCategoryId}",
+                    productCategoryId);
+
                 return "دسته بندی محصول با موفقیت بازیابی شد";
             }
             catch (DbUpdateConcurrencyException)
@@ -610,8 +905,24 @@ public class ProductService : ProductServicesContract
 
                 _unitOfWorkContract.ClearChangeTracker();
 
+                _logger.LogWarning(
+                    LogEvents.ProductCategory.ConcurrencyConflict,
+                    "Product category restore concurrency conflict. ProductCategoryId: {ProductCategoryId}, Attempt: {Attempt}, MaxAttempts: {MaxAttempts}",
+                    productCategoryId,
+                    attempt,
+                    maxAttempts);
+
                 if (attempt == maxAttempts)
-                    throw new ConflictException("دسته بندی محصول در حال تغییر است . لطفا دوباره تلاش کنید");
+                {
+                    _logger.LogError(
+                        LogEvents.ProductCategory.Failed,
+                        "Product category restore failed after maximum concurrency retry attempts. ProductCategoryId: {ProductCategoryId}, Attempts: {Attempts}",
+                        productCategoryId,
+                        attempt);
+
+                    throw new ConflictException(
+                        "دسته بندی محصول در حال تغییر است . لطفا دوباره تلاش کنید");
+                }
             }
         }
 
@@ -620,12 +931,29 @@ public class ProductService : ProductServicesContract
 
     public async Task<ViewProductCategoryDto> GetAllCategories()
     {
-        var categories = await _productRepositoryContract.GetAllProductCategories();
+        using var activity =
+            ActivitySources.ShopApi.StartActivity(nameof(GetAllCategories));
 
-        var dto = categories.Select(x => new ViewProductCategoryItemDto
-        {
-            Title = x.Title
-        }).ToList();
+        _logger.LogInformation(
+            LogEvents.ProductCategory.GetAllStarted,
+            "Product categories retrieval started.");
+
+        var categories =
+            await _productRepositoryContract.GetAllProductCategories();
+
+        var dto = categories
+            .Select(x => new ViewProductCategoryItemDto
+            {
+                Title = x.Title
+            })
+            .ToList();
+
+        activity?.SetTag("product_categories.count", dto.Count);
+
+        _logger.LogInformation(
+            LogEvents.ProductCategory.GetAllCompleted,
+            "Product categories retrieved successfully. Count: {Count}",
+            dto.Count);
 
         return new ViewProductCategoryDto
         {
@@ -633,64 +961,171 @@ public class ProductService : ProductServicesContract
         };
     }
 
-    public async Task<ViewProductCategoryDto> SearchProductCategoryByTitle(SearchProductCategoryDto dto)
+    public async Task<ViewProductCategoryDto> SearchProductCategoryByTitle(
+        SearchProductCategoryDto dto)
     {
-        var categories = await _productRepositoryContract.SearchProductCategoriesWithTitle(dto.Title);
+        using var activity =
+            ActivitySources.ShopApi.StartActivity(
+                nameof(SearchProductCategoryByTitle));
+
+        activity?.SetTag("product_category.search_title", dto.Title);
+
+        _logger.LogInformation(
+            LogEvents.ProductCategory.SearchStarted,
+            "Product category search started.");
+
+        var categories =
+            await _productRepositoryContract
+                .SearchProductCategoriesWithTitle(dto.Title);
 
         if (categories is null)
-            return new ViewProductCategoryDto()
+        {
+            _logger.LogInformation(
+                LogEvents.ProductCategory.SearchCompleted,
+                "Product category search completed with no results.");
+
+            return new ViewProductCategoryDto
             {
                 Items = []
             };
+        }
+
+        var items = categories
+            .Select(x => new ViewProductCategoryItemDto
+            {
+                Title = x.Title
+            })
+            .ToList();
+
+        activity?.SetTag("product_categories.count", items.Count);
+
+        _logger.LogInformation(
+            LogEvents.ProductCategory.SearchCompleted,
+            "Product category search completed. Count: {Count}",
+            items.Count);
 
         return new ViewProductCategoryDto
         {
-            Items = categories.Select(x => new ViewProductCategoryItemDto
-                {
-                    Title = x.Title
-                })
-                .ToList()
+            Items = items
         };
     }
 
-    public async Task<ViewProductCategoryItemDto> GetProductCategoryById(Guid productCategoryId)
+    public async Task<ViewProductCategoryItemDto> GetProductCategoryById(
+        Guid productCategoryId)
     {
-        var category = await _productRepositoryContract.GetProductCategoryById(productCategoryId);
+        using var activity =
+            ActivitySources.ShopApi.StartActivity(
+                nameof(GetProductCategoryById));
+
+        activity?.SetTag("product_category.id", productCategoryId);
+
+        var category =
+            await _productRepositoryContract
+                .GetProductCategoryById(productCategoryId);
 
         if (category is null)
-            throw new NotFoundException("دسته بندی محصول یافت نشد");
+        {
+            _logger.LogWarning(
+                LogEvents.ProductCategory.NotFound,
+                "Product category was not found. ProductCategoryId: {ProductCategoryId}",
+                productCategoryId);
+
+            throw new NotFoundException(
+                "دسته بندی محصول یافت نشد");
+        }
 
         var dto = new ViewProductCategoryItemDto
         {
             Title = category.Title
         };
 
+        _logger.LogInformation(
+            LogEvents.ProductCategory.GetByIdCompleted,
+            "Product category retrieved successfully. ProductCategoryId: {ProductCategoryId}",
+            productCategoryId);
+
         return dto;
     }
 
-    public async Task<string> EditProductCategoryAsync(EditProductCategoryDto dto)
+    public async Task<string> EditProductCategoryAsync(
+        EditProductCategoryDto dto)
     {
-        var category = await _productRepositoryContract.GetProductCategoryById(dto.Id);
+        using var activity =
+            ActivitySources.ShopApi.StartActivity(
+                nameof(EditProductCategoryAsync));
+
+        activity?.SetTag("product_category.id", dto.Id);
+
+        _logger.LogInformation(
+            LogEvents.ProductCategory.EditStarted,
+            "Product category edit started. ProductCategoryId: {ProductCategoryId}",
+            dto.Id);
+
+        var category =
+            await _productRepositoryContract
+                .GetProductCategoryById(dto.Id);
 
         if (category is null)
-            throw new NotFoundException("دسته بندی محصول یافت نشد .");
+        {
+            _logger.LogWarning(
+                LogEvents.ProductCategory.NotFound,
+                "Product category was not found for edit. ProductCategoryId: {ProductCategoryId}",
+                dto.Id);
+
+            throw new NotFoundException(
+                "دسته بندی محصول یافت نشد .");
+        }
 
         category.Edit(dto.Title);
 
         await _unitOfWorkContract.SaveAsync();
+
+        _logger.LogInformation(
+            LogEvents.ProductCategory.EditCompleted,
+            "Product category edited successfully. ProductCategoryId: {ProductCategoryId}",
+            dto.Id);
+
         return "دسته بندی محصول یا موفقیت تغییر کرد .";
     }
 
-    public async Task<string> CreateProductCategoryAsync(CreateProductCategoryDto dto)
+    public async Task<string> CreateProductCategoryAsync(
+        CreateProductCategoryDto dto)
     {
-        var isExist = await _productRepositoryContract.IsExistingProductCategory(dto.Title);
+        using var activity =
+            ActivitySources.ShopApi.StartActivity(
+                nameof(CreateProductCategoryAsync));
+
+        _logger.LogInformation(
+            LogEvents.ProductCategory.CreateStarted,
+            "Product category creation started.");
+
+        var isExist =
+            await _productRepositoryContract
+                .IsExistingProductCategory(dto.Title);
+
         if (isExist)
-            throw new DuplicateNameException("دسته بندی محصول وجود دارد");
+        {
+            _logger.LogWarning(
+                LogEvents.ProductCategory.Duplicate,
+                "Product category creation rejected because the title already exists.");
+
+            throw new DuplicateNameException(
+                "دسته بندی محصول وجود دارد");
+        }
 
         var category = ProductCategory.Create(dto.Title);
 
         await _productRepositoryContract.AddProductCategory(category);
         await _unitOfWorkContract.SaveAsync();
+
+        activity?.SetTag(
+            "product_category.id",
+            category.Id);
+
+        _logger.LogInformation(
+            LogEvents.ProductCategory.CreateCompleted,
+            "Product category created successfully. ProductCategoryId: {ProductCategoryId}",
+            category.Id);
 
         return $"دسته بندی {category.Title} ساخته شد .";
     }
@@ -701,89 +1136,131 @@ public class ProductService : ProductServicesContract
 
     public async Task<ViewProductBrandDto> GetAllProductBrands()
     {
-        var brands = await _productRepositoryContract.GetAllBrandAsync();
+        using var activity =
+            ActivitySources.ShopApi.StartActivity(nameof(GetAllProductBrands));
+
+        _logger.LogInformation(
+            LogEvents.ProductBrand.GetAllStarted,
+            "Product brands retrieval started.");
+
+        var brands =
+            await _productRepositoryContract.GetAllBrandAsync();
 
         if (brands is null)
-            return new ViewProductBrandDto()
+        {
+            _logger.LogInformation(
+                LogEvents.ProductBrand.GetAllCompleted,
+                "Product brands retrieval completed with no results.");
+
+            return new ViewProductBrandDto
             {
                 Items = []
             };
+        }
 
-        return new ViewProductBrandDto()
+        var items = brands
+            .Select(x => new ViewProductBrandItemDto
+            {
+                Title = x.Title
+            })
+            .ToList();
+
+        activity?.SetTag("product_brands.count", items.Count);
+
+        _logger.LogInformation(
+            LogEvents.ProductBrand.GetAllCompleted,
+            "Product brands retrieved successfully. Count: {Count}",
+            items.Count);
+
+        return new ViewProductBrandDto
         {
-            Items = brands.Select(x => new ViewProductBrandItemDto()
-                {
-                    Title = x.Title
-                })
-                .ToList()
+            Items = items
         };
     }
 
-    public async Task<string> CreateProductBrandAsync(CreateProductBrandDto dto)
+    public async Task<string> CreateProductBrandAsync(
+        CreateProductBrandDto dto)
     {
-        var isExist = await _productRepositoryContract.IsExistingBrand(dto.Title);
+        using var activity =
+            ActivitySources.ShopApi.StartActivity(nameof(CreateProductBrandAsync));
+
+        _logger.LogInformation(
+            LogEvents.ProductBrand.CreateStarted,
+            "Product brand creation started.");
+
+        var isExist =
+            await _productRepositoryContract.IsExistingBrand(dto.Title);
+
         if (isExist)
-            throw new DuplicateNameException("برند محصول وجود دارد");
+        {
+            _logger.LogWarning(
+                LogEvents.ProductBrand.Duplicate,
+                "Product brand creation rejected because the title already exists.");
+
+            throw new DuplicateNameException(
+                "برند محصول وجود دارد");
+        }
 
         var brand = ProductBrand.Create(dto.Title);
 
         await _productRepositoryContract.AddBrandAsync(brand);
         await _unitOfWorkContract.SaveAsync();
 
-        return $"برند  {brand.Title} ساخته شد .";
+        activity?.SetTag("product_brand.id", brand.Id);
+
+        _logger.LogInformation(
+            LogEvents.ProductBrand.CreateCompleted,
+            "Product brand created successfully. ProductBrandId: {ProductBrandId}",
+            brand.Id);
+
+        return $"برند {brand.Title} ساخته شد .";
     }
 
-    public async Task<string> DeleteProductBrandAsync(Guid productBrandId)
+    public async Task<string> DeleteProductBrandAsync(
+        Guid productBrandId)
     {
+        using var activity =
+            ActivitySources.ShopApi.StartActivity(nameof(DeleteProductBrandAsync));
+
+        activity?.SetTag("product_brand.id", productBrandId);
+
         int attempt = 0;
         const int maxAttempts = 5;
 
-        while (maxAttempts > attempt)
-        {
-            var productCategory = await _productRepositoryContract.GetProductBrandById(productBrandId);
-
-            if (productCategory is null)
-                throw new NotFoundException("دسته بندی محصولی یافت نشد !");
-
-            try
-            {
-                productCategory.Delete();
-
-                await _unitOfWorkContract.SaveAsync();
-                return "دسته بندی محصول با موفقیت حذف شد";
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                attempt++;
-
-                _unitOfWorkContract.ClearChangeTracker();
-
-                if (attempt == maxAttempts)
-                    throw new ConflictException("دسته بندی محصول در حال تغییر است . لطفا دوباره تلاش کنید");
-            }
-        }
-
-        throw new InvalidOperationException("خطای ناشناخته");
-    }
-
-    public async Task<string> RestoreProductBrandAsync(Guid productBrandId)
-    {
-        int attempt = 0;
-        const int maxAttempts = 5;
+        _logger.LogInformation(
+            LogEvents.ProductBrand.DeleteStarted,
+            "Product brand deletion started. ProductBrandId: {ProductBrandId}",
+            productBrandId);
 
         while (maxAttempts > attempt)
         {
-            var productBrand = await _productRepositoryContract.GetProductBrandById(productBrandId);
+            var productBrand =
+                await _productRepositoryContract
+                    .GetProductBrandById(productBrandId);
 
             if (productBrand is null)
-                throw new NotFoundException("دسته بندی محصولی یافت نشد !");
+            {
+                _logger.LogWarning(
+                    LogEvents.ProductBrand.NotFound,
+                    "Product brand was not found. ProductBrandId: {ProductBrandId}",
+                    productBrandId);
+
+                throw new NotFoundException(
+                    "برند محصول یافت نشد !");
+            }
 
             try
             {
                 productBrand.Delete();
 
                 await _unitOfWorkContract.SaveAsync();
-                return "دسته بندی محصول با موفقیت حذف شد";
+
+                _logger.LogInformation(
+                    LogEvents.ProductBrand.DeleteCompleted,
+                    "Product brand deleted successfully. ProductBrandId: {ProductBrandId}",
+                    productBrandId);
+
+                return "برند محصول با موفقیت حذف شد";
             }
             catch (DbUpdateConcurrencyException)
             {
@@ -791,60 +1268,225 @@ public class ProductService : ProductServicesContract
 
                 _unitOfWorkContract.ClearChangeTracker();
 
+                _logger.LogWarning(
+                    LogEvents.ProductBrand.ConcurrencyConflict,
+                    "Product brand deletion concurrency conflict. ProductBrandId: {ProductBrandId}, Attempt: {Attempt}, MaxAttempts: {MaxAttempts}",
+                    productBrandId,
+                    attempt,
+                    maxAttempts);
+
                 if (attempt == maxAttempts)
-                    throw new ConflictException("دسته بندی محصول در حال تغییر است . لطفا دوباره تلاش کنید");
+                {
+                    _logger.LogError(
+                        LogEvents.ProductBrand.Failed,
+                        "Product brand deletion failed after maximum concurrency retry attempts. ProductBrandId: {ProductBrandId}, Attempts: {Attempts}",
+                        productBrandId,
+                        attempt);
+
+                    throw new ConflictException(
+                        "برند محصول در حال تغییر است . لطفا دوباره تلاش کنید");
+                }
             }
         }
 
         throw new InvalidOperationException("خطای ناشناخته");
     }
 
-    public async Task<string> EditProductBrandAsync(EditProductBrandDto dto)
+    public async Task<string> RestoreProductBrandAsync(
+        Guid productBrandId)
     {
-        var brand = await _productRepositoryContract.GetProductBrandById(dto.Id);
+        using var activity =
+            ActivitySources.ShopApi.StartActivity(nameof(RestoreProductBrandAsync));
+
+        activity?.SetTag("product_brand.id", productBrandId);
+
+        int attempt = 0;
+        const int maxAttempts = 5;
+
+        _logger.LogInformation(
+            LogEvents.ProductBrand.RestoreStarted,
+            "Product brand restore started. ProductBrandId: {ProductBrandId}",
+            productBrandId);
+
+        while (maxAttempts > attempt)
+        {
+            var productBrand =
+                await _productRepositoryContract
+                    .GetProductBrandById(productBrandId);
+
+            if (productBrand is null)
+            {
+                _logger.LogWarning(
+                    LogEvents.ProductBrand.NotFound,
+                    "Product brand was not found. ProductBrandId: {ProductBrandId}",
+                    productBrandId);
+
+                throw new NotFoundException(
+                    "برند محصول یافت نشد !");
+            }
+
+            try
+            {
+                productBrand.Restore();
+
+                await _unitOfWorkContract.SaveAsync();
+
+                _logger.LogInformation(
+                    LogEvents.ProductBrand.RestoreCompleted,
+                    "Product brand restored successfully. ProductBrandId: {ProductBrandId}",
+                    productBrandId);
+
+                return "برند محصول با موفقیت بازیابی شد";
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                attempt++;
+
+                _unitOfWorkContract.ClearChangeTracker();
+
+                _logger.LogWarning(
+                    LogEvents.ProductBrand.ConcurrencyConflict,
+                    "Product brand restore concurrency conflict. ProductBrandId: {ProductBrandId}, Attempt: {Attempt}, MaxAttempts: {MaxAttempts}",
+                    productBrandId,
+                    attempt,
+                    maxAttempts);
+
+                if (attempt == maxAttempts)
+                {
+                    _logger.LogError(
+                        LogEvents.ProductBrand.Failed,
+                        "Product brand restore failed after maximum concurrency retry attempts. ProductBrandId: {ProductBrandId}, Attempts: {Attempts}",
+                        productBrandId,
+                        attempt);
+
+                    throw new ConflictException(
+                        "برند محصول در حال تغییر است . لطفا دوباره تلاش کنید");
+                }
+            }
+        }
+
+        throw new InvalidOperationException("خطای ناشناخته");
+    }
+
+    public async Task<string> EditProductBrandAsync(
+        EditProductBrandDto dto)
+    {
+        using var activity =
+            ActivitySources.ShopApi.StartActivity(nameof(EditProductBrandAsync));
+
+        activity?.SetTag("product_brand.id", dto.Id);
+
+        _logger.LogInformation(
+            LogEvents.ProductBrand.EditStarted,
+            "Product brand edit started. ProductBrandId: {ProductBrandId}",
+            dto.Id);
+
+        var brand =
+            await _productRepositoryContract
+                .GetProductBrandById(dto.Id);
 
         if (brand is null)
-            throw new NotFoundException("برند محصول یافت نشد .");
+        {
+            _logger.LogWarning(
+                LogEvents.ProductBrand.NotFound,
+                "Product brand was not found for edit. ProductBrandId: {ProductBrandId}",
+                dto.Id);
+
+            throw new NotFoundException(
+                "برند محصول یافت نشد .");
+        }
 
         brand.Edit(dto.Title);
 
         await _unitOfWorkContract.SaveAsync();
-        return "برند محصول یا موفقیت تغییر کرد .";
+
+        _logger.LogInformation(
+            LogEvents.ProductBrand.EditCompleted,
+            "Product brand edited successfully. ProductBrandId: {ProductBrandId}",
+            dto.Id);
+
+        return "برند محصول با موفقیت تغییر کرد .";
     }
 
-    public async Task<ViewProductBrandDto> SearchProductBrandByTitle(SearchProductBrandDto dto)
+    public async Task<ViewProductBrandDto> SearchProductBrandByTitle(
+        SearchProductBrandDto dto)
     {
-        var brands = await _productRepositoryContract.SearchProductBrandsWithTitle(dto.Title);
+        using var activity =
+            ActivitySources.ShopApi.StartActivity(
+                nameof(SearchProductBrandByTitle));
+
+        _logger.LogInformation(
+            LogEvents.ProductBrand.SearchStarted,
+            "Product brand search started.");
+
+        var brands =
+            await _productRepositoryContract
+                .SearchProductBrandsWithTitle(dto.Title);
 
         if (brands is null)
-            return new ViewProductBrandDto()
+        {
+            _logger.LogInformation(
+                LogEvents.ProductBrand.SearchCompleted,
+                "Product brand search completed with no results.");
+
+            return new ViewProductBrandDto
             {
                 Items = []
             };
+        }
 
-        return new ViewProductBrandDto()
+        var items = brands
+            .Select(x => new ViewProductBrandItemDto
+            {
+                Title = x.Title
+            })
+            .ToList();
+
+        activity?.SetTag("product_brands.count", items.Count);
+
+        _logger.LogInformation(
+            LogEvents.ProductBrand.SearchCompleted,
+            "Product brand search completed. Count: {Count}",
+            items.Count);
+
+        return new ViewProductBrandDto
         {
-            Items = brands.Select(x => new ViewProductBrandItemDto()
-                {
-                    Title = x.Title
-                })
-                .ToList()
+            Items = items
         };
     }
 
-    public async Task<ViewProductBrandItemDto> GetProductBrandById(Guid productBrandId)
+    public async Task<ViewProductBrandItemDto> GetProductBrandById(
+        Guid productBrandId)
     {
-        var brand = await _productRepositoryContract.GetProductBrandById(productBrandId);
+        using var activity =
+            ActivitySources.ShopApi.StartActivity(nameof(GetProductBrandById));
+
+        activity?.SetTag("product_brand.id", productBrandId);
+
+        var brand =
+            await _productRepositoryContract
+                .GetProductBrandById(productBrandId);
 
         if (brand is null)
-            throw new NotFoundException("دسته بندی محصول یافت نشد");
+        {
+            _logger.LogWarning(
+                LogEvents.ProductBrand.NotFound,
+                "Product brand was not found. ProductBrandId: {ProductBrandId}",
+                productBrandId);
 
-        var dto = new ViewProductBrandItemDto()
+            throw new NotFoundException(
+                "برند محصول یافت نشد");
+        }
+
+        _logger.LogInformation(
+            LogEvents.ProductBrand.GetByIdCompleted,
+            "Product brand retrieved successfully. ProductBrandId: {ProductBrandId}",
+            productBrandId);
+
+        return new ViewProductBrandItemDto
         {
             Title = brand.Title
         };
-
-        return dto;
     }
 
     #endregion
@@ -853,22 +1495,44 @@ public class ProductService : ProductServicesContract
 
     public async Task<ViewReviewsDto> GetAllProductReviews(Guid productId)
     {
-        var product = await _productRepositoryContract.GetProductByIdAsync(productId);
+        using var activity =
+            ActivitySources.ShopApi.StartActivity(nameof(GetAllProductReviews));
+
+        activity?.SetTag("product.id", productId);
+
+        var product =
+            await _productRepositoryContract
+                .GetProductByIdAsync(productId);
 
         if (product is null)
-            throw new NotFoundException("محصول یافت نشد");
+        {
+            _logger.LogWarning(
+                LogEvents.Review.ProductNotFound,
+                "Reviews retrieval rejected because the product was not found. ProductId: {ProductId}",
+                productId);
 
-        var reviews = await _reviewsRepositoryContract.GetAllReviewsByProductId(productId);
+            throw new NotFoundException("محصول یافت نشد");
+        }
+
+        var reviews =
+            await _reviewsRepositoryContract
+                .GetAllReviewsByProductId(productId);
 
         if (reviews is null)
+        {
+            _logger.LogInformation(
+                LogEvents.Review.GetAllCompleted,
+                "Product reviews retrieved with no reviews. ProductId: {ProductId}",
+                productId);
+
             return new ViewReviewsDto
             {
                 Reviews = []
             };
+        }
 
-        return new ViewReviewsDto
-        {
-            Reviews = product.Reviews.Select(r => new ViewReviewItemsDto
+        var reviewItems = product.Reviews
+            .Select(r => new ViewReviewItemsDto
             {
                 Comment = r.Comment,
                 CreatedAt = r.CreatedAt,
@@ -877,23 +1541,72 @@ public class ProductService : ProductServicesContract
                 {
                     Name = r.User.FullName
                 }
-            }).ToList()
+            })
+            .ToList();
+
+        activity?.SetTag("reviews.count", reviewItems.Count);
+
+        _logger.LogInformation(
+            LogEvents.Review.GetAllCompleted,
+            "Product reviews retrieved successfully. ProductId: {ProductId}, Count: {Count}",
+            productId,
+            reviewItems.Count);
+
+        return new ViewReviewsDto
+        {
+            Reviews = reviewItems
         };
     }
 
-    public async Task<string> AddReviewForProduct(Guid productId, CreateReviewDto dto)
+    public async Task<string> AddReviewForProduct(
+        Guid productId,
+        CreateReviewDto dto)
     {
-        var userId = _userContext.UserId ?? throw new UnauthorizedAccessException("کاربر یافت نشد");
+        using var activity =
+            ActivitySources.ShopApi.StartActivity(nameof(AddReviewForProduct));
 
-        var product = await _productRepositoryContract.GetProductByIdAsync(productId);
+        activity?.SetTag("product.id", productId);
+
+        var userId =
+            _userContext.UserId
+            ?? throw new UnauthorizedAccessException("کاربر یافت نشد");
+
+        activity?.SetTag("user.id", userId);
+
+        _logger.LogInformation(
+            LogEvents.Review.CreateStarted,
+            "Product review creation started. ProductId: {ProductId}",
+            productId);
+
+        var product =
+            await _productRepositoryContract
+                .GetProductByIdAsync(productId);
 
         if (product is null)
-            throw new NotFoundException("محصول یافت نشد");
+        {
+            _logger.LogWarning(
+                LogEvents.Review.ProductNotFound,
+                "Review creation rejected because the product was not found. ProductId: {ProductId}",
+                productId);
 
-        var isExistCommentByUser = await _reviewsRepositoryContract.ExistsByUserAndProductAsync(productId, userId);
+            throw new NotFoundException("محصول یافت نشد");
+        }
+
+        var isExistCommentByUser =
+            await _reviewsRepositoryContract
+                .ExistsByUserAndProductAsync(productId, userId);
 
         if (isExistCommentByUser)
-            throw new ConflictException("شما قبلا برای این محصول نظر ثبت کرده اید.");
+        {
+            _logger.LogWarning(
+                LogEvents.Review.Duplicate,
+                "Review creation rejected because the user has already reviewed the product. ProductId: {ProductId}, UserId: {UserId}",
+                productId,
+                userId);
+
+            throw new ConflictException(
+                "شما قبلا برای این محصول نظر ثبت کرده اید.");
+        }
 
         var review = new Domain.Entities.Review(
             starsCount: dto.StarsCount,
@@ -904,6 +1617,14 @@ public class ProductService : ProductServicesContract
         await _reviewsRepositoryContract.AddReview(review);
         await _unitOfWorkContract.SaveAsync();
 
+        activity?.SetTag("review.id", review.Id);
+
+        _logger.LogInformation(
+            LogEvents.Review.CreateCompleted,
+            "Product review created successfully. ReviewId: {ReviewId}, ProductId: {ProductId}",
+            review.Id,
+            productId);
+
         return "نظر شما با موفقیت ثبت شد";
     }
 
@@ -911,11 +1632,23 @@ public class ProductService : ProductServicesContract
 
     #region Variant
 
-    public async Task<string> EditProductVariantAsync(EditProductVariantDto dto)
+    public async Task<string> EditProductVariantAsync(
+        EditProductVariantDto dto)
     {
+        using var activity =
+            ActivitySources.ShopApi.StartActivity(
+                nameof(EditProductVariantAsync));
+
+        activity?.SetTag("product_variant.id", dto.Id);
+
         if (dto.Sku is null &&
             dto.Price is null)
         {
+            _logger.LogWarning(
+                LogEvents.ProductVariant.EditRejected,
+                "Product variant edit rejected because no field was provided. ProductVariantId: {ProductVariantId}",
+                dto.Id);
+
             throw new BusinessException(
                 "برای ویرایش Variant، حداقل یک فیلد را تغییر دهید.");
         }
@@ -923,14 +1656,27 @@ public class ProductService : ProductServicesContract
         int attempt = 0;
         const int maxAttempts = 5;
 
+        _logger.LogInformation(
+            LogEvents.ProductVariant.EditStarted,
+            "Product variant edit started. ProductVariantId: {ProductVariantId}",
+            dto.Id);
+
         while (attempt < maxAttempts)
         {
             var variant =
-                await _productRepositoryContract.GetProductVariantByIdAsync(dto.Id);
+                await _productRepositoryContract
+                    .GetProductVariantByIdAsync(dto.Id);
 
             if (variant is null)
+            {
+                _logger.LogWarning(
+                    LogEvents.ProductVariant.NotFound,
+                    "Product variant was not found. ProductVariantId: {ProductVariantId}",
+                    dto.Id);
+
                 throw new NotFoundException(
                     "Variant یافت نشد!");
+            }
 
             try
             {
@@ -940,6 +1686,11 @@ public class ProductService : ProductServicesContract
 
                 await _unitOfWorkContract.SaveAsync();
 
+                _logger.LogInformation(
+                    LogEvents.ProductVariant.EditCompleted,
+                    "Product variant edited successfully. ProductVariantId: {ProductVariantId}",
+                    dto.Id);
+
                 return "Variant با موفقیت تغییر کرد";
             }
             catch (DbUpdateConcurrencyException)
@@ -948,8 +1699,21 @@ public class ProductService : ProductServicesContract
 
                 _unitOfWorkContract.ClearChangeTracker();
 
+                _logger.LogWarning(
+                    LogEvents.ProductVariant.ConcurrencyConflict,
+                    "Product variant edit concurrency conflict. ProductVariantId: {ProductVariantId}, Attempt: {Attempt}, MaxAttempts: {MaxAttempts}",
+                    dto.Id,
+                    attempt,
+                    maxAttempts);
+
                 if (attempt == maxAttempts)
                 {
+                    _logger.LogError(
+                        LogEvents.ProductVariant.Failed,
+                        "Product variant edit failed after maximum concurrency retry attempts. ProductVariantId: {ProductVariantId}, Attempts: {Attempts}",
+                        dto.Id,
+                        attempt);
+
                     throw new ConflictException(
                         "Variant در حال تغییر است. لطفاً دوباره تلاش کنید.");
                 }

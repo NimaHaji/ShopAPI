@@ -75,6 +75,7 @@ public class CouponsController : ControllerBase
     }
 
     [HttpPatch("{couponId}/activate")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     public async Task<IActionResult> ActivateCoupon([FromRoute]Guid couponId)
     {
         var result=await _couponsServiceContract.ActivateCouponAsync(couponId);
@@ -85,6 +86,7 @@ public class CouponsController : ControllerBase
     }
     
     [HttpPatch("{couponId}/deactivate")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     public async Task<IActionResult> DeActivateCoupon([FromRoute]Guid couponId)
     {
         var result=await _couponsServiceContract.DeActivateCouponAsync(couponId);

@@ -3,6 +3,7 @@ using Application.Features.Payment.Interfaces;
 using Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.WebUtilities;
 
 namespace ShopApi.Controllers;
 
@@ -10,14 +11,12 @@ namespace ShopApi.Controllers;
 [Route("api/[controller]/[action]")]
 public class PaymentsController : ControllerBase
 {
-    private readonly HttpClient _httpClient;
     private readonly IConfiguration _config;
     private readonly PaymentServiceContract _paymentServiceContract;
 
-    public PaymentsController(HttpClient httpClient, IConfiguration config,
+    public PaymentsController(IConfiguration config,
         PaymentServiceContract paymentServiceContract)
     {
-        _httpClient = httpClient;
         _config = config;
         _paymentServiceContract = paymentServiceContract;
     }
@@ -48,7 +47,7 @@ public class PaymentsController : ControllerBase
 
     [HttpPost("{gateway}")]
     [HttpGet("{gateway}")]
-    [Authorize]
+    [AllowAnonymous]
     public async Task<IActionResult> CallBack([FromRoute] PaymentGateway gateway)
     {
         var values = GetAllValues();
@@ -73,6 +72,25 @@ public class PaymentsController : ControllerBase
 
         var result = await _paymentServiceContract.HandleCallBackAsync(gateway, dto);
 
-        return Ok(result);
+        var redirectUrl = BuildPaymentResultUrl(result);
+
+        return Redirect(redirectUrl);
+    }
+
+    private string BuildPaymentResultUrl(VerifyPaymentResult result)
+    {
+        var baseUrl = _config["Payment:CallbackRedirectUrl"];
+
+        if (string.IsNullOrWhiteSpace(baseUrl))
+            throw new InvalidOperationException("تنظیمات Payment:CallbackRedirectUrl یافت نشد.");
+
+        var queryParams = new Dictionary<string, string?>
+        {
+            ["status"] = result.IsSuccess ? "success" : "failed",
+            ["ref"] = result.RefNumber,
+            ["message"] = result.Message
+        };
+
+        return QueryHelpers.AddQueryString(baseUrl, queryParams);
     }
 }
