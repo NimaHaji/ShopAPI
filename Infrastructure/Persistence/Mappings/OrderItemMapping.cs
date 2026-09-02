@@ -15,6 +15,8 @@ public class OrderItemMapping : IEntityTypeConfiguration<OrderItem>
         builder.Property(x => x.ProductId)
             .IsRequired();
 
+        builder.Property(oi => oi.ProductVariantId)
+            .IsRequired();
         builder.Property(x => x.OrderId)
             .IsRequired();
 

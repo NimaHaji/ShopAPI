@@ -15,10 +15,17 @@ public interface DiscountServiceContract
 
     #region Product
 
-    Task<string> SetDiscountForProductAsync(Guid discountId,AddProductToDiscountDto dto);
-    Task<string> DeleteDiscountFoProduct(Guid discountId, Guid productId);
+    Task<string> SetDiscountForProductAsync(Guid discountId, AddProductToDiscountDto dto);
+    Task<string> DeleteDiscountForProduct(Guid discountId, Guid productId);
     Task<ViewDiscountItemsDto> GetDiscountByProductId(Guid productId);
-    
+
+    #region variants
+
+    Task<string> DeleteDiscountForProductVariant(Guid discountId, Guid productVariantId);
+    Task<ViewDiscountItemsDto> GetDiscountByProductVariantId(Guid productVariantId);
+    Task<string> SetDiscountForProductVariantAsync(Guid discountId, AddProductVariantToDiscountDto dto);
+
     #endregion
 
+    #endregion
 }

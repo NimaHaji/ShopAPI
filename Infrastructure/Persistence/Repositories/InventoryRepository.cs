@@ -14,21 +14,28 @@ public class InventoryRepository : InventoryRepositoryContract
         _context = context;
     }
 
-    public async Task<InventoryItem?> GetByProductIdAsync(Guid productId)
+    public async Task<InventoryItem?> GetByProductVariantIdAsync(Guid productVariantId)
     {
         return await _context
             .InventoryItems
-            .Include(it => it.Product)
-            .Include(it => it.Transactions.OrderByDescending(t => t.CreatedAt).Take(10))
-            .FirstOrDefaultAsync(it => it.ProductId == productId);
+            .Include(it => it.ProductVariant)
+            .ThenInclude(pv => pv.Product)
+            .Include(it => it.Transactions.OrderByDescending(t => t.CreatedAt))
+            .Include(it => it.ProductVariant)
+            .ThenInclude(pv => pv.Options)
+            .ThenInclude(pvo => pvo.ProductOption)
+            .Include(it => it.ProductVariant)
+            .ThenInclude(pv => pv.Options)
+            .ThenInclude(pvo => pvo.ProductOptionValue)
+            .FirstOrDefaultAsync(it => it.ProductVariantId == productVariantId);
     }
 
-    public async Task<List<InventoryItem>?> GetByProductIdsAsync(List<Guid> productId)
+    public async Task<List<InventoryItem>?> GetByProductIdsAsync(List<Guid> productVariantIds)
     {
         return await _context
             .InventoryItems
-            .Include(it => it.Product)
-            .Where(it => productId.Contains(it.ProductId))
+            .Include(it => it.ProductVariant)
+            .Where(it => productVariantIds.Contains(it.ProductVariantId))
             .ToListAsync();
     }
 
@@ -43,7 +50,15 @@ public class InventoryRepository : InventoryRepositoryContract
     {
         return await _context
             .InventoryItems
-            .Include(it => it.Product)
+            .Include(it => it.ProductVariant)
+            .ThenInclude(pv => pv.Product)
+            .Include(it => it.Transactions.OrderByDescending(t => t.CreatedAt))
+            .Include(it => it.ProductVariant)
+            .ThenInclude(pv => pv.Options)
+            .ThenInclude(pvo => pvo.ProductOption)
+            .Include(it => it.ProductVariant)
+            .ThenInclude(pv => pv.Options)
+            .ThenInclude(pvo => pvo.ProductOptionValue)
             .ToListAsync();
     }
 
@@ -57,12 +72,21 @@ public class InventoryRepository : InventoryRepositoryContract
         await _context.InventoryItems.AddAsync(inventory);
     }
 
-    public async Task<InventoryItem?> GetByProductId(Guid productId)
+    public async Task<InventoryItem?> GetByProductVariantId(Guid productVariantId)
     {
         return await _context
             .InventoryItems
-            .Include(it => it.Product)
+            .Include(it => it.ProductVariant)
             .Include(it => it.Transactions.OrderByDescending(t => t.CreatedAt).Take(10))
-            .FirstOrDefaultAsync(it => it.ProductId == productId);
+            .FirstOrDefaultAsync(it => it.ProductVariantId == productVariantId);
+    }
+
+    public async Task<List<InventoryItem>?> GetByProductVariantIdsAsync(List<Guid> productVariantIds)
+    {
+        return await _context
+            .InventoryItems
+            .Include(it => it.ProductVariant)
+            .Where(it => productVariantIds.Contains(it.ProductVariantId))
+            .ToListAsync();
     }
 }

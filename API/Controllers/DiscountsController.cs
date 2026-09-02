@@ -111,18 +111,32 @@ public class DiscountsController : ControllerBase
     [Authorize(Roles = "Admin,SuperAdmin")]
     public async Task<IActionResult> DeleteDiscountForProduct([FromRoute]Guid discountId,[FromRoute]Guid productId)
     {
-        var result=await _discountServiceContract.DeleteDiscountFoProduct(discountId,productId);
+        var result=await _discountServiceContract.DeleteDiscountForProduct(discountId,productId);
         return Ok(new
         {
             message = result
         });
     }
-
-    [HttpGet("{productId}/products")]
-    public async Task<IActionResult> GetDiscountByProductId([FromRoute]Guid productId)
+    
+    [HttpDelete("{discountId}/variants/{productVariantId}")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
+    public async Task<IActionResult> DeleteDiscountForProductVariant([FromRoute]Guid discountId,[FromRoute]Guid productVariantId)
     {
-        var discount=await _discountServiceContract.GetDiscountByProductId(productId);
-        return Ok(discount);
+        var result=await _discountServiceContract.DeleteDiscountForProductVariant(discountId,productVariantId);
+        return Ok(new
+        {
+            message = result
+        });
     }
     
+    [HttpPost("{discountId}/variants")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
+    public async Task<IActionResult> SetDiscountForProductVariants([FromRoute]Guid discountId,[FromBody]AddProductVariantToDiscountDto dto) 
+    {
+        var result = await _discountServiceContract.SetDiscountForProductVariantAsync(discountId,dto);
+        return Ok(new
+        {
+            message = result
+        });
+    }
 }

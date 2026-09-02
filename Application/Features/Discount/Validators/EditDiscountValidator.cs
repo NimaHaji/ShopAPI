@@ -8,7 +8,7 @@ public class EditDiscountValidator : AbstractValidator<EditDiscountDto>
 {
     public EditDiscountValidator()
     {
-        // حداقل یک فیلد باید ارسال شود
+
         RuleFor(x => x)
             .Must(HaveAtLeastOneChange)
             .WithMessage("حداقل یک مقدار برای ویرایش باید ارسال شود.");

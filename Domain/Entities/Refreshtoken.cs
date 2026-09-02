@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace Domain.Entities;
 
 public class RefreshToken
@@ -9,4 +11,5 @@ public class RefreshToken
     public bool IsRevoked { get; set; }
     public Guid UserId { get; set; }
     public User User { get; set; } = null!;
+    [Timestamp] public Byte[] RowVersion { get; private set; }
 }

@@ -22,5 +22,10 @@ public class RefreshTokenMapping : IEntityTypeConfiguration<RefreshToken>
             .HasForeignKey(x => x.UserId)
             .OnDelete(DeleteBehavior.Cascade);
         
+        builder
+            .Property(rf=>rf.RowVersion)
+            .IsRowVersion()
+            .IsConcurrencyToken();
+            
     }
 }
