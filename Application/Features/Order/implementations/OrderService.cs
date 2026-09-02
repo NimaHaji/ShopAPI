@@ -6,6 +6,8 @@ using Application.Features.Order.Interfaces;
 using Application.Features.Product.Interfaces;
 using Domain.Entities;
 using Domain.Enums;
+using Microsoft.Extensions.Logging;
+using Shared;
 using Shared.Exceptions;
 
 namespace Application.Features.Order.implementations;
@@ -16,6 +18,7 @@ public class OrderService : OrderServicesContract
     private readonly UnitOfWorkContract _unitOfWorkContract;
     private readonly OrderRepositoryContract _orderRepository;
     private readonly ProductRepositoryContract _productRepository;
+    private readonly ILogger<OrderService> _logger;
 
     public OrderService(OrderRepositoryContract orderRepository, ProductRepositoryContract productRepository,
         IUSerContext userContext, UnitOfWorkContract unitOfWorkContract)
@@ -26,18 +29,28 @@ public class OrderService : OrderServicesContract
         _unitOfWorkContract = unitOfWorkContract;
     }
 
-    public async Task<Guid> CreateOrderAsync(CreateOrderDto orderDto, Domain.Entities.Address userAddress)
+    public async Task<Guid> CreateOrderAsync(
+        CreateOrderDto orderDto,
+        Domain.Entities.Address userAddress)
     {
         using var activity =
-            ActivitySources.ShopApi.StartActivity("Order.Create");
+            ActivitySources.ShopApi.StartActivity(
+                nameof(CreateOrderAsync));
 
         activity?.SetTag(
             "order.items_count",
             orderDto.Items.Count);
-        
+
         var userId = _userContext.UserId
                      ?? throw new UnauthorizedAccessException(
                          "کاربر احراز هویت نشده است.");
+
+        activity?.SetTag("user.id", userId);
+
+        _logger.LogInformation(
+            LogEvents.Order.CreateStarted,
+            "Order creation started. ItemCount: {ItemCount}",
+            orderDto.Items.Count);
 
         var productVariantIds = orderDto.Items
             .Select(x => x.ProductVariantId)
@@ -48,8 +61,14 @@ public class OrderService : OrderServicesContract
             .GetVariantsWithDiscountAsync(productVariantIds);
 
         if (variants.Count != productVariantIds.Count)
+        {
+            _logger.LogWarning(
+                LogEvents.Order.ProductNotFound,
+                "Order creation rejected because one or more product variants were not found.");
+
             throw new NotFoundException(
                 "یک یا چند محصول یافت نشد.");
+        }
 
         var order = new Domain.Entities.Order(
             userId: userId,
@@ -65,16 +84,29 @@ public class OrderService : OrderServicesContract
 
         var variantMap = variants.ToDictionary(x => x.Id);
 
-        foreach (var item in orderDto.Items)    
+        foreach (var item in orderDto.Items)
         {
             if (item.Quantity <= 0)
+            {
+                _logger.LogWarning(
+                    LogEvents.Order.InvalidQuantity,
+                    "Order creation rejected because product quantity is invalid. ProductVariantId: {ProductVariantId}, Quantity: {Quantity}",
+                    item.ProductVariantId,
+                    item.Quantity);
+
                 throw new BusinessException(
                     "تعداد محصول باید بیشتر از صفر باشد.");
+            }
 
             if (!variantMap.TryGetValue(
                     item.ProductVariantId,
                     out var variant))
             {
+                _logger.LogWarning(
+                    LogEvents.Order.ProductNotFound,
+                    "Order creation rejected because product variant was not found. ProductVariantId: {ProductVariantId}",
+                    item.ProductVariantId);
+
                 throw new NotFoundException(
                     "Variant موردنظر یافت نشد.");
             }
@@ -87,11 +119,12 @@ public class OrderService : OrderServicesContract
 
             var variantDiscount = variant.DiscountVariants
                 .Select(dv => dv.Discount)
-                .FirstOrDefault(d => d is not null &&
-                                     !d.IsDeleted &&
-                                     d.IsActive &&
-                                     d.StartsAt <= now &&
-                                     d.EndsAt > now);
+                .FirstOrDefault(d =>
+                    d is not null &&
+                    !d.IsDeleted &&
+                    d.IsActive &&
+                    d.StartsAt <= now &&
+                    d.EndsAt > now);
 
             var productDiscount = product.DiscountProducts
                 .Select(dp => dp.Discount)
@@ -102,11 +135,13 @@ public class OrderService : OrderServicesContract
                     d.StartsAt <= now &&
                     d.EndsAt > now);
 
-            var activeDiscount = variantDiscount ?? productDiscount;
+            var activeDiscount =
+                variantDiscount ?? productDiscount;
 
             if (activeDiscount is not null)
             {
-                if (activeDiscount.DiscountType == DiscountType.Percentage)
+                if (activeDiscount.DiscountType ==
+                    DiscountType.Percentage)
                 {
                     discountAmount = (long)(
                         unitPrice *
@@ -128,7 +163,8 @@ public class OrderService : OrderServicesContract
                 }
             }
 
-            var finalUnitPrice = unitPrice - discountAmount;
+            var finalUnitPrice =
+                unitPrice - discountAmount;
 
             var orderItem = new OrderItem(
                 productId: product.Id,
@@ -139,57 +175,73 @@ public class OrderService : OrderServicesContract
                 discountAmount: discountAmount,
                 finalUnitPrice: finalUnitPrice,
                 productTitle: product.Title,
-                productImage: product.Images.Where(i => i.IsPrimary)
-                    .Select(i => i.ImageLink).FirstOrDefault(),
-                variantImage: variant.Images.Where(i => i.IsPrimary)
-                    .Select(i => i.ImageUrl).FirstOrDefault(),
-                options: variant.Options.Select(x => (x.ProductOption.Name, x.ProductOptionValue.Value)).ToList()
+                productImage: product.Images
+                    .Where(i => i.IsPrimary)
+                    .Select(i => i.ImageLink)
+                    .FirstOrDefault(),
+                variantImage: variant.Images
+                    .Where(i => i.IsPrimary)
+                    .Select(i => i.ImageUrl)
+                    .FirstOrDefault(),
+                options: variant.Options
+                    .Select(x =>
+                        (x.ProductOption.Name,
+                            x.ProductOptionValue.Value))
+                    .ToList()
             );
 
             order.AddItem(orderItem);
         }
-        
+
         activity?.SetTag(
             "order.items_created",
             orderDto.Items.Count);
-        
+
         if (orderDto.CouponId.HasValue)
         {
             order.ApplyCoupon(
                 orderDto.CouponId.Value,
                 orderDto.CouponCode!,
                 orderDto.CouponDiscountAmount);
+
+            activity?.SetTag(
+                "order.has_coupon",
+                true);
         }
 
         await _orderRepository.CreateOrderAsync(order);
-        
+
         activity?.SetTag(
             "order.id",
-            order.Id.ToString());
+            order.Id);
 
         activity?.SetStatus(
             ActivityStatusCode.Ok);
-        
+
+        _logger.LogInformation(
+            LogEvents.Order.CreateCompleted,
+            "Order created successfully. OrderId: {OrderId}, ItemCount: {ItemCount}",
+            order.Id,
+            orderDto.Items.Count);
+
         return order.Id;
     }
 
+
     public async Task<ViewOrderListDto> GetAllOrdersAsync()
     {
-        var orders = await _orderRepository.GetAllOrders();
+        using var activity =
+            ActivitySources.ShopApi.StartActivity(
+                nameof(GetAllOrdersAsync));
 
-        if (orders is null || !orders.Any())
-        {
-            return new ViewOrderListDto
-            {
-                OrderList = []
-            };
-        }
+        var orders =
+            await _orderRepository.GetAllOrders();
 
-        return new ViewOrderListDto
-        {
-            OrderList = orders.Select(order => new ViewOrderDto
+        var orderList = orders?
+            .Select(order => new ViewOrderDto
             {
                 Id = order.Id,
+
                 Items = order.OrderItems
                     .Select(item => new ViewOrderItemDto
                     {
@@ -203,56 +255,77 @@ public class OrderService : OrderServicesContract
                         DiscountAmount = item.DiscountAmount,
                         FinalUnitPrice = item.FinalUnitPrice,
                         TotalPrice = item.TotalPrice,
+
                         Options = item.Options
-                            .Select(option => new ViewOrderItemOptionDto
-                            {
-                                OptionName = option.OptionName,
-                                Value = option.Value
-                            })
+                            .Select(option =>
+                                new ViewOrderItemOptionDto
+                                {
+                                    OptionName = option.OptionName,
+                                    Value = option.Value
+                                })
                             .ToList()
                     })
                     .ToList(),
+
                 Subtotal = order.OrderItems.Sum(item =>
                     item.UnitPrice * item.Quantity),
+
                 ProductDiscountAmount = order.OrderItems.Sum(item =>
                     item.DiscountAmount * item.Quantity),
-                CouponDiscountAmount = order.CouponDiscountAmount,
+
+                CouponDiscountAmount =
+                    order.CouponDiscountAmount,
+
                 TotalPrice = order.TotalPrice,
-                OrderStatus = order.OrderStatus.ToString(),
+
+                OrderStatus =
+                    order.OrderStatus.ToString(),
+
                 CreatedAt = order.CreatedAt,
+
                 CouponId = order.CouponId,
                 CouponCode = order.CouponCode,
+
                 ReceiverName = order.ReceiverName,
                 PhoneNumber = order.PhoneNumber,
                 Province = order.Province,
                 City = order.City,
                 AddressLine = order.AddressLine,
                 PostalCode = order.PostalCode
-            }).ToList()
+            })
+            .ToList() ?? [];
+
+        activity?.SetTag(
+            "orders.count",
+            orderList.Count);
+
+        return new ViewOrderListDto
+        {
+            OrderList = orderList
         };
     }
 
+
     public async Task<ViewOrderListDto> GetAllUserOrdersAsync()
     {
+        using var activity =
+            ActivitySources.ShopApi.StartActivity(
+                nameof(GetAllUserOrdersAsync));
+
         var userId = _userContext.UserId
                      ?? throw new UnauthorizedAccessException(
                          "کاربر احراز هویت نشده است.");
 
-        var orders = await _orderRepository.GetOrderByUserIdAsync(userId);
+        activity?.SetTag("user.id", userId);
 
-        if (orders is null || !orders.Any())
-        {
-            return new ViewOrderListDto
-            {
-                OrderList = []
-            };
-        }
+        var orders =
+            await _orderRepository.GetOrderByUserIdAsync(userId);
 
-        return new ViewOrderListDto
-        {
-            OrderList = orders.Select(order => new ViewOrderDto
+        var orderList = orders?
+            .Select(order => new ViewOrderDto
             {
                 Id = order.Id,
+
                 Items = order.OrderItems
                     .Select(item => new ViewOrderItemDto
                     {
@@ -266,50 +339,96 @@ public class OrderService : OrderServicesContract
                         DiscountAmount = item.DiscountAmount,
                         FinalUnitPrice = item.FinalUnitPrice,
                         TotalPrice = item.TotalPrice,
+
                         Options = item.Options
-                            .Select(option => new ViewOrderItemOptionDto
-                            {
-                                OptionName = option.OptionName,
-                                Value = option.Value
-                            })
+                            .Select(option =>
+                                new ViewOrderItemOptionDto
+                                {
+                                    OptionName = option.OptionName,
+                                    Value = option.Value
+                                })
                             .ToList()
                     })
                     .ToList(),
+
                 Subtotal = order.OrderItems.Sum(item =>
                     item.UnitPrice * item.Quantity),
+
                 ProductDiscountAmount = order.OrderItems.Sum(item =>
                     item.DiscountAmount * item.Quantity),
-                CouponDiscountAmount = order.CouponDiscountAmount,
+
+                CouponDiscountAmount =
+                    order.CouponDiscountAmount,
+
                 TotalPrice = order.TotalPrice,
-                OrderStatus = order.OrderStatus.ToString(),
+
+                OrderStatus =
+                    order.OrderStatus.ToString(),
+
                 CreatedAt = order.CreatedAt,
+
                 CouponId = order.CouponId,
                 CouponCode = order.CouponCode,
+
                 ReceiverName = order.ReceiverName,
                 PhoneNumber = order.PhoneNumber,
                 Province = order.Province,
                 City = order.City,
                 AddressLine = order.AddressLine,
                 PostalCode = order.PostalCode
-            }).ToList()
+            })
+            .ToList() ?? [];
+
+        activity?.SetTag(
+            "orders.count",
+            orderList.Count);
+
+        return new ViewOrderListDto
+        {
+            OrderList = orderList
         };
     }
 
-    public async Task<ViewOrderDto> GetOrderByIdAsync(Guid orderId)
+
+    public async Task<ViewOrderDto> GetOrderByIdAsync(
+        Guid orderId)
     {
+        using var activity =
+            ActivitySources.ShopApi.StartActivity(
+                nameof(GetOrderByIdAsync));
+
+        activity?.SetTag("order.id", orderId);
+
         if (orderId == Guid.Empty)
-            throw new BusinessException("شناسه سفارش نامعتبر است.");
+            throw new BusinessException(
+                "شناسه سفارش نامعتبر است.");
 
-        var userId = _userContext.UserId ?? throw new UnauthorizedAccessException("کاربر احراز هویت نشده است.");
+        var userId = _userContext.UserId
+                     ?? throw new UnauthorizedAccessException(
+                         "کاربر احراز هویت نشده است.");
 
-        var order = await _orderRepository.GetOrderByIdAsync(orderId, userId);
+        activity?.SetTag("user.id", userId);
+
+        var order =
+            await _orderRepository.GetOrderByIdAsync(
+                orderId,
+                userId);
 
         if (order is null)
-            throw new NotFoundException("سفارش یافت نشد.");
+        {
+            _logger.LogWarning(
+                LogEvents.Order.NotFound,
+                "Order not found. OrderId: {OrderId}",
+                orderId);
 
-        var dto = new ViewOrderDto
+            throw new NotFoundException(
+                "سفارش یافت نشد.");
+        }
+
+        return new ViewOrderDto
         {
             Id = order.Id,
+
             Items = order.OrderItems
                 .Select(item => new ViewOrderItemDto
                 {
@@ -323,25 +442,37 @@ public class OrderService : OrderServicesContract
                     DiscountAmount = item.DiscountAmount,
                     FinalUnitPrice = item.FinalUnitPrice,
                     TotalPrice = item.TotalPrice,
+
                     Options = item.Options
-                        .Select(option => new ViewOrderItemOptionDto
-                        {
-                            OptionName = option.OptionName,
-                            Value = option.Value
-                        })
+                        .Select(option =>
+                            new ViewOrderItemOptionDto
+                            {
+                                OptionName = option.OptionName,
+                                Value = option.Value
+                            })
                         .ToList()
                 })
                 .ToList(),
+
             Subtotal = order.OrderItems.Sum(item =>
                 item.UnitPrice * item.Quantity),
+
             ProductDiscountAmount = order.OrderItems.Sum(item =>
                 item.DiscountAmount * item.Quantity),
-            CouponDiscountAmount = order.CouponDiscountAmount,
+
+            CouponDiscountAmount =
+                order.CouponDiscountAmount,
+
             TotalPrice = order.TotalPrice,
-            OrderStatus = order.OrderStatus.ToString(),
+
+            OrderStatus =
+                order.OrderStatus.ToString(),
+
             CreatedAt = order.CreatedAt,
+
             CouponId = order.CouponId,
             CouponCode = order.CouponCode,
+
             ReceiverName = order.ReceiverName,
             PhoneNumber = order.PhoneNumber,
             Province = order.Province,
@@ -349,35 +480,115 @@ public class OrderService : OrderServicesContract
             AddressLine = order.AddressLine,
             PostalCode = order.PostalCode
         };
-
-        return dto;
     }
+
 
     public async Task<string> CancelOrderAsync(Guid orderId)
     {
-        var userId = _userContext.UserId ?? throw new UnauthorizedAccessException("کاربر احراز هویت نشده است.");
+        using var activity =
+            ActivitySources.ShopApi.StartActivity(
+                nameof(CancelOrderAsync));
 
-        var order = await _orderRepository.GetOrderByIdAsync(orderId, userId);
+        activity?.SetTag("order.id", orderId);
+
+        var userId = _userContext.UserId
+                     ?? throw new UnauthorizedAccessException(
+                         "کاربر احراز هویت نشده است.");
+
+        activity?.SetTag("user.id", userId);
+
+        _logger.LogInformation(
+            LogEvents.Order.CancelStarted,
+            "Order cancellation started. OrderId: {OrderId}",
+            orderId);
+
+        var order =
+            await _orderRepository.GetOrderByIdAsync(
+                orderId,
+                userId);
 
         if (order is null)
-            throw new NotFoundException("سفارش یافت نشد");
+        {
+            _logger.LogWarning(
+                LogEvents.Order.NotFound,
+                "Order cancellation rejected because order was not found. OrderId: {OrderId}",
+                orderId);
+
+            throw new NotFoundException(
+                "سفارش یافت نشد");
+        }
 
         order.Cancel();
+
         await _unitOfWorkContract.SaveAsync();
+
+        activity?.SetStatus(
+            ActivityStatusCode.Ok);
+
+        _logger.LogInformation(
+            LogEvents.Order.CancelCompleted,
+            "Order cancelled successfully. OrderId: {OrderId}",
+            orderId);
+
         return "سفارش با موفقیت لغو شد .";
     }
 
-    public async Task<string> ChangOrderStatusByIdAsync(Guid orderId, OrderStatus status)
-    {
-        var userId = _userContext.UserId ?? throw new UnauthorizedAccessException("کاربر احراز هویت نشده است.");
 
-        var order = await _orderRepository.GetOrderByIdAsync(orderId, userId);
+    public async Task<string> ChangOrderStatusByIdAsync(
+        Guid orderId,
+        OrderStatus status)
+    {
+        using var activity =
+            ActivitySources.ShopApi.StartActivity(
+                nameof(ChangOrderStatusByIdAsync));
+
+        activity?.SetTag("order.id", orderId);
+        activity?.SetTag(
+            "order.new_status",
+            status.ToString());
+
+        var userId = _userContext.UserId
+                     ?? throw new UnauthorizedAccessException(
+                         "کاربر احراز هویت نشده است.");
+
+        activity?.SetTag("user.id", userId);
+
+        _logger.LogInformation(
+            LogEvents.Order.StatusChangeStarted,
+            "Order status change started. OrderId: {OrderId}, NewStatus: {Status}",
+            orderId,
+            status);
+
+        var order =
+            await _orderRepository.GetOrderByIdAsync(
+                orderId,
+                userId);
 
         if (order is null)
-            throw new NotFoundException("سفارش یافت نشد");
+        {
+            _logger.LogWarning(
+                LogEvents.Order.NotFound,
+                "Order status change rejected because order was not found. OrderId: {OrderId}",
+                orderId);
+
+            throw new NotFoundException(
+                "سفارش یافت نشد");
+        }
 
         order.ChangeOrderStatusTo(status);
+
         await _unitOfWorkContract.SaveAsync();
-        return $"وضعیت سفارش تغییر پیدا کرد وضعیت فعلی {order.OrderStatus.ToString()} .";
+
+        activity?.SetStatus(
+            ActivityStatusCode.Ok);
+
+        _logger.LogInformation(
+            LogEvents.Order.StatusChangeCompleted,
+            "Order status changed successfully. OrderId: {OrderId}, Status: {Status}",
+            orderId,
+            order.OrderStatus);
+
+        return
+            $"وضعیت سفارش تغییر پیدا کرد وضعیت فعلی {order.OrderStatus} .";
     }
 }

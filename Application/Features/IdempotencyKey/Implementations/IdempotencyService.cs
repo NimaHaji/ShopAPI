@@ -1,3 +1,4 @@
+using Application.Common.Observability;
 using Application.Features.IdempotencyKey.DTOs;
 using Application.Features.IdempotencyKey.Interfaces;
 using Domain.Entities;
@@ -16,10 +17,21 @@ public class IdempotencyService : IdempotencyServiceContract
             idempotencyRepositoryContract;
     }
 
-    public async Task<IdempotencyResultDto> CheckAsync(Guid userId, string key, IdempotencyOperation operation)
+    public async Task<IdempotencyResultDto> CheckAsync(
+        Guid userId,
+        string key,
+        IdempotencyOperation operation)
     {
+        using var activity =
+            ActivitySources.ShopApi.StartActivity(
+                nameof(CheckAsync));
+
+        activity?.SetTag("user.id", userId);
+        activity?.SetTag("idempotency.operation", operation.ToString());
+
         if (userId == Guid.Empty)
-            throw new BusinessException("شناسه کاربری نا معتبر است .");
+            throw new BusinessException(
+                "شناسه کاربری نا معتبر است .");
 
         if (string.IsNullOrWhiteSpace(key))
         {
@@ -35,6 +47,10 @@ public class IdempotencyService : IdempotencyServiceContract
 
         if (existing is not null)
         {
+            activity?.SetTag(
+                "idempotency.status",
+                existing.Status.ToString());
+
             return existing.Status switch
             {
                 IdempotencyStatus.Completed
@@ -58,9 +74,18 @@ public class IdempotencyService : IdempotencyServiceContract
             };
         }
 
-        var idempotencyKey = new Domain.Entities.IdempotencyKey(userId, key, operation);
+        var idempotencyKey =
+            new Domain.Entities.IdempotencyKey(
+                userId,
+                key,
+                operation);
 
-        await _idempotencyRepositoryContract.AddAsync(idempotencyKey);
+        await _idempotencyRepositoryContract
+            .AddAsync(idempotencyKey);
+
+        activity?.SetTag(
+            "idempotency.status",
+            IdempotencyStatusDto.New.ToString());
 
         return new IdempotencyResultDto
         {
@@ -69,10 +94,25 @@ public class IdempotencyService : IdempotencyServiceContract
         };
     }
 
-    public async Task CompleteAsync(Guid userId, string key, Guid resource, IdempotencyOperation operation)
+    public async Task CompleteAsync(
+        Guid userId,
+        string key,
+        Guid resource,
+        IdempotencyOperation operation)
     {
+        using var activity =
+            ActivitySources.ShopApi.StartActivity(
+                nameof(CompleteAsync));
+
+        activity?.SetTag("user.id", userId);
+        activity?.SetTag("resource.id", resource);
+        activity?.SetTag(
+            "idempotency.operation",
+            operation.ToString());
+
         if (userId == Guid.Empty)
-            throw new BusinessException("شناسه کاربری نا معتبر است .");
+            throw new BusinessException(
+                "شناسه کاربری نا معتبر است .");
 
         if (string.IsNullOrWhiteSpace(key))
         {
@@ -81,7 +121,8 @@ public class IdempotencyService : IdempotencyServiceContract
         }
 
         if (resource == Guid.Empty)
-            throw new BusinessException("شناسه سفارش نامعتبر است.");
+            throw new BusinessException(
+                "شناسه سفارش نامعتبر است.");
 
         key = key.Trim();
 
@@ -96,5 +137,9 @@ public class IdempotencyService : IdempotencyServiceContract
         }
 
         existing.Complete(resource);
+
+        activity?.SetTag(
+            "idempotency.status",
+            IdempotencyStatus.Completed.ToString());
     }
 }

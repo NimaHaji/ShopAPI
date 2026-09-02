@@ -22,7 +22,6 @@
 
     <ItemGroup>
       <Folder Include="Features\CouponUsage\Implementations\" />
-      <Folder Include="Features\DummyData\" />
       <Folder Include="Features\IdempotencyKey\enum\" />
       <Folder Include="Features\IdempotencyKey\Validators\" />
     </ItemGroup>
