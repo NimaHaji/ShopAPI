@@ -1,6 +1,7 @@
 using Domain.Entities;
 using Infrastructure.Persistence.Contexts;
 using Infrastructure.Persistence.Seed.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence.Seed;
 
@@ -21,6 +22,15 @@ public class BrandSeeder
 
         foreach (var item in items)
         {
+            var existing = await _context.ProductBrands
+                .FirstOrDefaultAsync(b => b.Title == item.Title);
+
+            if (existing is not null)
+            {
+                seedContext.Brands[item.Key] = existing.Id;
+                continue;
+            }
+
             var brand = ProductBrand.Create(item.Title);
             seedContext.Brands[item.Key] = brand.Id;
             await _context.ProductBrands.AddAsync(brand);

@@ -2,6 +2,7 @@ using Application.Features.Cart.DTOs;
 using Application.Features.Cart.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace ShopApi.Controllers;
 
@@ -15,7 +16,7 @@ public class CartsController : ControllerBase
     {
         _cartService = cartService;
     }
-    
+
     [HttpGet("Cart")]
     [Authorize]
     public async Task<IActionResult> GetCartAsync()
@@ -26,9 +27,11 @@ public class CartsController : ControllerBase
 
     [HttpPost("items")]
     [Authorize]
+    [EnableRateLimiting("Write")]
     public async Task<IActionResult> AddItem(AddCartItemDto item)
     {
         var result = await _cartService.AddItemAsync(item);
+
         return Ok(new
         {
             message = result
@@ -37,9 +40,11 @@ public class CartsController : ControllerBase
 
     [HttpPut("items")]
     [Authorize]
+    [EnableRateLimiting("Write")]
     public async Task<IActionResult> UpdateQuantity(UpdateCartDto dto)
     {
         var result = await _cartService.UpdateItemQuantityAsync(dto);
+
         return Ok(new
         {
             message = result
@@ -48,9 +53,11 @@ public class CartsController : ControllerBase
 
     [HttpDelete("items/{productVariantId:guid}")]
     [Authorize]
+    [EnableRateLimiting("Write")]
     public async Task<IActionResult> DeleteItem(Guid productVariantId)
     {
         var result = await _cartService.DeleteItemAsync(productVariantId);
+
         return Ok(new
         {
             message = result
@@ -59,12 +66,14 @@ public class CartsController : ControllerBase
 
     [HttpDelete("clear")]
     [Authorize]
+    [EnableRateLimiting("Write")]
     public async Task<IActionResult> ClearCart()
     {
         var result = await _cartService.ClearCartAsync();
+
         return Ok(new
         {
-            message =result
+            message = result
         });
     }
 
@@ -73,6 +82,7 @@ public class CartsController : ControllerBase
     public async Task<IActionResult> GetCount()
     {
         var count = await _cartService.GetCartItemsCountAsync();
+
         return Ok(new
         {
             itemscount = count

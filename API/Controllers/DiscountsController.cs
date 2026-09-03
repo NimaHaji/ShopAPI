@@ -2,6 +2,7 @@ using Application.Features.Discount.DTOs;
 using Application.Features.Discount.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace ShopApi.Controllers;
 
@@ -32,9 +33,11 @@ public class DiscountsController : ControllerBase
 
     [HttpPatch("{discountId}/activate")]
     [Authorize(Roles = "Admin,SuperAdmin")]
+    [EnableRateLimiting("Write")]
     public async Task<IActionResult> ActiveDiscount([FromRoute] Guid discountId)
     {
         var result = await _discountServiceContract.ActivateDiscountAsync(discountId);
+
         return Ok(new
         {
             message = result
@@ -43,9 +46,11 @@ public class DiscountsController : ControllerBase
 
     [HttpPatch("{discountId}/deactivate")]
     [Authorize(Roles = "Admin,SuperAdmin")]
+    [EnableRateLimiting("Write")]
     public async Task<IActionResult> DeActiveDiscount([FromRoute] Guid discountId)
     {
         var result = await _discountServiceContract.DeActivateDiscountAsync(discountId);
+
         return Ok(new
         {
             message = result
@@ -54,9 +59,11 @@ public class DiscountsController : ControllerBase
 
     [HttpPost]
     [Authorize(Roles = "Admin,SuperAdmin")]
+    [EnableRateLimiting("Write")]
     public async Task<IActionResult> CreateDiscount([FromBody] CreateDiscountDto dto)
     {
         var result = await _discountServiceContract.CreateDiscountAsync(dto);
+
         return Ok(new
         {
             message = result
@@ -65,9 +72,15 @@ public class DiscountsController : ControllerBase
 
     [HttpPut("{discountId}")]
     [Authorize(Roles = "Admin,SuperAdmin")]
-    public async Task<IActionResult> EditDiscount([FromRoute] Guid discountId, [FromBody] EditDiscountDto dto)
+    [EnableRateLimiting("Write")]
+    public async Task<IActionResult> EditDiscount(
+        [FromRoute] Guid discountId,
+        [FromBody] EditDiscountDto dto)
     {
-        var result = await _discountServiceContract.EditDiscountByIdAsync(discountId, dto);
+        var result = await _discountServiceContract.EditDiscountByIdAsync(
+            discountId,
+            dto);
+
         return Ok(new
         {
             message = result
@@ -76,20 +89,24 @@ public class DiscountsController : ControllerBase
 
     [HttpDelete("{discountId}")]
     [Authorize(Roles = "Admin,SuperAdmin")]
+    [EnableRateLimiting("Write")]
     public async Task<IActionResult> DeleteDiscount([FromRoute] Guid discountId)
     {
         var result = await _discountServiceContract.DeleteDiscountByIdAsync(discountId);
+
         return Ok(new
         {
             message = result
         });
     }
-    
+
     [HttpPost("{discountId}/restore")]
     [Authorize(Roles = "Admin,SuperAdmin")]
+    [EnableRateLimiting("Write")]
     public async Task<IActionResult> RestoreDiscount([FromRoute] Guid discountId)
     {
         var result = await _discountServiceContract.RestoreDiscountByIdAsync(discountId);
+
         return Ok(new
         {
             message = result
@@ -98,9 +115,15 @@ public class DiscountsController : ControllerBase
 
     [HttpPost("{discountId}/products")]
     [Authorize(Roles = "Admin,SuperAdmin")]
-    public async Task<IActionResult> SetDiscountForProducts([FromRoute]Guid discountId,[FromBody]AddProductToDiscountDto dto) 
+    [EnableRateLimiting("Write")]
+    public async Task<IActionResult> SetDiscountForProducts(
+        [FromRoute] Guid discountId,
+        [FromBody] AddProductToDiscountDto dto)
     {
-        var result = await _discountServiceContract.SetDiscountForProductAsync(discountId,dto);
+        var result = await _discountServiceContract.SetDiscountForProductAsync(
+            discountId,
+            dto);
+
         return Ok(new
         {
             message = result
@@ -109,31 +132,49 @@ public class DiscountsController : ControllerBase
 
     [HttpDelete("{discountId}/products/{productId}")]
     [Authorize(Roles = "Admin,SuperAdmin")]
-    public async Task<IActionResult> DeleteDiscountForProduct([FromRoute]Guid discountId,[FromRoute]Guid productId)
+    [EnableRateLimiting("Write")]
+    public async Task<IActionResult> DeleteDiscountForProduct(
+        [FromRoute] Guid discountId,
+        [FromRoute] Guid productId)
     {
-        var result=await _discountServiceContract.DeleteDiscountForProduct(discountId,productId);
+        var result = await _discountServiceContract.DeleteDiscountForProduct(
+            discountId,
+            productId);
+
         return Ok(new
         {
             message = result
         });
     }
-    
+
     [HttpDelete("{discountId}/variants/{productVariantId}")]
     [Authorize(Roles = "Admin,SuperAdmin")]
-    public async Task<IActionResult> DeleteDiscountForProductVariant([FromRoute]Guid discountId,[FromRoute]Guid productVariantId)
+    [EnableRateLimiting("Write")]
+    public async Task<IActionResult> DeleteDiscountForProductVariant(
+        [FromRoute] Guid discountId,
+        [FromRoute] Guid productVariantId)
     {
-        var result=await _discountServiceContract.DeleteDiscountForProductVariant(discountId,productVariantId);
+        var result = await _discountServiceContract.DeleteDiscountForProductVariant(
+            discountId,
+            productVariantId);
+
         return Ok(new
         {
             message = result
         });
     }
-    
+
     [HttpPost("{discountId}/variants")]
     [Authorize(Roles = "Admin,SuperAdmin")]
-    public async Task<IActionResult> SetDiscountForProductVariants([FromRoute]Guid discountId,[FromBody]AddProductVariantToDiscountDto dto) 
+    [EnableRateLimiting("Write")]
+    public async Task<IActionResult> SetDiscountForProductVariants(
+        [FromRoute] Guid discountId,
+        [FromBody] AddProductVariantToDiscountDto dto)
     {
-        var result = await _discountServiceContract.SetDiscountForProductVariantAsync(discountId,dto);
+        var result = await _discountServiceContract.SetDiscountForProductVariantAsync(
+            discountId,
+            dto);
+
         return Ok(new
         {
             message = result
