@@ -1,14 +1,54 @@
 [
   {
     "userKey": "user1",
-    "productKeys": ["macbook-pro", "sony-headphones", "chanel-coco"]
+    "productKeys": [
+      "macbook-pro",
+      "sony-headphones",
+      "chanel-coco",
+      "apple-watch-s9",
+      "samsung-galaxy-watch6",
+      "xiaomi-watch-s3",
+      "sony-wh-ch520",
+      "apple-airpods-pro2",
+      "samsung-galaxy-buds2",
+      "apple-watch-s9",
+      "samsung-galaxy-watch6",
+      "xiaomi-watch-s3",
+      "sony-wh-ch520",
+      "apple-airpods-pro2",
+      "samsung-galaxy-buds2"
+    ]
   },
   {
     "userKey": "user2",
-    "productKeys": ["iphone-15", "calvin-dress", "annibale-bed"]
+    "productKeys": [
+      "iphone-15",
+      "calvin-dress",
+      "annibale-bed",
+      "xiaomi-redmi-note-13",
+      "samsung-galaxy-a54",
+      "samsung-galaxy-z-flip5",
+      "samsung-side-fridge",
+      "lg-washing-9kg",
+      "bosch-dishwasher-14",
+      "xiaomi-redmi-note-13",
+      "samsung-galaxy-a54",
+      "samsung-galaxy-z-flip5",
+      "samsung-side-fridge",
+      "lg-washing-9kg",
+      "bosch-dishwasher-14"
+    ]
   },
   {
     "userKey": "admin",
-    "productKeys": ["asus-zenbook"]
+    "productKeys": [
+      "asus-zenbook",
+      "lenovo-ideapad-slim5",
+      "hp-pavilion-15",
+      "asus-vivobook-15",
+      "lenovo-ideapad-slim5",
+      "hp-pavilion-15",
+      "asus-vivobook-15"
+    ]
   }
 ]

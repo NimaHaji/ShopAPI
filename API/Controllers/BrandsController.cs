@@ -2,6 +2,7 @@ using Application.Features.Product.DTOs;
 using Application.Features.Product.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace ShopApi.Controllers;
 
@@ -25,9 +26,11 @@ public class BrandsController : ControllerBase
 
     [Authorize(Roles = "Admin,SuperAdmin")]
     [HttpPost]
+    [EnableRateLimiting("Write")]
     public async Task<IActionResult> CreateBrand(CreateProductBrandDto dto)
     {
         var res = await _productServicesContract.CreateProductBrandAsync(dto);
+
         return Ok(new
         {
             message = res
@@ -36,6 +39,7 @@ public class BrandsController : ControllerBase
 
     [Authorize(Roles = "Admin,SuperAdmin")]
     [HttpDelete("{brandId:guid}")]
+    [EnableRateLimiting("Write")]
     public async Task<IActionResult> DeleteBrand([FromRoute] Guid brandId)
     {
         var result = await _productServicesContract.DeleteProductBrandAsync(brandId);
@@ -45,9 +49,10 @@ public class BrandsController : ControllerBase
             message = result
         });
     }
-    
+
     [Authorize(Roles = "Admin,SuperAdmin")]
     [HttpPost("{brandId:guid}/restore")]
+    [EnableRateLimiting("Write")]
     public async Task<IActionResult> RestoreBrand([FromRoute] Guid brandId)
     {
         var result = await _productServicesContract.RestoreProductBrandAsync(brandId);
@@ -57,25 +62,29 @@ public class BrandsController : ControllerBase
             message = result
         });
     }
-    
+
+    [Authorize(Roles = "Admin,SuperAdmin")]
     [HttpPut]
+    [EnableRateLimiting("Write")]
     public async Task<IActionResult> EditBrand(EditProductBrandDto dto)
     {
         var result = await _productServicesContract.EditProductBrandAsync(dto);
+
         return Ok(new
         {
             message = result
         });
     }
 
-    [HttpGet]
-    [Route("Search")]
-    public async Task<IActionResult> SearchProductBrand([FromQuery]SearchProductBrandDto dto)
+    [HttpGet("Search")]
+    [EnableRateLimiting("Search")]
+    public async Task<IActionResult> SearchProductBrand(
+        [FromQuery] SearchProductBrandDto dto)
     {
         var brands = await _productServicesContract.SearchProductBrandByTitle(dto);
         return Ok(brands);
     }
-    
+
     [HttpGet("{brandId}")]
     public async Task<IActionResult> GetBrand(Guid brandId)
     {

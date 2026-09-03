@@ -40,5 +40,1013 @@
     "starsCount": 3,
     "comment": "کیفیت پارچه خوبه ولی سایزبندی کمی کوچک بود.",
     "status": "Pending"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "ck-floral-summer",
+    "starsCount": 1,
+    "comment": "کیفیت پایین‌تر از انتظارم بود.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "skincare-set",
+    "starsCount": 4,
+    "comment": "از خریدم کاملاً راضیم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "zara-satin-slip",
+    "starsCount": 5,
+    "comment": "ارسال سریع و محصول اورجینال.",
+    "status": "Pending"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "mango-wrap-dress",
+    "starsCount": 5,
+    "comment": "خیلی راضی‌ام، دقیقاً مثل عکس بود.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "samsung-soundbar-b450",
+    "starsCount": 1,
+    "comment": "کیفیت پایین‌تر از انتظارم بود.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "chanel-bleu",
+    "starsCount": 5,
+    "comment": "کیفیت ساخت فوق‌العاده است.",
+    "status": "Pending"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "lg-washing-9kg",
+    "starsCount": 4,
+    "comment": "خیلی راضی‌ام، دقیقاً مثل عکس بود.",
+    "status": "Pending"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "kalleh-greek-yogurt",
+    "starsCount": 4,
+    "comment": "ارزش خرید بالایی داره، پیشنهاد می‌کنم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "apple-watch-s9",
+    "starsCount": 5,
+    "comment": "خیلی راضی‌ام، دقیقاً مثل عکس بود.",
+    "status": "Pending"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "mango-pleated-dress",
+    "starsCount": 5,
+    "comment": "کیفیت ساخت فوق‌العاده است.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "apple-airpods-pro2",
+    "starsCount": 5,
+    "comment": "کیفیت عالی و بسته‌بندی تمیز بود.",
+    "status": "Pending"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "samsung-galaxy-m34",
+    "starsCount": 4,
+    "comment": "کیفیت ساخت فوق‌العاده است.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "samsung-galaxy-a54",
+    "starsCount": 3,
+    "comment": "کیفیت متوسط، قیمتش مناسبه.",
+    "status": "Declined"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "samsung-galaxy-s23fe",
+    "starsCount": 3,
+    "comment": "کیفیت متوسط، قیمتش مناسبه.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "samsung-odyssey-g5",
+    "starsCount": 3,
+    "comment": "بد نیست، ولی انتظار بیشتری داشتم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "asus-tuf-f15",
+    "starsCount": 5,
+    "comment": "خیلی راضی‌ام، دقیقاً مثل عکس بود.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "sony-dualsense",
+    "starsCount": 3,
+    "comment": "کیفیت متوسط، قیمتش مناسبه.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "lenovo-tab-p12",
+    "starsCount": 5,
+    "comment": "خیلی راضی‌ام، دقیقاً مثل عکس بود.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "zara-sling-heel",
+    "starsCount": 5,
+    "comment": "ارسال سریع و محصول اورجینال.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "hydra-soft-cream",
+    "starsCount": 5,
+    "comment": "از خریدم کاملاً راضیم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "aloe-soothing-gel",
+    "starsCount": 4,
+    "comment": "کیفیت عالی و بسته‌بندی تمیز بود.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "dior-homme",
+    "starsCount": 5,
+    "comment": "کیفیت عالی و بسته‌بندی تمیز بود.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "xiaomi-14",
+    "starsCount": 2,
+    "comment": "اصلاً پیشنهاد نمی‌کنم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "hp-omen-16",
+    "starsCount": 5,
+    "comment": "کیفیت ساخت فوق‌العاده است.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "chanel-chance",
+    "starsCount": 1,
+    "comment": "اصلاً پیشنهاد نمی‌کنم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "xiaomi-poco-m6",
+    "starsCount": 3,
+    "comment": "بد نیست، ولی انتظار بیشتری داشتم.",
+    "status": "Pending"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "loreal-revitalift-cream",
+    "starsCount": 5,
+    "comment": "خیلی راضی‌ام، دقیقاً مثل عکس بود.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "classic-denim-jacket",
+    "starsCount": 5,
+    "comment": "ارسال سریع و محصول اورجینال.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "xiaomi-cam-2k",
+    "starsCount": 1,
+    "comment": "محصول مشکل داشت و مرجوع کردم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "samsung-galaxy-m34",
+    "starsCount": 5,
+    "comment": "کیفیت ساخت فوق‌العاده است.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "modern-tv-stand",
+    "starsCount": 5,
+    "comment": "از خریدم کاملاً راضیم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "ck-eternity",
+    "starsCount": 5,
+    "comment": "کیفیت ساخت فوق‌العاده است.",
+    "status": "Pending"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "adidas-3s-hoodie",
+    "starsCount": 5,
+    "comment": "ارزش خرید بالایی داره، پیشنهاد می‌کنم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "huawei-nova-y90",
+    "starsCount": 4,
+    "comment": "خیلی راضی‌ام، دقیقاً مثل عکس بود.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "xiaomi-watch-s3",
+    "starsCount": 3,
+    "comment": "خوبه ولی ارسال کمی طول کشید.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "asus-vivobook-15",
+    "starsCount": 3,
+    "comment": "کیفیت متوسط، قیمتش مناسبه.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "xiaomi-vacuum-s10",
+    "starsCount": 2,
+    "comment": "اصلاً پیشنهاد نمی‌کنم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "nike-club-fleece",
+    "starsCount": 3,
+    "comment": "خوبه ولی ارسال کمی طول کشید.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "lenovo-thinkpad-e14",
+    "starsCount": 4,
+    "comment": "ارسال سریع و محصول اورجینال.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "dior-sauvage-elixir",
+    "starsCount": 5,
+    "comment": "ارزش خرید بالایی داره، پیشنهاد می‌کنم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "leather-loafer-w",
+    "starsCount": 1,
+    "comment": "کیفیت پایین‌تر از انتظارم بود.",
+    "status": "Pending"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "xiaomi-redmibook-15",
+    "starsCount": 3,
+    "comment": "بد نیست، ولی انتظار بیشتری داشتم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "loreal-elseve-mask",
+    "starsCount": 4,
+    "comment": "ارسال سریع و محصول اورجینال.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "sony-wh-ch520",
+    "starsCount": 5,
+    "comment": "از خریدم کاملاً راضیم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "hp-pavilion-15",
+    "starsCount": 5,
+    "comment": "کیفیت ساخت فوق‌العاده است.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "xiaomi-redmi-note-13",
+    "starsCount": 5,
+    "comment": "از خریدم کاملاً راضیم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "nike-infinity-run",
+    "starsCount": 5,
+    "comment": "ارزش خرید بالایی داره، پیشنهاد می‌کنم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "mango-ballet-flat",
+    "starsCount": 5,
+    "comment": "خیلی راضی‌ام، دقیقاً مثل عکس بود.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "basmati-rice-5kg",
+    "starsCount": 4,
+    "comment": "کیفیت ساخت فوق‌العاده است.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "dg-the-one",
+    "starsCount": 2,
+    "comment": "کیفیت پایین‌تر از انتظارم بود.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "apple-iphone-13",
+    "starsCount": 2,
+    "comment": "محصول مشکل داشت و مرجوع کردم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "huawei-freebuds-5i",
+    "starsCount": 5,
+    "comment": "کیفیت عالی و بسته‌بندی تمیز بود.",
+    "status": "Declined"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "xiaomi-airfryer-5l",
+    "starsCount": 5,
+    "comment": "کیفیت ساخت فوق‌العاده است.",
+    "status": "Pending"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "loreal-hyaluron-expert",
+    "starsCount": 3,
+    "comment": "کیفیت متوسط، قیمتش مناسبه.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "mazafati-dates-900",
+    "starsCount": 5,
+    "comment": "ارزش خرید بالایی داره، پیشنهاد می‌کنم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "xiaomi-monitor-27",
+    "starsCount": 3,
+    "comment": "بد نیست، ولی انتظار بیشتری داشتم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "olive-oil-1l",
+    "starsCount": 5,
+    "comment": "ارزش خرید بالایی داره، پیشنهاد می‌کنم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "samsung-galaxy-fit3",
+    "starsCount": 5,
+    "comment": "ارزش خرید بالایی داره، پیشنهاد می‌کنم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "zara-ankle-boot",
+    "starsCount": 3,
+    "comment": "بد نیست، ولی انتظار بیشتری داشتم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "charcoal-mask",
+    "starsCount": 3,
+    "comment": "در کل با این قیمت راضیم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "lg-ac-24000",
+    "starsCount": 5,
+    "comment": "ارسال سریع و محصول اورجینال.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "samsung-ac-18000",
+    "starsCount": 5,
+    "comment": "ارزش خرید بالایی داره، پیشنهاد می‌کنم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "green-tea-100",
+    "starsCount": 5,
+    "comment": "ارسال سریع و محصول اورجینال.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "asus-rt-ax55-router",
+    "starsCount": 3,
+    "comment": "بد نیست، ولی انتظار بیشتری داشتم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "samsung-stick-vacuum",
+    "starsCount": 4,
+    "comment": "ارسال سریع و محصول اورجینال.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "apple-airpods-max",
+    "starsCount": 4,
+    "comment": "از خریدم کاملاً راضیم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "samsung-t7-shield",
+    "starsCount": 1,
+    "comment": "کیفیت پایین‌تر از انتظارم بود.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "sony-headphones",
+    "starsCount": 5,
+    "comment": "ارسال سریع و محصول اورجینال.",
+    "status": "Declined"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "hp-x3000-mouse",
+    "starsCount": 5,
+    "comment": "ارزش خرید بالایی داره، پیشنهاد می‌کنم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "denim-shirt-dress",
+    "starsCount": 4,
+    "comment": "کیفیت ساخت فوق‌العاده است.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "sony-wf-c500",
+    "starsCount": 5,
+    "comment": "کیفیت ساخت فوق‌العاده است.",
+    "status": "Declined"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "samsung-side-fridge",
+    "starsCount": 4,
+    "comment": "ارزش خرید بالایی داره، پیشنهاد می‌کنم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "asus-tuf-f15",
+    "starsCount": 4,
+    "comment": "کیفیت عالی و بسته‌بندی تمیز بود.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "ck-evening-black",
+    "starsCount": 3,
+    "comment": "کیفیت متوسط، قیمتش مناسبه.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "dark-chocolate-85",
+    "starsCount": 5,
+    "comment": "ارزش خرید بالایی داره، پیشنهاد می‌کنم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "lenovo-tab-m11",
+    "starsCount": 5,
+    "comment": "خیلی راضی‌ام، دقیقاً مثل عکس بود.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "ck-shirt-dress",
+    "starsCount": 5,
+    "comment": "از خریدم کاملاً راضیم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "apple-macbook-pro-m3pro",
+    "starsCount": 5,
+    "comment": "کیفیت ساخت فوق‌العاده است.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "adidas-3s-hoodie",
+    "starsCount": 5,
+    "comment": "ارسال سریع و محصول اورجینال.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "loreal-elseve-mask",
+    "starsCount": 4,
+    "comment": "کیفیت ساخت فوق‌العاده است.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "modern-sofa-3seat",
+    "starsCount": 5,
+    "comment": "ارسال سریع و محصول اورجینال.",
+    "status": "Pending"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "basic-white-sneaker",
+    "starsCount": 5,
+    "comment": "از خریدم کاملاً راضیم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "samsung-galaxy-tab-s9fe",
+    "starsCount": 3,
+    "comment": "کیفیت متوسط، قیمتش مناسبه.",
+    "status": "Pending"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "ck-evening-black",
+    "starsCount": 5,
+    "comment": "ارزش خرید بالایی داره، پیشنهاد می‌کنم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "zara-wool-coat",
+    "starsCount": 3,
+    "comment": "بد نیست، ولی انتظار بیشتری داشتم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "sony-wh-ch520",
+    "starsCount": 5,
+    "comment": "از خریدم کاملاً راضیم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "samsung-galaxy-z-flip5",
+    "starsCount": 5,
+    "comment": "ارزش خرید بالایی داره، پیشنهاد می‌کنم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "xiaomi-cam-2k",
+    "starsCount": 5,
+    "comment": "ارزش خرید بالایی داره، پیشنهاد می‌کنم.",
+    "status": "Pending"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "hp-elitebook-840",
+    "starsCount": 5,
+    "comment": "ارزش خرید بالایی داره، پیشنهاد می‌کنم.",
+    "status": "Pending"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "zara-oxford-shirt",
+    "starsCount": 3,
+    "comment": "در کل با این قیمت راضیم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "samsung-galaxy-a34",
+    "starsCount": 5,
+    "comment": "خیلی راضی‌ام، دقیقاً مثل عکس بود.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "samsung-galaxy-fit3",
+    "starsCount": 5,
+    "comment": "کیفیت عالی و بسته‌بندی تمیز بود.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "huawei-nova-12",
+    "starsCount": 5,
+    "comment": "ارسال سریع و محصول اورجینال.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "samsung-ac-18000",
+    "starsCount": 5,
+    "comment": "خیلی راضی‌ام، دقیقاً مثل عکس بود.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "chanel-allure",
+    "starsCount": 5,
+    "comment": "ارزش خرید بالایی داره، پیشنهاد می‌کنم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "apple-ipad-air-5",
+    "starsCount": 4,
+    "comment": "کیفیت عالی و بسته‌بندی تمیز بود.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "samsung-galaxy-s23fe",
+    "starsCount": 1,
+    "comment": "کیفیت پایین‌تر از انتظارم بود.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "xiaomi-powerbank-20000",
+    "starsCount": 5,
+    "comment": "کیفیت ساخت فوق‌العاده است.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "samsung-galaxy-book3",
+    "starsCount": 5,
+    "comment": "از خریدم کاملاً راضیم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "basic-white-sneaker",
+    "starsCount": 4,
+    "comment": "کیفیت ساخت فوق‌العاده است.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "samsung-galaxy-book3",
+    "starsCount": 5,
+    "comment": "ارسال سریع و محصول اورجینال.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "xiaomi-redmi-note-13",
+    "starsCount": 3,
+    "comment": "بد نیست، ولی انتظار بیشتری داشتم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "quinoa-500",
+    "starsCount": 5,
+    "comment": "از خریدم کاملاً راضیم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "nike-court-vision",
+    "starsCount": 4,
+    "comment": "ارزش خرید بالایی داره، پیشنهاد می‌کنم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "zara-maxi-boho",
+    "starsCount": 5,
+    "comment": "کیفیت عالی و بسته‌بندی تمیز بود.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "dior-jadore",
+    "starsCount": 5,
+    "comment": "خیلی راضی‌ام، دقیقاً مثل عکس بود.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "asus-rt-ax55-router",
+    "starsCount": 2,
+    "comment": "اصلاً پیشنهاد نمی‌کنم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "samsung-galaxy-a34",
+    "starsCount": 5,
+    "comment": "خیلی راضی‌ام، دقیقاً مثل عکس بود.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "sony-ps5",
+    "starsCount": 4,
+    "comment": "ارزش خرید بالایی داره، پیشنهاد می‌کنم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "apple-ipad-10",
+    "starsCount": 4,
+    "comment": "ارزش خرید بالایی داره، پیشنهاد می‌کنم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "samsung-stick-vacuum",
+    "starsCount": 1,
+    "comment": "اصلاً پیشنهاد نمی‌کنم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "apple-iphone-13",
+    "starsCount": 4,
+    "comment": "ارسال سریع و محصول اورجینال.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "organic-honey",
+    "starsCount": 5,
+    "comment": "از خریدم کاملاً راضیم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "annibale-bed",
+    "starsCount": 5,
+    "comment": "خیلی راضی‌ام، دقیقاً مثل عکس بود.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "hp-k500f-keyboard",
+    "starsCount": 5,
+    "comment": "از خریدم کاملاً راضیم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "denim-shirt-dress",
+    "starsCount": 5,
+    "comment": "ارزش خرید بالایی داره، پیشنهاد می‌کنم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "wood-shoe-rack",
+    "starsCount": 5,
+    "comment": "ارزش خرید بالایی داره، پیشنهاد می‌کنم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "amazfit-gts4",
+    "starsCount": 1,
+    "comment": "کیفیت پایین‌تر از انتظارم بود.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "saffron-honey",
+    "starsCount": 5,
+    "comment": "از خریدم کاملاً راضیم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "adidas-tiro-pants",
+    "starsCount": 5,
+    "comment": "از خریدم کاملاً راضیم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "samsung-galaxy-tab-s9fe",
+    "starsCount": 5,
+    "comment": "کیفیت عالی و بسته‌بندی تمیز بود.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "xiaomi-redmi-13c",
+    "starsCount": 3,
+    "comment": "خوبه ولی ارسال کمی طول کشید.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "glass-coffee-table",
+    "starsCount": 5,
+    "comment": "ارزش خرید بالایی داره، پیشنهاد می‌کنم.",
+    "status": "Pending"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "hp-k500f-keyboard",
+    "starsCount": 5,
+    "comment": "کیفیت عالی و بسته‌بندی تمیز بود.",
+    "status": "Declined"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "wardrobe-3door",
+    "starsCount": 4,
+    "comment": "ارسال سریع و محصول اورجینال.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "bosch-pro-vacuum",
+    "starsCount": 2,
+    "comment": "کیفیت پایین‌تر از انتظارم بود.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "nike-infinity-run",
+    "starsCount": 5,
+    "comment": "از خریدم کاملاً راضیم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "zara-polka-midi",
+    "starsCount": 5,
+    "comment": "خیلی راضی‌ام، دقیقاً مثل عکس بود.",
+    "status": "Pending"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "lenovo-legion-5",
+    "starsCount": 5,
+    "comment": "ارزش خرید بالایی داره، پیشنهاد می‌کنم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "mango-slim-jeans",
+    "starsCount": 5,
+    "comment": "از خریدم کاملاً راضیم.",
+    "status": "Pending"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "apple-watch-se2",
+    "starsCount": 5,
+    "comment": "از خریدم کاملاً راضیم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "bosch-dishwasher-14",
+    "starsCount": 1,
+    "comment": "بسته‌بندی آسیب دیده بود.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "nightstand-pair",
+    "starsCount": 5,
+    "comment": "کیفیت عالی و بسته‌بندی تمیز بود.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "xiaomi-airfryer-5l",
+    "starsCount": 4,
+    "comment": "ارسال سریع و محصول اورجینال.",
+    "status": "Pending"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "kalleh-milk-lowfat",
+    "starsCount": 5,
+    "comment": "کیفیت ساخت فوق‌العاده است.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "miss-dior",
+    "starsCount": 5,
+    "comment": "خیلی راضی‌ام، دقیقاً مثل عکس بود.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "huawei-sound-joy",
+    "starsCount": 2,
+    "comment": "اصلاً پیشنهاد نمی‌کنم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user1",
+    "productKey": "sony-wh-1000xm4",
+    "starsCount": 5,
+    "comment": "کیفیت عالی و بسته‌بندی تمیز بود.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "xiaomi-redmi-pad",
+    "starsCount": 3,
+    "comment": "در کل با این قیمت راضیم.",
+    "status": "Declined"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "arabica-coffee-1kg",
+    "starsCount": 2,
+    "comment": "محصول مشکل داشت و مرجوع کردم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "xiaomi-smart-band-8",
+    "starsCount": 5,
+    "comment": "ارزش خرید بالایی داره، پیشنهاد می‌کنم.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "kalleh-butter",
+    "starsCount": 4,
+    "comment": "کیفیت ساخت فوق‌العاده است.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "oak-dining-6seat",
+    "starsCount": 5,
+    "comment": "کیفیت عالی و بسته‌بندی تمیز بود.",
+    "status": "Approved"
+  },
+  {
+    "userKey": "user2",
+    "productKey": "mango-espadrille",
+    "starsCount": 5,
+    "comment": "کیفیت عالی و بسته‌بندی تمیز بود.",
+    "status": "Approved"
   }
 ]

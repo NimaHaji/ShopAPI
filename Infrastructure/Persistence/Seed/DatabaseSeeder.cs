@@ -60,34 +60,20 @@ public class DatabaseSeeder
 
     public async Task SeedAsync()
     {
+        // Idempotent seeding: every sub-seeder checks for existing rows by
+        // natural key (Title/Code/Email/SKU/...) and skips them, so this method
+        // is safe to run multiple times. Never delete the database here.
         var force = _configuration.GetValue<bool>("Seed:Force");
-
-        var hasData = await _context.Products.AnyAsync();
-        
-        if (hasData && !force)
+        if (force && !_environment.IsDevelopment())
         {
-            var count = await _context.Products.CountAsync();
-
-            _logger.LogInformation(
-                "Seeder skipped. Existing products: {Count}",
-                count);
-
-            return;
+            throw new InvalidOperationException(
+                "Force seed is only allowed in Development environment.");
         }
-        
-        if (force && hasData)
+
+        if (force)
         {
-            if (!_environment.IsDevelopment())
-            {
-                throw new InvalidOperationException(
-                    "Force seed is only allowed in Development environment.");
-            }
-            
             _logger.LogWarning(
-                "Force seed enabled. Recreating database...");
-            
-            await _context.Database.EnsureDeletedAsync();
-            await _context.Database.MigrateAsync();
+                "Seed:Force is enabled but ignored. Seeding is idempotent and will only insert missing data.");
         }
         
         await using var transaction =

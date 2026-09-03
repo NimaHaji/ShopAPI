@@ -7,7 +7,10 @@
     "maxDiscountAmount": 5000000,
     "startsAt": "2025-01-01T00:00:00Z",
     "endsAt": "2027-12-31T23:59:59Z",
-    "productKeys": ["iphone-15", "samsung-s24"],
+    "productKeys": [
+      "iphone-15",
+      "samsung-s24"
+    ],
     "variantKeys": []
   },
   {
@@ -19,7 +22,10 @@
     "startsAt": "2025-01-01T00:00:00Z",
     "endsAt": "2027-12-31T23:59:59Z",
     "productKeys": [],
-    "variantKeys": ["macbook-pro-default", "asus-zenbook-default"]
+    "variantKeys": [
+      "macbook-pro-default",
+      "asus-zenbook-default"
+    ]
   },
   {
     "key": "fragrance-special",
@@ -30,6 +36,59 @@
     "startsAt": "2025-01-01T00:00:00Z",
     "endsAt": "2027-12-31T23:59:59Z",
     "productKeys": [],
-    "variantKeys": ["dior-sauvage-default", "chanel-coco-default"]
+    "variantKeys": [
+      "dior-sauvage-default",
+      "chanel-coco-50ml"
+    ]
+  },
+  {
+    "key": "summer-sale",
+    "title": "حراج تابستانه",
+    "discountType": "Percentage",
+    "value": 20,
+    "maxDiscountAmount": 3000000,
+    "startsAt": "2025-06-01T00:00:00Z",
+    "endsAt": "2027-09-30T23:59:59Z",
+    "productKeys": [
+      "xiaomi-redmi-note-13",
+      "samsung-galaxy-a54",
+      "sony-wh-ch520",
+      "apple-airpods-pro2",
+      "samsung-side-fridge",
+      "lg-washing-9kg"
+    ],
+    "variantKeys": []
+  },
+  {
+    "key": "audio-fest",
+    "title": "جشنواره صوتی",
+    "discountType": "FixedAmount",
+    "value": 500000,
+    "maxDiscountAmount": null,
+    "startsAt": "2025-01-01T00:00:00Z",
+    "endsAt": "2027-12-31T23:59:59Z",
+    "productKeys": [],
+    "variantKeys": [
+      "sony-wh-ch520-default",
+      "apple-airpods-pro2-v1",
+      "samsung-galaxy-buds2-default",
+      "sony-wf-c500-v1"
+    ]
+  },
+  {
+    "key": "fashion-fest",
+    "title": "جشنواره مد",
+    "discountType": "Percentage",
+    "value": 25,
+    "maxDiscountAmount": 1000000,
+    "startsAt": "2025-03-01T00:00:00Z",
+    "endsAt": "2027-12-31T23:59:59Z",
+    "productKeys": [
+      "ck-floral-summer",
+      "ck-evening-black",
+      "nike-dry-tee",
+      "nike-air-pegasus"
+    ],
+    "variantKeys": []
   }
 ]

@@ -2,6 +2,7 @@ using Domain.Entities;
 using Domain.Enums;
 using Infrastructure.Persistence.Contexts;
 using Infrastructure.Persistence.Seed.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence.Seed;
 
@@ -22,6 +23,15 @@ public class CouponSeeder
 
         foreach (var item in items)
         {
+            var existing = await _context.Coupons
+                .FirstOrDefaultAsync(c => c.Code == item.Code);
+
+            if (existing is not null)
+            {
+                seedContext.Coupons[item.Key] = existing.Id;
+                continue;
+            }
+
             var discountType = ParseDiscountType(item.DiscountType);
             var coupon = new Coupon(
                 item.Code,

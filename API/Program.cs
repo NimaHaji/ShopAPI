@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text;
+using System.Threading.RateLimiting;
 using Application;
 using FluentValidation;
 using FluentValidation.AspNetCore;
@@ -8,7 +9,9 @@ using Infrastructure.Persistence.Contexts;
 using Infrastructure.Persistence.Seed;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
@@ -22,6 +25,135 @@ using ShopApi.Middlewares;
 using AssemblyReference = Application.Validator.AssemblyReference;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor |
+        ForwardedHeaders.XForwardedProto;
+});
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        var response = context.HttpContext.Response;
+
+        response.StatusCode = StatusCodes.Status429TooManyRequests;
+        response.ContentType = "application/json";
+
+        response.Headers.RetryAfter = "60";
+
+        await response.WriteAsJsonAsync(
+            new
+            {
+                statusCode = 429,
+                message = "تعداد درخواست‌های شما بیش از حد مجاز است. لطفاً کمی بعد دوباره تلاش کنید.",
+                retryAfterSeconds = 60
+            },
+            cancellationToken);
+    };
+
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(
+        httpContext =>
+        {
+            var ip = httpContext.Connection.RemoteIpAddress?.ToString()
+                     ?? "unknown";
+
+            return RateLimitPartition.GetFixedWindowLimiter(
+                ip,
+                _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 100,
+                    Window = TimeSpan.FromMinutes(1),
+                    QueueLimit = 0
+                });
+        });
+
+    options.AddPolicy("Auth", httpContext =>
+    {
+        var ip = httpContext.Connection.RemoteIpAddress?.ToString()
+                 ?? "unknown";
+
+        return RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: ip,
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            });
+    });
+
+    options.AddPolicy("RefreshToken", httpContext =>
+    {
+        var ip = httpContext.Connection.RemoteIpAddress?.ToString()
+                 ?? "unknown";
+
+        return RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: ip,
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            });
+    });
+
+    options.AddPolicy("Sensitive", httpContext =>
+    {
+        var userId = httpContext.User.FindFirstValue(
+            ClaimTypes.NameIdentifier);
+
+        var partitionKey = userId is not null
+            ? $"user:{userId}"
+            : $"ip:{httpContext.Connection.RemoteIpAddress}";
+
+        return RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey,
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            });
+    });
+
+    options.AddPolicy("Search", httpContext =>
+    {
+        var ip = httpContext.Connection.RemoteIpAddress?.ToString()
+                 ?? "unknown";
+
+        return RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: ip,
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 60,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            });
+    });
+
+    options.AddPolicy("Write", httpContext =>
+    {
+        var userId = httpContext.User
+            .FindFirstValue(ClaimTypes.NameIdentifier);
+
+        var partitionKey = userId is not null
+            ? $"user:{userId}"
+            : $"ip:{httpContext.Connection.RemoteIpAddress}";
+
+        return RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey,
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 30,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            });
+    });
+});
+
 builder.Host
     .UseSerilog((context, services, configuration) =>
     {
@@ -30,6 +162,7 @@ builder.Host
             .ReadFrom.Services(services)
             .Enrich.FromLogContext();
     });
+
 builder.Services
     .AddControllers()
     .AddFluentValidation(x => { x.AutomaticValidationEnabled = true; });
@@ -150,10 +283,7 @@ builder.Services
             .AddAspNetCoreInstrumentation()
             .AddEntityFrameworkCoreInstrumentation()
             .AddHttpClientInstrumentation()
-            .AddOtlpExporter(options =>
-            {
-                options.Endpoint = new Uri(builder.Configuration["Otlp:Endpoint"]);
-            });
+            .AddOtlpExporter(options => { options.Endpoint = new Uri(builder.Configuration["Otlp:Endpoint"]); });
     });
 
 builder.Services.AddValidatorsFromAssemblyContaining<AssemblyReference>();
@@ -179,6 +309,8 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 builder.Services.AddScoped<DatabaseSeeder>();
 
 var app = builder.Build();
+
+app.UseForwardedHeaders();
 
 app.UseSwagger();
 app.UseSwaggerUI();
@@ -209,10 +341,14 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseExceptionHandler();
 app.UseMiddleware<RequestLoggingMiddleware>();
+app.UseRateLimiter();
 app.UseAuthorization();
+
+
 app.MapControllers();
+
 app.MapHealthChecks("/health"
-    ,new HealthCheckOptions
+    , new HealthCheckOptions
     {
         ResponseWriter = HealthCheckResponseWriter.WriteResponseAsync
     });
@@ -228,5 +364,7 @@ app.MapHealthChecks(
     {
         Predicate = check => check.Tags.Contains("ready"),
     });
+
 app.MapPrometheusScrapingEndpoint();
+
 app.Run();

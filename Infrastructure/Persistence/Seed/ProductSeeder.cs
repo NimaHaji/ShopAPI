@@ -2,6 +2,7 @@ using Domain.Entities;
 using Domain.Services;
 using Infrastructure.Persistence.Contexts;
 using Infrastructure.Persistence.Seed.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence.Seed;
 
@@ -30,6 +31,18 @@ public class ProductSeeder
 
         foreach (var item in items)
         {
+            // Idempotency: skip products that already exist (matched by Title).
+            var existingProduct = await _context.Products
+                .Include(p => p.Variants)
+                .FirstOrDefaultAsync(p => p.Title == item.Title);
+
+            if (existingProduct is not null)
+            {
+                seedContext.Products[item.Key] = existingProduct.Id;
+                MapExistingVariants(seedContext, item, existingProduct);
+                continue;
+            }
+
             if (!seedContext.Categories.TryGetValue(
                     item.CategoryKey,
                     out var categoryId))
@@ -141,12 +154,18 @@ public class ProductSeeder
              */
             foreach (var variantDto in item.Variants)
             {
-                var sku =
-                    string.IsNullOrWhiteSpace(variantDto.Sku)
-                    ? _skuGenerator.GenerateSku()
-                    : variantDto.Sku.Trim();
+                var sku = ResolveSku(variantDto);
 
+                // Idempotency: SKU is unique. Reuse existing variant instead of failing.
+                var existingVariant = await _context.Variants
+                    .FirstOrDefaultAsync(v => v.Sku == sku);
 
+                if (existingVariant is not null)
+                {
+                    seedContext.Variants[variantDto.Key] =
+                        existingVariant.Id;
+                    continue;
+                }
 
                 var variant =
                     ProductVariant.Create(
@@ -255,5 +274,64 @@ public class ProductSeeder
         }
         
         await _context.SaveChangesAsync();
+    }
+
+    private string ResolveSku(ProductVariantSeedDto variantDto)
+    {
+        if (!string.IsNullOrWhiteSpace(variantDto.Sku))
+            return variantDto.Sku.Trim();
+
+        // Deterministic fallback so re-running the seeder produces the same SKU
+        // instead of a new random one (which would break idempotency).
+        // Variant keys in seed JSON are unique, so they are safe to derive SKUs from.
+        return $"SEED-{variantDto.Key.Trim().ToUpperInvariant()}";
+    }
+
+    private static void MapExistingVariants(
+        SeedContext seedContext,
+        ProductSeedDto item,
+        Product existingProduct)
+    {
+        var existingVariants = existingProduct.Variants
+            .OrderBy(v => v.AddedAt)
+            .ThenBy(v => v.Sku, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        for (var i = 0; i < item.Variants.Count; i++)
+        {
+            var variantDto = item.Variants[i];
+
+            // Prefer matching by explicit SKU when available.
+            if (!string.IsNullOrWhiteSpace(variantDto.Sku))
+            {
+                var sku = variantDto.Sku.Trim();
+                var bySku = existingVariants.FirstOrDefault(v =>
+                    v.Sku.Equals(sku, StringComparison.OrdinalIgnoreCase));
+
+                if (bySku is not null)
+                {
+                    seedContext.Variants[variantDto.Key] = bySku.Id;
+                    continue;
+                }
+            }
+
+            // Fallback for variants with generated SKUs (old seed runs used random
+            // SKUs, so we cannot match by SKU): map by position when counts align.
+            if (existingVariants.Count == item.Variants.Count)
+            {
+                seedContext.Variants[variantDto.Key] = existingVariants[i].Id;
+                continue;
+            }
+
+            // Last resort: deterministic SKU lookup (for runs seeded with new logic).
+            var deterministicSku = $"SEED-{variantDto.Key.Trim().ToUpperInvariant()}";
+            var byDeterministic = existingVariants.FirstOrDefault(v =>
+                v.Sku.Equals(deterministicSku, StringComparison.OrdinalIgnoreCase));
+
+            if (byDeterministic is not null)
+            {
+                seedContext.Variants[variantDto.Key] = byDeterministic.Id;
+            }
+        }
     }
 }

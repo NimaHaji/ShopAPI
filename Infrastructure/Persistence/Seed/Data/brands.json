@@ -1,10 +1,82 @@
 [
-  { "key": "apple", "title": "اپل" },
-  { "key": "samsung", "title": "سامسونگ" },
-  { "key": "sony", "title": "سونی" },
-  { "key": "dior", "title": "دیور" },
-  { "key": "chanel", "title": "شنل" },
-  { "key": "dolce-gabbana", "title": "دولچه و گابانا" },
-  { "key": "asus", "title": "ایسوس" },
-  { "key": "calvin-klein", "title": "کلوین کلین" }
+  {
+    "key": "apple",
+    "title": "اپل"
+  },
+  {
+    "key": "samsung",
+    "title": "سامسونگ"
+  },
+  {
+    "key": "sony",
+    "title": "سونی"
+  },
+  {
+    "key": "dior",
+    "title": "دیور"
+  },
+  {
+    "key": "chanel",
+    "title": "شنل"
+  },
+  {
+    "key": "dolce-gabbana",
+    "title": "دولچه و گابانا"
+  },
+  {
+    "key": "asus",
+    "title": "ایسوس"
+  },
+  {
+    "key": "calvin-klein",
+    "title": "کلوین کلین"
+  },
+  {
+    "key": "xiaomi",
+    "title": "شیائومی"
+  },
+  {
+    "key": "huawei",
+    "title": "هواوی"
+  },
+  {
+    "key": "lenovo",
+    "title": "لنوو"
+  },
+  {
+    "key": "hp",
+    "title": "اچ‌پی"
+  },
+  {
+    "key": "lg",
+    "title": "ال‌جی"
+  },
+  {
+    "key": "bosch",
+    "title": "بوش"
+  },
+  {
+    "key": "nike",
+    "title": "نایکی"
+  },
+  {
+    "key": "adidas",
+    "title": "آدیداس"
+  },
+  {
+    "key": "loreal",
+    "title": "لورآل"
+  },
+  {
+    "key": "kalleh",
+    "title": "کاله"
+  },
+  {
+    "key": "zara",
+    "title": "زارا"
+  },
+  {
+    "key": "mango",
+    "title": "مانگو"
+  }
 ]

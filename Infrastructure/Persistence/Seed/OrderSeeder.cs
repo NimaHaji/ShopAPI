@@ -2,6 +2,7 @@ using Domain.Entities;
 using Domain.Enums;
 using Infrastructure.Persistence.Contexts;
 using Infrastructure.Persistence.Seed.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence.Seed;
 
@@ -23,6 +24,15 @@ public class OrderSeeder
     {
         var items =
             await _reader.ReadListAsync<OrderSeedDto>("orders.json");
+
+        if (items.Count == 0)
+            return;
+
+        // Orders have no natural unique key in the domain model, so the only
+        // safe idempotent behavior is to skip seeding when orders already exist.
+        // Otherwise every re-run would create duplicate orders/payments/usages.
+        if (await _context.Orders.AnyAsync())
+            return;
 
 
         foreach (var orderDto in items)
@@ -59,7 +69,14 @@ public class OrderSeeder
 
                 var variant =
                     await _context.Variants
-                        .FindAsync(variantId)
+                        .Include(v => v.Product)
+                            .ThenInclude(p => p!.Images)
+                        .Include(v => v.Images)
+                        .Include(v => v.Options)
+                            .ThenInclude(o => o.ProductOption)
+                        .Include(v => v.Options)
+                            .ThenInclude(o => o.ProductOptionValue)
+                        .FirstOrDefaultAsync(v => v.Id == variantId)
                     ?? throw new InvalidOperationException(
                         $"Variant entity not found: {itemDto.VariantKey}");
 
@@ -77,9 +94,9 @@ public class OrderSeeder
                     unitPrice: itemDto.UnitPrice,
                     discountAmount: itemDto.DiscountAmount,
                     finalUnitPrice: itemDto.UnitPrice - itemDto.DiscountAmount,
-                    productTitle: product?.Title ?? "محصول",
+                    productTitle: product?.Title ?? variant.Product?.Title ?? "محصول",
                     
-                    productImage: variant.Product.Images
+                    productImage: variant.Product?.Images
                         .Where(pi => pi.IsPrimary)
                         .Select(pi => pi.ImageLink)
                         .FirstOrDefault(),
@@ -90,7 +107,8 @@ public class OrderSeeder
                         .FirstOrDefault(),
                     
                     options: variant.Options
-                        .Select(pvo=>(pvo.ProductOption.Name,pvo.ProductOptionValue.Value))
+                        .Where(pvo => pvo.ProductOption != null && pvo.ProductOptionValue != null)
+                        .Select(pvo => (pvo.ProductOption!.Name, pvo.ProductOptionValue!.Value))
                         .ToList()
                     );
 

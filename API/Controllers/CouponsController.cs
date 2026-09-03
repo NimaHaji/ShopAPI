@@ -2,8 +2,10 @@ using Application.Features.Coupon.DTOs;
 using Application.Features.Coupon.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace ShopApi.Controllers;
+
 [ApiController]
 [Route("api/[controller]")]
 public class CouponsController : ControllerBase
@@ -14,28 +16,34 @@ public class CouponsController : ControllerBase
     {
         _couponsServiceContract = couponsServiceContract;
     }
-    
+
     [HttpGet]
     [Authorize(Roles = "Admin,SuperAdmin")]
     public async Task<IActionResult> GetAllCouponsForAdmin()
     {
-        var coupons=await _couponsServiceContract.GetAllCouponsForAdminAsync();
+        var coupons = await _couponsServiceContract.GetAllCouponsForAdminAsync();
+
         return Ok(coupons);
     }
-    
+
     [HttpGet("{couponId}")]
     [Authorize(Roles = "Admin,SuperAdmin")]
-    public async Task<IActionResult> GetCouponByIdForAdmin([FromRoute]Guid couponId)
+    public async Task<IActionResult> GetCouponByIdForAdmin(
+        [FromRoute] Guid couponId)
     {
-        var coupons=await _couponsServiceContract.GetCouponByIdForAdminAsync(couponId);
+        var coupons = await _couponsServiceContract.GetCouponByIdForAdminAsync(couponId);
+
         return Ok(coupons);
     }
 
     [HttpPost]
     [Authorize(Roles = "Admin,SuperAdmin")]
-    public async Task<IActionResult> CreateCoupon([FromBody]CreateCouponDto dto)
+    [EnableRateLimiting("Write")]
+    public async Task<IActionResult> CreateCoupon(
+        [FromBody] CreateCouponDto dto)
     {
         var result = await _couponsServiceContract.CreateCouponAsync(dto);
+
         return Ok(new
         {
             message = result
@@ -44,9 +52,12 @@ public class CouponsController : ControllerBase
 
     [HttpPut]
     [Authorize(Roles = "Admin,SuperAdmin")]
-    public async Task<IActionResult> EditCoupon([FromBody]EditCouponDto dto)
+    [EnableRateLimiting("Write")]
+    public async Task<IActionResult> EditCoupon(
+        [FromBody] EditCouponDto dto)
     {
         var result = await _couponsServiceContract.EditCouponAsync(dto);
+
         return Ok(new
         {
             message = result
@@ -55,19 +66,26 @@ public class CouponsController : ControllerBase
 
     [HttpDelete("{couponId}")]
     [Authorize(Roles = "Admin,SuperAdmin")]
-    public async Task<IActionResult> DeleteCoupon([FromRoute]Guid couponId)
+    [EnableRateLimiting("Write")]
+    public async Task<IActionResult> DeleteCoupon(
+        [FromRoute] Guid couponId)
     {
-        var result=await _couponsServiceContract.DeleteCouponAsync(couponId);
+        var result = await _couponsServiceContract.DeleteCouponAsync(couponId);
+
         return Ok(new
         {
             message = result
         });
     }
+
     [HttpDelete("{couponId}/restore")]
     [Authorize(Roles = "Admin,SuperAdmin")]
-    public async Task<IActionResult> RestoreCoupon([FromRoute]Guid couponId)
+    [EnableRateLimiting("Write")]
+    public async Task<IActionResult> RestoreCoupon(
+        [FromRoute] Guid couponId)
     {
-        var result=await _couponsServiceContract.RestoreCouponAsync(couponId);
+        var result = await _couponsServiceContract.RestoreCouponAsync(couponId);
+
         return Ok(new
         {
             message = result
@@ -76,20 +94,26 @@ public class CouponsController : ControllerBase
 
     [HttpPatch("{couponId}/activate")]
     [Authorize(Roles = "Admin,SuperAdmin")]
-    public async Task<IActionResult> ActivateCoupon([FromRoute]Guid couponId)
+    [EnableRateLimiting("Write")]
+    public async Task<IActionResult> ActivateCoupon(
+        [FromRoute] Guid couponId)
     {
-        var result=await _couponsServiceContract.ActivateCouponAsync(couponId);
+        var result = await _couponsServiceContract.ActivateCouponAsync(couponId);
+
         return Ok(new
         {
             message = result
         });
     }
-    
+
     [HttpPatch("{couponId}/deactivate")]
     [Authorize(Roles = "Admin,SuperAdmin")]
-    public async Task<IActionResult> DeActivateCoupon([FromRoute]Guid couponId)
+    [EnableRateLimiting("Write")]
+    public async Task<IActionResult> DeActivateCoupon(
+        [FromRoute] Guid couponId)
     {
-        var result=await _couponsServiceContract.DeActivateCouponAsync(couponId);
+        var result = await _couponsServiceContract.DeActivateCouponAsync(couponId);
+
         return Ok(new
         {
             message = result
@@ -97,9 +121,12 @@ public class CouponsController : ControllerBase
     }
 
     [HttpPost("validate")]
-    public async Task<IActionResult> ValidateCoupon([FromBody]ValidateCouponDto dto)
+    [Authorize]
+    public async Task<IActionResult> ValidateCoupon(
+        [FromBody] ValidateCouponDto dto)
     {
         var result = await _couponsServiceContract.ValidateCouponAsync(dto);
+
         return Ok(result);
     }
 }
