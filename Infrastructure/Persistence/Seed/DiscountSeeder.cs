@@ -2,6 +2,7 @@ using Domain.Entities;
 using Domain.Enums;
 using Infrastructure.Persistence.Contexts;
 using Infrastructure.Persistence.Seed.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence.Seed;
 
@@ -22,6 +23,16 @@ public class DiscountSeeder
 
         foreach (var item in items)
         {
+            var existing = await _context.Discounts
+                .FirstOrDefaultAsync(d => d.Title == item.Title);
+
+            if (existing is not null)
+            {
+                seedContext.Discounts[item.Key] = existing.Id;
+                await EnsureDiscountLinksAsync(seedContext, item, existing.Id);
+                continue;
+            }
+
             var discountType = ParseDiscountType(item.DiscountType);
             var discount = new Discount(
                 item.Title,
@@ -49,6 +60,36 @@ public class DiscountSeeder
 
                 await _context.DiscountVariants.AddAsync(DiscountVariant.Create(discount.Id, variantId));
             }
+        }
+    }
+
+    private async Task EnsureDiscountLinksAsync(
+        SeedContext seedContext,
+        DiscountSeedDto item,
+        Guid discountId)
+    {
+        foreach (var productKey in item.ProductKeys)
+        {
+            if (!seedContext.Products.TryGetValue(productKey, out var productId))
+                continue;
+
+            var linkExists = await _context.DiscountProducts.AnyAsync(x =>
+                x.DiscountId == discountId && x.ProductId == productId);
+
+            if (!linkExists)
+                await _context.DiscountProducts.AddAsync(new DiscountProduct(discountId, productId));
+        }
+
+        foreach (var variantKey in item.VariantKeys)
+        {
+            if (!seedContext.Variants.TryGetValue(variantKey, out var variantId))
+                continue;
+
+            var linkExists = await _context.DiscountVariants.AnyAsync(x =>
+                x.DiscountId == discountId && x.ProductVariantId == variantId);
+
+            if (!linkExists)
+                await _context.DiscountVariants.AddAsync(DiscountVariant.Create(discountId, variantId));
         }
     }
 

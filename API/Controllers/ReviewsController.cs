@@ -3,6 +3,7 @@ using Application.Features.Review.interfaces;
 using Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace ShopApi.Controllers;
 
@@ -18,11 +19,14 @@ public class ReviewsController : ControllerBase
     }
 
     [HttpPut("{reviewId:guid}")]
-    [Authorize(Roles = ("Admin,SuperAdmin"))]
-    public async Task<IActionResult> EditReviewAsAdmin([FromBody] EditReviewAsAdminDto dto,
+    [Authorize(Roles = "Admin,SuperAdmin")]
+    [EnableRateLimiting("Write")]
+    public async Task<IActionResult> EditReviewAsAdmin(
+        [FromBody] EditReviewAsAdminDto dto,
         [FromRoute] Guid reviewId)
     {
-        var result = await _reviewServiceContract.EditReviewAsAdminAsync(dto,reviewId);
+        var result = await _reviewServiceContract.EditReviewAsAdminAsync(dto, reviewId);
+
         return Ok(new
         {
             message = result
@@ -30,58 +34,76 @@ public class ReviewsController : ControllerBase
     }
 
     [HttpDelete("{reviewId:guid}")]
-    [Authorize(Roles = ("Admin,SuperAdmin"))]
-    public async Task<IActionResult> DeleteReviewAsAdmin([FromRoute]Guid reviewId)
+    [Authorize(Roles = "Admin,SuperAdmin")]
+    [EnableRateLimiting("Write")]
+    public async Task<IActionResult> DeleteReviewAsAdmin(
+        [FromRoute] Guid reviewId)
     {
         var result = await _reviewServiceContract.DeleteReviewAsAdminAsync(reviewId);
+
         return Ok(new
         {
             message = result
         });
     }
-    
+
     [HttpPost("{reviewId:guid}/restore")]
-    [Authorize(Roles = ("Admin,SuperAdmin"))]
-    public async Task<IActionResult> RestoreReviewAsAdmin([FromRoute]Guid reviewId)
+    [Authorize(Roles = "Admin,SuperAdmin")]
+    [EnableRateLimiting("Write")]
+    public async Task<IActionResult> RestoreReviewAsAdmin(
+        [FromRoute] Guid reviewId)
     {
         var result = await _reviewServiceContract.RestoreReviewAsAdminAsync(reviewId);
+
         return Ok(new
         {
             message = result
         });
     }
+
     [HttpGet]
-    [Authorize(Roles = ("Admin,SuperAdmin"))]
-    public async Task<IActionResult> GetReviews([FromQuery] ReviewStatus? status)
+    [Authorize(Roles = "Admin,SuperAdmin")]
+    public async Task<IActionResult> GetReviews(
+        [FromQuery] ReviewStatus? status)
     {
         if (status.HasValue)
         {
-            var reviews = await _reviewServiceContract.GetAllReviewsByStatusForAdmin(status.Value);
+            var reviews =
+                await _reviewServiceContract.GetAllReviewsByStatusForAdmin(status.Value);
+
             return Ok(reviews);
         }
-    
-        var allReviews = await _reviewServiceContract.GetAllReviewsForAdmin();
+
+        var allReviews =
+            await _reviewServiceContract.GetAllReviewsForAdmin();
+
         return Ok(allReviews);
     }
 
     [HttpGet("{reviewId:guid}")]
-    [Authorize(Roles = ("Admin,SuperAdmin"))]
-    public async Task<IActionResult> GetReviewById([FromRoute] Guid reviewId)
+    [Authorize(Roles = "Admin,SuperAdmin")]
+    public async Task<IActionResult> GetReviewById(
+        [FromRoute] Guid reviewId)
     {
-        var review = await _reviewServiceContract.GetReviewsByIdForAdmin(reviewId);
+        var review =
+            await _reviewServiceContract.GetReviewsByIdForAdmin(reviewId);
+
         return Ok(review);
     }
 
     [HttpPatch("{reviewId:guid}/{status}")]
-    [Authorize(Roles = ("Admin,SuperAdmin"))]
-    public async Task<IActionResult> ChangeReviewStatus([FromRoute] Guid reviewId, [FromRoute] ReviewStatus status)
+    [Authorize(Roles = "Admin,SuperAdmin")]
+    [EnableRateLimiting("Write")]
+    public async Task<IActionResult> ChangeReviewStatus(
+        [FromRoute] Guid reviewId,
+        [FromRoute] ReviewStatus status)
     {
-        var result = await _reviewServiceContract.ChangeReviewStatus(reviewId, status);
+        var result =
+            await _reviewServiceContract.ChangeReviewStatus(reviewId, status);
+
         return Ok(new
         {
             message = result
         });
     }
-    
-    
 }

@@ -2,15 +2,43 @@
   {
     "userKey": "user1",
     "items": [
-      { "variantKey": "iphone-15-black-128", "quantity": 1 },
-      { "variantKey": "dior-sauvage-default", "quantity": 2 }
+      {
+        "variantKey": "iphone-15-black-128",
+        "quantity": 1
+      },
+      {
+        "variantKey": "dior-sauvage-default",
+        "quantity": 2
+      },
+      {
+        "variantKey": "xiaomi-redmi-note-13-default",
+        "quantity": 1
+      },
+      {
+        "variantKey": "xiaomi-redmi-note-13-default",
+        "quantity": 1
+      }
     ]
   },
   {
     "userKey": "user2",
     "items": [
-      { "variantKey": "samsung-s24-gray", "quantity": 1 },
-      { "variantKey": "skincare-set-default", "quantity": 1 }
+      {
+        "variantKey": "samsung-s24-gray",
+        "quantity": 1
+      },
+      {
+        "variantKey": "skincare-set-default",
+        "quantity": 1
+      },
+      {
+        "variantKey": "sony-wh-ch520-default",
+        "quantity": 2
+      },
+      {
+        "variantKey": "sony-wh-ch520-default",
+        "quantity": 2
+      }
     ]
   }
 ]

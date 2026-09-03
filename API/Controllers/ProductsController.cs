@@ -4,6 +4,7 @@ using Application.Features.Product.Interfaces;
 using Application.Features.Review.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace ShopApi.Controllers;
 
@@ -13,7 +14,10 @@ public class ProductsController : ControllerBase
 {
     private readonly ProductServicesContract _productServicesContract;
     private readonly DiscountServiceContract _discountServiceContract;
-    public ProductsController(ProductServicesContract productServicesContract, DiscountServiceContract discountServiceContract)
+
+    public ProductsController(
+        ProductServicesContract productServicesContract,
+        DiscountServiceContract discountServiceContract)
     {
         _productServicesContract = productServicesContract;
         _discountServiceContract = discountServiceContract;
@@ -35,10 +39,12 @@ public class ProductsController : ControllerBase
     }
 
     [Authorize(Roles = "Admin,SuperAdmin")]
+    [EnableRateLimiting("Write")]
     [HttpPost]
     public async Task<IActionResult> AddProduct(CreateProductDto dto)
     {
         var result = await _productServicesContract.AddProductAsync(dto);
+
         return Ok(new
         {
             message = result
@@ -46,22 +52,12 @@ public class ProductsController : ControllerBase
     }
 
     [Authorize(Roles = "Admin,SuperAdmin")]
+    [EnableRateLimiting("Write")]
     [HttpPatch]
     public async Task<IActionResult> EditProduct([FromBody] EditProductDto dto)
     {
         var result = await _productServicesContract.EditProductAsync(dto);
-        return Ok(new
-            {
-                message = result
-            }
-        );
-    }
 
-    [Authorize(Roles = "Admin,SuperAdmin")]
-    [HttpDelete("{productId:guid}")]
-    public async Task<IActionResult> DeleteProduct([FromRoute] Guid productId)
-    {
-        var result = await _productServicesContract.DeleteProductAsync(productId);
         return Ok(new
         {
             message = result
@@ -69,10 +65,25 @@ public class ProductsController : ControllerBase
     }
 
     [Authorize(Roles = "Admin,SuperAdmin")]
+    [EnableRateLimiting("Write")]
+    [HttpDelete("{productId:guid}")]
+    public async Task<IActionResult> DeleteProduct([FromRoute] Guid productId)
+    {
+        var result = await _productServicesContract.DeleteProductAsync(productId);
+
+        return Ok(new
+        {
+            message = result
+        });
+    }
+
+    [Authorize(Roles = "Admin,SuperAdmin")]
+    [EnableRateLimiting("Write")]
     [HttpPost("{productId:guid}/restore")]
     public async Task<IActionResult> RestoreProduct([FromRoute] Guid productId)
     {
         var result = await _productServicesContract.RestoreProductAsync(productId);
+
         return Ok(new
         {
             message = result
@@ -81,6 +92,7 @@ public class ProductsController : ControllerBase
 
     [HttpGet]
     [Route("Search")]
+    [EnableRateLimiting("Search")]
     public async Task<IActionResult> SearchProduct([FromQuery] string query)
     {
         var product = await _productServicesContract.SearchProductByTitle(query);
@@ -96,19 +108,23 @@ public class ProductsController : ControllerBase
 
     [HttpPost("{productId:guid}/Reviews")]
     [Authorize]
-    public async Task<IActionResult> AddReviewForProduct([FromRoute] Guid productId, [FromBody] CreateReviewDto dto)
+    [EnableRateLimiting("Write")]
+    public async Task<IActionResult> AddReviewForProduct(
+        [FromRoute] Guid productId,
+        [FromBody] CreateReviewDto dto)
     {
         var result = await _productServicesContract.AddReviewForProduct(productId, dto);
+
         return Ok(new
         {
             message = result
         });
     }
-    
+
     [HttpGet("{productId}/discounts")]
-    public async Task<IActionResult> GetDiscountByProductId([FromRoute]Guid productId)
+    public async Task<IActionResult> GetDiscountByProductId([FromRoute] Guid productId)
     {
-        var discount=await _discountServiceContract.GetDiscountByProductId(productId);
+        var discount = await _discountServiceContract.GetDiscountByProductId(productId);
         return Ok(discount);
     }
 }

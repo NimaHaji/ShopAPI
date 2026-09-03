@@ -1,10 +1,58 @@
 [
-  { "key": "electronics", "title": "لوازم الکترونیکی" },
-  { "key": "smartphones", "title": "گوشی موبایل" },
-  { "key": "laptops", "title": "لپ‌تاپ" },
-  { "key": "fragrances", "title": "عطر و ادکلن" },
-  { "key": "skincare", "title": "مراقبت پوست" },
-  { "key": "groceries", "title": "مواد غذایی" },
-  { "key": "furniture", "title": "مبلمان" },
-  { "key": "womens-dresses", "title": "لباس زنانه" }
+  {
+    "key": "electronics",
+    "title": "لوازم الکترونیکی"
+  },
+  {
+    "key": "smartphones",
+    "title": "گوشی موبایل"
+  },
+  {
+    "key": "laptops",
+    "title": "لپ‌تاپ"
+  },
+  {
+    "key": "fragrances",
+    "title": "عطر و ادکلن"
+  },
+  {
+    "key": "skincare",
+    "title": "مراقبت پوست"
+  },
+  {
+    "key": "groceries",
+    "title": "مواد غذایی"
+  },
+  {
+    "key": "furniture",
+    "title": "مبلمان"
+  },
+  {
+    "key": "womens-dresses",
+    "title": "لباس زنانه"
+  },
+  {
+    "key": "tablets",
+    "title": "تبلت"
+  },
+  {
+    "key": "wearables",
+    "title": "ساعت و پوشیدنی هوشمند"
+  },
+  {
+    "key": "audio",
+    "title": "هدفون و تجهیزات صوتی"
+  },
+  {
+    "key": "home-appliances",
+    "title": "لوازم خانگی"
+  },
+  {
+    "key": "mens-clothing",
+    "title": "لباس مردانه"
+  },
+  {
+    "key": "womens-shoes",
+    "title": "کفش زنانه"
+  }
 ]

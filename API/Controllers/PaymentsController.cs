@@ -3,6 +3,7 @@ using Application.Features.Payment.Interfaces;
 using Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.WebUtilities;
 
 namespace ShopApi.Controllers;
@@ -23,6 +24,7 @@ public class PaymentsController : ControllerBase
 
     [HttpPost]
     [Authorize]
+    [EnableRateLimiting("Sensitive")]
     public async Task<IActionResult> GetPaymentUrl([FromBody] CreatePaymentDto dto,[FromHeader(Name = "Idempotency-Key")]string idempotencyKey)
     {
         var paymentUrl = await _paymentServiceContract.CreatePaymentAsync(dto,idempotencyKey);

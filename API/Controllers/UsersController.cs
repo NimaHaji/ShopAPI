@@ -2,6 +2,7 @@ using Application.Features.Auth.DTOs;
 using Application.Features.Auth.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace ShopApi.Controllers;
 
@@ -11,27 +12,36 @@ public class UsersController : ControllerBase
 {
     private readonly IUserService _service;
     private readonly IPasswordRecoveryService _passwordRecoveryService;
-    public UsersController(IUserService service, IPasswordRecoveryService passwordRecoveryService)
+
+    public UsersController(
+        IUserService service,
+        IPasswordRecoveryService passwordRecoveryService)
     {
         _service = service;
         _passwordRecoveryService = passwordRecoveryService;
     }
 
     [HttpPost("Register")]
-    public async Task<IActionResult> Register([FromBody] RegisterUserRequestDto registerUserRequestDto)
+    [EnableRateLimiting("Auth")]
+    public async Task<IActionResult> Register(
+        [FromBody] RegisterUserRequestDto registerUserRequestDto)
     {
         var res = await _service.RegisterUserAsync(registerUserRequestDto);
         return Ok(res);
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] LoginUserRequestDto requestDto)
+    [EnableRateLimiting("Auth")]
+    public async Task<IActionResult> Login(
+        [FromBody] LoginUserRequestDto requestDto)
     {
         return Ok(await _service.LoginUserAsync(requestDto));
     }
 
     [HttpPost("refresh")]
-    public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest dto)
+    [EnableRateLimiting("RefreshToken")]
+    public async Task<IActionResult> Refresh(
+        [FromBody] RefreshTokenRequest dto)
     {
         return Ok(await _service.RefreshTokenAsync(dto.RefreshToken));
     }
@@ -46,6 +56,7 @@ public class UsersController : ControllerBase
 
     [HttpPost("Logout")]
     [Authorize]
+    [EnableRateLimiting("Write")]
     public async Task<IActionResult> Logout()
     {
         var res = await _service.LogoutUserAsync();
@@ -62,32 +73,41 @@ public class UsersController : ControllerBase
 
     [HttpPatch("Profile")]
     [Authorize]
-    public async Task<ProfileResponseDto> UpdateProfile([FromBody] UpdateProfileRequestDto updateProfileRequestDto)
+    [EnableRateLimiting("Write")]
+    public async Task<ProfileResponseDto> UpdateProfile(
+        [FromBody] UpdateProfileRequestDto updateProfileRequestDto)
     {
         return await _service.UpdateProfileAsync(updateProfileRequestDto);
     }
-    
-    [HttpPost("ForgetPassword")]
-    public async Task<IActionResult> ForgetPassword(ForgetPasswordRequestDto dto)
-    {
-        var result= await _passwordRecoveryService.ForgetPasswordAsync(dto.Email);
-        return Ok(new
-        {
-            message=result
-        });
-    }
 
-    [HttpPost("ResetPassword")]
-    public async Task<IActionResult> ResetPassword(ResetPasswordRequestDto dto)
+    [HttpPost("ForgetPassword")]
+    [EnableRateLimiting("Auth")]
+    public async Task<IActionResult> ForgetPassword(
+        ForgetPasswordRequestDto dto)
     {
-        var result= await _passwordRecoveryService.ResetPasswordAsync(
-            dto.Email,
-            dto.Code,
-            dto.NewPassword);
+        var result =
+            await _passwordRecoveryService.ForgetPasswordAsync(dto.Email);
+
         return Ok(new
         {
             message = result
         });
     }
-    
+
+    [HttpPost("ResetPassword")]
+    [EnableRateLimiting("Auth")]
+    public async Task<IActionResult> ResetPassword(
+        ResetPasswordRequestDto dto)
+    {
+        var result =
+            await _passwordRecoveryService.ResetPasswordAsync(
+                dto.Email,
+                dto.Code,
+                dto.NewPassword);
+
+        return Ok(new
+        {
+            message = result
+        });
+    }
 }

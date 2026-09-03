@@ -2,6 +2,7 @@ using Application.Features.Order.Interfaces;
 using Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace ShopApi.Controllers;
 
@@ -43,23 +44,31 @@ public class OrdersController : ControllerBase
 
     [HttpPost("{orderId}/cancel")]
     [Authorize]
+    [EnableRateLimiting("Sensitive")]
     public async Task<IActionResult> Cancel(Guid orderId)
     {
-        var result=await _orderServicesContract.CancelOrderAsync(orderId);
+        var result = await _orderServicesContract.CancelOrderAsync(orderId);
+
         return Ok(new
         {
-            message=result
+            message = result
         });
     }
 
     [HttpPatch("{orderId}/{status}")]
     [Authorize(Roles = "Admin,SuperAdmin")]
-    public async Task<IActionResult> ChangeOrderStatus([FromRoute]Guid orderId, [FromRoute] OrderStatus status)
+    [EnableRateLimiting("Write")]
+    public async Task<IActionResult> ChangeOrderStatus(
+        [FromRoute] Guid orderId,
+        [FromRoute] OrderStatus status)
     {
-        var result=await _orderServicesContract.ChangOrderStatusByIdAsync(orderId, status);
+        var result = await _orderServicesContract.ChangOrderStatusByIdAsync(
+            orderId,
+            status);
+
         return Ok(new
         {
-            message=result
+            message = result
         });
     }
 }

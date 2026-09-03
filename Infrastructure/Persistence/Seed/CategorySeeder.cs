@@ -1,6 +1,7 @@
 using Domain.Entities;
 using Infrastructure.Persistence.Contexts;
 using Infrastructure.Persistence.Seed.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence.Seed;
 
@@ -21,6 +22,15 @@ public class CategorySeeder
 
         foreach (var item in items)
         {
+            var existing = await _context.ProductCategories
+                .FirstOrDefaultAsync(c => c.Title == item.Title);
+
+            if (existing is not null)
+            {
+                seedContext.Categories[item.Key] = existing.Id;
+                continue;
+            }
+
             var category = ProductCategory.Create(item.Title);
             seedContext.Categories[item.Key] = category.Id;
             await _context.ProductCategories.AddAsync(category);

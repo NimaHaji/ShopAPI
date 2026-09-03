@@ -2,6 +2,7 @@ using Application.Features.Address.DTOs;
 using Application.Features.Address.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace ShopApi.Controllers;
 
@@ -32,6 +33,7 @@ public class AddressesController:ControllerBase
     }
 
     [HttpPost]
+    [EnableRateLimiting("Write")]
     public async Task<IActionResult> CreateAddress([FromBody]CreateAddressDto dto)
     {
         var result = await _addressServiceContract.CreateAddressAsync(dto);
@@ -42,6 +44,7 @@ public class AddressesController:ControllerBase
     }
 
     [HttpPatch("{addressId}")]
+    [EnableRateLimiting("Write")]
     public async Task<IActionResult> EditAddress([FromRoute]Guid addressId,[FromBody]EditAddressDto dto)
     {
         var result=await _addressServiceContract.EditAddressAsync(addressId,dto);
@@ -52,6 +55,7 @@ public class AddressesController:ControllerBase
     }
 
     [HttpDelete("{addressId}")]
+    [EnableRateLimiting("Write")]
     public async Task<IActionResult> DeleteAddress([FromRoute]Guid addressId)
     {
         var result=await _addressServiceContract.DeleteAddressByIdAsync(addressId);
@@ -62,6 +66,7 @@ public class AddressesController:ControllerBase
     }
 
     [HttpPut("{addressId}/default")]
+    [EnableRateLimiting("Write")]
     public async Task<IActionResult> SetAddressDefault([FromRoute]Guid addressId)
     {
         var result=await _addressServiceContract.SetAddressDefaultAsync(addressId);

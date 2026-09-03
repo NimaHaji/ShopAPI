@@ -1,6 +1,8 @@
 using Application.Features.Inventory.DTOs;
 using Application.Features.Inventory.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Shared.Exceptions;
 
 namespace ShopApi.Controllers;
@@ -20,18 +22,24 @@ public class InventoriesController : ControllerBase
     public async Task<ActionResult> GetAll()
     {
         var result = await _inventoryServiceContract.GetAllInventoryAsync();
+
         return Ok(result);
     }
 
     [HttpGet("{productVariantId}")]
     public async Task<ActionResult> GetByProductVariantId(Guid productVariantId)
     {
-        var result = await _inventoryServiceContract.GetInventoryByProductVariantIdAsync(productVariantId);
+        var result = await _inventoryServiceContract
+            .GetInventoryByProductVariantIdAsync(productVariantId);
+
         return Ok(result);
     }
 
     [HttpPost("reserve")]
-    public async Task<ActionResult<ViewInventoryItemDto>> ReserveStock([FromBody] StockReserveRequestDto request)
+    [Authorize(Roles = "Admin,SuperAdmin")]
+    [EnableRateLimiting("Sensitive")]
+    public async Task<ActionResult<ViewInventoryItemDto>> ReserveStock(
+        [FromBody] StockReserveRequestDto request)
     {
         try
         {
@@ -48,8 +56,11 @@ public class InventoriesController : ControllerBase
         }
     }
 
-    [HttpPost("confirm")]
-    public async Task<ActionResult<ViewInventoryItemDto>> ConfirmReservation([FromBody] StockReserveRequestDto request)
+    [HttpPost("confirm")]    
+    [Authorize(Roles = "Admin,SuperAdmin")]
+    [EnableRateLimiting("Sensitive")]
+    public async Task<ActionResult<ViewInventoryItemDto>> ConfirmReservation(
+        [FromBody] StockReserveRequestDto request)
     {
         var result = await _inventoryServiceContract.ConfirmReservationAsync(
             request.ProductVariantId,
@@ -60,7 +71,10 @@ public class InventoriesController : ControllerBase
     }
 
     [HttpPost("cancel")]
-    public async Task<ActionResult<ViewInventoryItemDto>> CancelReservation([FromBody] StockReserveRequestDto request)
+    [Authorize(Roles = "Admin,SuperAdmin")]
+    [EnableRateLimiting("Sensitive")]
+    public async Task<ActionResult<ViewInventoryItemDto>> CancelReservation(
+        [FromBody] StockReserveRequestDto request)
     {
         var result = await _inventoryServiceContract.CancelReservationAsync(
             request.ProductVariantId,
@@ -71,7 +85,10 @@ public class InventoriesController : ControllerBase
     }
 
     [HttpPost("add-stock")]
-    public async Task<ActionResult<ViewInventoryItemDto>> AddStock([FromBody] StockAddRequestDto request)
+    [Authorize(Roles = "Admin,SuperAdmin")]
+    [EnableRateLimiting("Write")]
+    public async Task<ActionResult<ViewInventoryItemDto>> AddStock(
+        [FromBody] StockAddRequestDto request)
     {
         var result = await _inventoryServiceContract.AddStockAsync(
             request.ProductVariantId,
