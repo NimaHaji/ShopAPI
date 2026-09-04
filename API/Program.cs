@@ -2,6 +2,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Threading.RateLimiting;
 using Application;
+using Application.Caching.Interfaces;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Infrastructure;
@@ -366,5 +367,4 @@ app.MapHealthChecks(
     });
 
 app.MapPrometheusScrapingEndpoint();
-
 app.Run();

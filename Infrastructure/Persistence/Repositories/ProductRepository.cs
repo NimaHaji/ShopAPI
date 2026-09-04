@@ -219,7 +219,6 @@ public class ProductRepository : ProductRepositoryContract
             .ProductCategories
             .Where(c => !c.IsDeleted)
             .OrderByDescending(x => x.Title)
-            .Take(4)
             .ToListAsync();
     }
 
