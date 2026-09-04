@@ -1,4 +1,5 @@
 using System.Data;
+using Application.Caching.Interfaces;
 using Application.Common.Interfaces;
 using Application.Common.Observability;
 using Application.Features.Inventory.Interfaces;
@@ -25,11 +26,12 @@ public class ProductService : ProductServicesContract
     private readonly ReviewsRepositoryContract _reviewsRepositoryContract;
     private readonly IUSerContext _userContext;
     private readonly ILogger<ProductService> _logger;
+    private readonly ICacheService _cacheService;
 
     public ProductService(ProductRepositoryContract productRepositoryContract,
         InventoryServiceContract inventoryServiceContract, UnitOfWorkContract unitOfWorkContract,
         SkuGeneratorContract skuGeneratorContract, ReviewsRepositoryContract reviewsRepositoryContract,
-        IUSerContext userContext, ILogger<ProductService> logger)
+        IUSerContext userContext, ILogger<ProductService> logger, ICacheService cacheService)
     {
         _productRepositoryContract = productRepositoryContract;
         _inventoryServiceContract = inventoryServiceContract;
@@ -38,6 +40,7 @@ public class ProductService : ProductServicesContract
         _reviewsRepositoryContract = reviewsRepositoryContract;
         _userContext = userContext;
         _logger = logger;
+        _cacheService = cacheService;
     }
 
     #region product
@@ -817,6 +820,10 @@ public class ProductService : ProductServicesContract
 
                 await _unitOfWorkContract.SaveAsync();
 
+                await _cacheService.RemoveAsync("category:all");
+                await _cacheService.RemoveByPatternAsync("category:search:*");
+                await _cacheService.RemoveAsync($"category:{productCategoryId}");
+                
                 _logger.LogInformation(
                     LogEvents.ProductCategory.DeleteCompleted,
                     "Product category deleted successfully. ProductCategoryId: {ProductCategoryId}",
@@ -891,7 +898,11 @@ public class ProductService : ProductServicesContract
                 productCategory.Restore();
 
                 await _unitOfWorkContract.SaveAsync();
-
+                
+                await _cacheService.RemoveAsync("category:all"); 
+                await _cacheService.RemoveByPatternAsync("category:search:*");
+                await _cacheService.RemoveAsync($"category:{productCategoryId}");
+                
                 _logger.LogInformation(
                     LogEvents.ProductCategory.RestoreCompleted,
                     "Product category restored successfully. ProductCategoryId: {ProductCategoryId}",
@@ -938,27 +949,46 @@ public class ProductService : ProductServicesContract
             LogEvents.ProductCategory.GetAllStarted,
             "Product categories retrieval started.");
 
+        const string cacheKey = "category:all";
+
+        var cachedCategories = await _cacheService.GetAsync<ViewProductCategoryDto>(cacheKey);
+
+        if (cachedCategories is not null)
+        {
+            activity?.SetTag("cache.hit", true);
+
+            _logger.LogInformation("Product categories retrieved from cache.");
+
+            return cachedCategories;
+        }
+
+        activity?.SetTag("cache.hit", false);
+
         var categories =
             await _productRepositoryContract.GetAllProductCategories();
 
-        var dto = categories
-            .Select(x => new ViewProductCategoryItemDto
+        var result = new ViewProductCategoryDto
+        {
+            Items = categories.Select(x => new ViewProductCategoryItemDto
             {
                 Title = x.Title
-            })
-            .ToList();
+            }).ToList()
+        };
 
-        activity?.SetTag("product_categories.count", dto.Count);
+        await _cacheService.SetAsync(
+            key: cacheKey,
+            value: result,
+            expiration: TimeSpan.FromMinutes(10)
+        );
+
+        activity?.SetTag("product_categories.count", result.Items.Count);
 
         _logger.LogInformation(
             LogEvents.ProductCategory.GetAllCompleted,
             "Product categories retrieved successfully. Count: {Count}",
-            dto.Count);
+            result.Items.Count);
 
-        return new ViewProductCategoryDto
-        {
-            Items = dto
-        };
+        return result;
     }
 
     public async Task<ViewProductCategoryDto> SearchProductCategoryByTitle(
@@ -974,6 +1004,20 @@ public class ProductService : ProductServicesContract
             LogEvents.ProductCategory.SearchStarted,
             "Product category search started.");
 
+        var cacheKey = $"category:search:{dto.Title.Trim().ToLowerInvariant()}";
+        
+        var cachedCategories = await _cacheService.GetAsync<ViewProductCategoryDto>(cacheKey);
+
+        if (cachedCategories is not null)
+        {
+            activity?.SetTag("cache.hit", true);
+            
+            _logger.LogInformation("Product category searched from cache.");
+            
+            return cachedCategories;
+        }
+        activity?.SetTag("cache.hit", false);
+        
         var categories =
             await _productRepositoryContract
                 .SearchProductCategoriesWithTitle(dto.Title);
@@ -989,25 +1033,31 @@ public class ProductService : ProductServicesContract
                 Items = []
             };
         }
+        
+        var result = new ViewProductCategoryDto
+        {
+            Items = categories
+                .Select(x => new ViewProductCategoryItemDto
+                {
+                    Title = x.Title
+                })
+                .ToList()
+        };
 
-        var items = categories
-            .Select(x => new ViewProductCategoryItemDto
-            {
-                Title = x.Title
-            })
-            .ToList();
-
-        activity?.SetTag("product_categories.count", items.Count);
+        await _cacheService.SetAsync(
+            key: cacheKey,
+            value: result,
+            expiration: TimeSpan.FromMinutes(10)
+        );
+        
+        activity?.SetTag("product_categories.count", result.Items.Count);
 
         _logger.LogInformation(
             LogEvents.ProductCategory.SearchCompleted,
             "Product category search completed. Count: {Count}",
-            items.Count);
+            result.Items.Count);
 
-        return new ViewProductCategoryDto
-        {
-            Items = items
-        };
+        return result;
     }
 
     public async Task<ViewProductCategoryItemDto> GetProductCategoryById(
@@ -1018,6 +1068,19 @@ public class ProductService : ProductServicesContract
                 nameof(GetProductCategoryById));
 
         activity?.SetTag("product_category.id", productCategoryId);
+
+        var cacheKey = $"category:{productCategoryId}";
+        var cachedCategory = await _cacheService.GetAsync<ViewProductCategoryItemDto>(cacheKey);
+
+        if (cachedCategory is not null)
+        {
+            activity?.SetTag("cache.hit", true);
+            _logger.LogInformation("Product category retrieved from cache successfully.");
+
+            return cachedCategory;
+        }
+
+        activity?.SetTag("cache.hit", false);
 
         var category =
             await _productRepositoryContract
@@ -1038,6 +1101,12 @@ public class ProductService : ProductServicesContract
         {
             Title = category.Title
         };
+
+        await _cacheService.SetAsync(
+            key: cacheKey,
+            value: dto,
+            expiration: TimeSpan.FromMinutes(10)
+        );
 
         _logger.LogInformation(
             LogEvents.ProductCategory.GetByIdCompleted,
@@ -1079,7 +1148,11 @@ public class ProductService : ProductServicesContract
         category.Edit(dto.Title);
 
         await _unitOfWorkContract.SaveAsync();
-
+        
+        await _cacheService.RemoveAsync("category:" + dto.Id);
+        await _cacheService.RemoveAsync("category:all");
+        await _cacheService.RemoveByPatternAsync("category:search:*");
+        
         _logger.LogInformation(
             LogEvents.ProductCategory.EditCompleted,
             "Product category edited successfully. ProductCategoryId: {ProductCategoryId}",
@@ -1118,6 +1191,9 @@ public class ProductService : ProductServicesContract
         await _productRepositoryContract.AddProductCategory(category);
         await _unitOfWorkContract.SaveAsync();
 
+        await _cacheService.RemoveAsync("category:all");
+        await _cacheService.RemoveByPatternAsync("category:search:*");
+        
         activity?.SetTag(
             "product_category.id",
             category.Id);
