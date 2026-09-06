@@ -37,10 +37,12 @@ public class RedisCacheService : ICacheService
             pattern: pattern
         );
 
-        foreach (var key in keys)
-        {
-            await _database.KeyDeleteAsync(key);
-        }
+        var batch = keys.ToArray();
+        
+        if (batch.Length == 0)
+            return;
+        
+        await _database.KeyDeleteAsync(batch);
     }
 
     public async Task<bool> ExistAsync(string key)

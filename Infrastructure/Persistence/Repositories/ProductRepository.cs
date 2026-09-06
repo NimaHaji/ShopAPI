@@ -209,6 +209,15 @@ public class ProductRepository : ProductRepositoryContract
             .ToListAsync();
     }
 
+    public async Task<List<Guid>?> GetProductIdsByBrandIdAsync(Guid productBrandId)
+    {
+        return await _context
+            .Products
+            .Where(p => p.BrandId == productBrandId)
+            .Select(p => p.Id)
+            .ToListAsync();
+    }
+
     #endregion
 
     #region Category
