@@ -1,4 +1,7 @@
 using System.Data;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 using Application.Caching.Interfaces;
 using Application.Common.Interfaces;
 using Application.Common.Observability;
@@ -26,12 +29,14 @@ public class ProductService : ProductServicesContract
     private readonly ReviewsRepositoryContract _reviewsRepositoryContract;
     private readonly IUSerContext _userContext;
     private readonly ILogger<ProductService> _logger;
+    private readonly CacheKeyBuilderContract _cacheKeyBuilder;
     private readonly ICacheService _cacheService;
 
     public ProductService(ProductRepositoryContract productRepositoryContract,
         InventoryServiceContract inventoryServiceContract, UnitOfWorkContract unitOfWorkContract,
         SkuGeneratorContract skuGeneratorContract, ReviewsRepositoryContract reviewsRepositoryContract,
-        IUSerContext userContext, ILogger<ProductService> logger, ICacheService cacheService)
+        IUSerContext userContext, ILogger<ProductService> logger, ICacheService cacheService,
+        CacheKeyBuilderContract cacheKeyBuilder)
     {
         _productRepositoryContract = productRepositoryContract;
         _inventoryServiceContract = inventoryServiceContract;
@@ -41,6 +46,7 @@ public class ProductService : ProductServicesContract
         _userContext = userContext;
         _logger = logger;
         _cacheService = cacheService;
+        _cacheKeyBuilder = cacheKeyBuilder;
     }
 
     #region product
@@ -54,8 +60,22 @@ public class ProductService : ProductServicesContract
             LogEvents.Product.GetAllStarted,
             "Getting products.");
 
-        var products =
-            await _productRepositoryContract.GetProductList(query);
+        var cacheKey = _cacheKeyBuilder.ProductList(query);
+        var productCache = await _cacheService.GetAsync<ViewProductDto>(cacheKey);
+
+        if (productCache is not null)
+        {
+            activity?.SetTag("cache.hit", true);
+
+            _logger.LogInformation("product successfully retrieved from cache. ProductCount: {ProductCount}",
+                productCache.Items.Count);
+
+            return productCache;
+        }
+
+        activity?.SetTag("cache.hit", false);
+
+        var products = await _productRepositoryContract.GetProductList(query);
 
         if (products is null)
         {
@@ -71,23 +91,15 @@ public class ProductService : ProductServicesContract
 
         var now = DateTime.UtcNow;
 
-        var dto = products.Select(p =>
+        var result = new ViewProductDto
         {
-            var variants = p.Variants
-                .Where(v => !v.IsDeleted)
-                .ToList();
-
-            var activeProductDiscount = p.DiscountProducts
-                .Select(dp => dp.Discount)
-                .FirstOrDefault(d =>
-                    !d.IsDeleted &&
-                    d.IsActive &&
-                    d.StartsAt <= now &&
-                    d.EndsAt > now);
-
-            var variantDtos = variants.Select(v =>
+            Items = products.Select(p =>
             {
-                var activeVariantDiscount = v.DiscountVariants
+                var variants = p.Variants
+                    .Where(v => !v.IsDeleted)
+                    .ToList();
+
+                var activeProductDiscount = p.DiscountProducts
                     .Select(dp => dp.Discount)
                     .FirstOrDefault(d =>
                         !d.IsDeleted &&
@@ -95,132 +107,146 @@ public class ProductService : ProductServicesContract
                         d.StartsAt <= now &&
                         d.EndsAt > now);
 
-                var discount = activeVariantDiscount ?? activeProductDiscount;
-
-                var priceInfo = CalculatePrice(v.Price, discount);
-
-                return new ViewProductVariantDto
+                var variantDtos = variants.Select(v =>
                 {
-                    Id = v.Id,
-                    Sku = v.Sku,
-                    Price = v.Price,
-                    FinalPrice = priceInfo.FinalPrice,
+                    var activeVariantDiscount = v.DiscountVariants
+                        .Select(dp => dp.Discount)
+                        .FirstOrDefault(d =>
+                            !d.IsDeleted &&
+                            d.IsActive &&
+                            d.StartsAt <= now &&
+                            d.EndsAt > now);
 
-                    Stock = v.InventoryItem?.AvailableQuantity ?? 0,
+                    var discount = activeVariantDiscount ?? activeProductDiscount;
 
-                    DiscountType = priceInfo.DiscountType,
-                    DiscountPercentage = priceInfo.DiscountPercentage,
-                    DiscountAmount = priceInfo.DiscountAmount,
+                    var priceInfo = CalculatePrice(v.Price, discount);
 
-                    Options = v.Options
-                        .Select(pvo => new ViewProductVariantOptionDto
+                    return new ViewProductVariantDto
+                    {
+                        Id = v.Id,
+                        Sku = v.Sku,
+                        Price = v.Price,
+                        FinalPrice = priceInfo.FinalPrice,
+
+                        Stock = v.InventoryItem?.AvailableQuantity ?? 0,
+
+                        DiscountType = priceInfo.DiscountType,
+                        DiscountPercentage = priceInfo.DiscountPercentage,
+                        DiscountAmount = priceInfo.DiscountAmount,
+
+                        Options = v.Options
+                            .Select(pvo => new ViewProductVariantOptionDto
+                            {
+                                Id = pvo.Id,
+                                ProductOptionId = pvo.ProductOptionId,
+                                OptionName = pvo.ProductOption.Name,
+                                ProductOptionValueId = pvo.ProductOptionValueId,
+                                Value = pvo.ProductOptionValue.Value
+                            })
+                            .ToList(),
+
+                        Images = v.Images
+                            .OrderBy(i => i.SortOrder)
+                            .Select(i => new ViewProductImageDto
+                            {
+                                Id = i.Id,
+                                Url = i.ImageUrl,
+                                IsPrimary = i.IsPrimary,
+                                SortOrder = i.SortOrder
+                            })
+                            .ToList()
+                    };
+                }).ToList();
+
+                return new ViewProductItemDto
+                {
+                    Id = p.Id,
+                    Title = p.Title,
+                    Description = p.Description,
+                    Brand = p.Brand?.Title ?? "بدون برند",
+                    Category = p.Category.Title,
+
+                    MinPrice = variantDtos
+                        .Select(v => v.Price)
+                        .DefaultIfEmpty(0)
+                        .Min(),
+
+                    MaxPrice = variantDtos
+                        .Select(v => v.Price)
+                        .DefaultIfEmpty(0)
+                        .Max(),
+
+                    FinalMinPrice = variantDtos
+                        .Select(v => v.FinalPrice)
+                        .DefaultIfEmpty(0)
+                        .Min(),
+
+                    FinalMaxPrice = variantDtos
+                        .Select(v => v.FinalPrice)
+                        .DefaultIfEmpty(0)
+                        .Max(),
+
+                    Stock = variants
+                        .Sum(v => v.InventoryItem?.AvailableQuantity ?? 0),
+
+                    Images = p.Images
+                        .OrderBy(pi => pi.SortOrder)
+                        .Select(pi => new ViewProductImageDto
                         {
-                            Id = pvo.Id,
-                            ProductOptionId = pvo.ProductOptionId,
-                            OptionName = pvo.ProductOption.Name,
-                            ProductOptionValueId = pvo.ProductOptionValueId,
-                            Value = pvo.ProductOptionValue.Value
+                            Id = pi.Id,
+                            IsPrimary = pi.IsPrimary,
+                            SortOrder = pi.SortOrder,
+                            Url = pi.ImageLink
                         })
                         .ToList(),
 
-                    Images = v.Images
-                        .OrderBy(i => i.SortOrder)
-                        .Select(i => new ViewProductImageDto
+                    Rating = p.Reviews
+                        .Where(r =>
+                            !r.IsDeleted &&
+                            r.ReviewStatus == ReviewStatus.Approved)
+                        .Select(r => (decimal?)r.StarsCount)
+                        .Average() ?? 0,
+
+                    ReviewCount = p.Reviews
+                        .Count(r =>
+                            !r.IsDeleted &&
+                            r.ReviewStatus == ReviewStatus.Approved),
+
+                    Options = p.Options
+                        .Select(o => new ViewProductOptionDto
                         {
-                            Id = i.Id,
-                            Url = i.ImageUrl,
-                            IsPrimary = i.IsPrimary,
-                            SortOrder = i.SortOrder
+                            Id = o.Id,
+                            Name = o.Name,
+
+                            Values = o.Values
+                                .Select(pov => new ViewProductOptionValueDto
+                                {
+                                    Id = pov.Id,
+                                    Value = pov.Value
+                                })
+                                .ToList()
                         })
-                        .ToList()
+                        .ToList(),
+
+                    Variants = variantDtos
                 };
-            }).ToList();
+            }).ToList()
+        };
 
-            return new ViewProductItemDto
-            {
-                Id = p.Id,
-                Title = p.Title,
-                Description = p.Description,
-                Brand = p.Brand?.Title ?? "بدون برند",
-                Category = p.Category.Title,
+        await _cacheService.SetAsync(
+            key: cacheKey,
+            value: result,
+            expiration: TimeSpan.FromMinutes(10)
+        );
 
-                MinPrice = variantDtos
-                    .Select(v => v.Price)
-                    .DefaultIfEmpty(0)
-                    .Min(),
-
-                MaxPrice = variantDtos
-                    .Select(v => v.Price)
-                    .DefaultIfEmpty(0)
-                    .Max(),
-
-                FinalMinPrice = variantDtos
-                    .Select(v => v.FinalPrice)
-                    .DefaultIfEmpty(0)
-                    .Min(),
-
-                FinalMaxPrice = variantDtos
-                    .Select(v => v.FinalPrice)
-                    .DefaultIfEmpty(0)
-                    .Max(),
-
-                Stock = variants
-                    .Sum(v => v.InventoryItem?.AvailableQuantity ?? 0),
-
-                Images = p.Images
-                    .OrderBy(pi => pi.SortOrder)
-                    .Select(pi => new ViewProductImageDto
-                    {
-                        Id = pi.Id,
-                        IsPrimary = pi.IsPrimary,
-                        SortOrder = pi.SortOrder,
-                        Url = pi.ImageLink
-                    })
-                    .ToList(),
-
-                Rating = p.Reviews
-                    .Where(r =>
-                        !r.IsDeleted &&
-                        r.ReviewStatus == ReviewStatus.Approved)
-                    .Select(r => (decimal?)r.StarsCount)
-                    .Average() ?? 0,
-
-                ReviewCount = p.Reviews
-                    .Count(r =>
-                        !r.IsDeleted &&
-                        r.ReviewStatus == ReviewStatus.Approved),
-
-                Options = p.Options
-                    .Select(o => new ViewProductOptionDto
-                    {
-                        Id = o.Id,
-                        Name = o.Name,
-
-                        Values = o.Values
-                            .Select(pov => new ViewProductOptionValueDto
-                            {
-                                Id = pov.Id,
-                                Value = pov.Value
-                            })
-                            .ToList()
-                    })
-                    .ToList(),
-
-                Variants = variantDtos
-            };
-        }).ToList();
-
-        activity?.SetTag("products.count", dto.Count);
+        activity?.SetTag("products.count", result.Items.Count);
 
         _logger.LogInformation(
             LogEvents.Product.GetAllCompleted,
             "Products retrieved successfully. ProductCount: {ProductCount}",
-            dto.Count);
+            result.Items.Count);
 
-        return new ViewProductDto
-        {
-            Items = dto
-        };
+        return result;
     }
 
     public async Task<string> AddProductAsync(CreateProductDto dto)
@@ -274,6 +300,9 @@ public class ProductService : ProductServicesContract
         activity?.SetTag("product.id", product.Id);
         activity?.SetTag("product.variant_id", variant.Id);
 
+        await _cacheService.RemoveByPatternAsync(_cacheKeyBuilder.ProductListPattern());
+        await _cacheService.RemoveByPatternAsync(_cacheKeyBuilder.ProductSearchPattern());
+
         _logger.LogInformation(
             LogEvents.Product.CreateCompleted,
             "Product created successfully. ProductId: {ProductId}, VariantId: {VariantId}",
@@ -300,6 +329,24 @@ public class ProductService : ProductServicesContract
             LogEvents.Product.SearchStarted,
             "Searching products by title.");
 
+        var cacheKey = _cacheKeyBuilder.ProductSearch(query);
+        var cacheProducts = await _cacheService.GetAsync<SearchProductResultDto>(cacheKey);
+
+        if (cacheProducts is not null)
+        {
+            activity?.SetTag("cache.hit", true);
+
+            _logger.LogInformation(
+                LogEvents.Product.SearchCompleted,
+                "Product search retrieved successfully from cache.ResultCount: {ResultCount}",
+                cacheProducts.Items.Count
+            );
+
+            return cacheProducts;
+        }
+
+        activity?.SetTag("cache.hit", false);
+
         var productList =
             await _productRepositoryContract.SearchProductWithTitle(query);
 
@@ -315,25 +362,31 @@ public class ProductService : ProductServicesContract
             };
         }
 
-        var dto = productList
-            .Select(x => new SearchProductItemsResultDto
-            {
-                Title = x.Title,
-                Category = x.Category.Title,
-            })
-            .ToList();
+        var result = new SearchProductResultDto
+        {
+            Items = productList
+                .Select(x => new SearchProductItemsResultDto
+                {
+                    Title = x.Title,
+                    Category = x.Category.Title,
+                })
+                .ToList()
+        };
 
-        activity?.SetTag("products.count", dto.Count);
+        await _cacheService.SetAsync(
+            key: cacheKey,
+            value: result,
+            expiration: TimeSpan.FromMinutes(10)
+        );
+
+        activity?.SetTag("products.count", result.Items.Count);
 
         _logger.LogInformation(
             LogEvents.Product.SearchCompleted,
             "Product search completed successfully. ResultCount: {ResultCount}",
-            dto.Count);
+            result.Items.Count);
 
-        return new SearchProductResultDto
-        {
-            Items = dto
-        };
+        return result;
     }
 
     public async Task<ViewProductItemDto> GetProductById(Guid productId)
@@ -342,6 +395,22 @@ public class ProductService : ProductServicesContract
             ActivitySources.ShopApi.StartActivity(nameof(GetProductById));
 
         activity?.SetTag("product.id", productId);
+
+        var cacheKey = _cacheKeyBuilder.Product(productId);
+        var cachedProduct = await _cacheService.GetAsync<ViewProductItemDto>(cacheKey);
+
+        if (cachedProduct is not null)
+        {
+            activity?.SetTag("cache.hit", true);
+
+            _logger.LogInformation(
+                LogEvents.Product.GetByIdCompleted,
+                "Product retrieved successfully from cache.");
+
+            return cachedProduct;
+        }
+
+        activity?.SetTag("cache.hit", false);
 
         var product =
             await _productRepositoryContract.GetProductByIdAsync(productId);
@@ -441,7 +510,7 @@ public class ProductService : ProductServicesContract
             "Product retrieved successfully. ProductId: {ProductId}",
             productId);
 
-        return new ViewProductItemDto
+        var result = new ViewProductItemDto
         {
             Id = product.Id,
             Title = product.Title,
@@ -499,6 +568,13 @@ public class ProductService : ProductServicesContract
 
             Variants = variantDto
         };
+
+        await _cacheService.SetAsync(
+            key: cacheKey,
+            value: result,
+            expiration: TimeSpan.FromMinutes(10));
+
+        return result;
     }
 
     public async Task<string> EditProductAsync(EditProductDto dto)
@@ -548,6 +624,10 @@ public class ProductService : ProductServicesContract
                 product.Edit(dto.Title, dto.Description);
 
                 await _unitOfWorkContract.SaveAsync();
+
+                await _cacheService.RemoveByPatternAsync(_cacheKeyBuilder.ProductListPattern());
+                await _cacheService.RemoveAsync(_cacheKeyBuilder.Product(product.Id));
+                await _cacheService.RemoveByPatternAsync(_cacheKeyBuilder.ProductSearchPattern());
 
                 _logger.LogInformation(
                     LogEvents.Product.EditCompleted,
@@ -622,6 +702,10 @@ public class ProductService : ProductServicesContract
 
                 await _unitOfWorkContract.SaveAsync();
 
+                await _cacheService.RemoveAsync(_cacheKeyBuilder.Product(product.Id));
+                await _cacheService.RemoveByPatternAsync(_cacheKeyBuilder.ProductSearchPattern());
+                await _cacheService.RemoveByPatternAsync(_cacheKeyBuilder.ProductListPattern());
+
                 _logger.LogInformation(
                     LogEvents.Product.DeleteCompleted,
                     "Product deleted successfully. ProductId: {ProductId}",
@@ -694,6 +778,10 @@ public class ProductService : ProductServicesContract
                 product.Restore();
 
                 await _unitOfWorkContract.SaveAsync();
+
+                await _cacheService.RemoveAsync(_cacheKeyBuilder.Product(product.Id));
+                await _cacheService.RemoveByPatternAsync(_cacheKeyBuilder.ProductSearchPattern());
+                await _cacheService.RemoveByPatternAsync(_cacheKeyBuilder.ProductListPattern());
 
                 _logger.LogInformation(
                     LogEvents.Product.RestoreCompleted,
@@ -820,10 +908,10 @@ public class ProductService : ProductServicesContract
 
                 await _unitOfWorkContract.SaveAsync();
 
-                await _cacheService.RemoveAsync("category:all");
-                await _cacheService.RemoveByPatternAsync("category:search:*");
-                await _cacheService.RemoveAsync($"category:{productCategoryId}");
-                
+                await _cacheService.RemoveAsync(_cacheKeyBuilder.CategoryList());
+                await _cacheService.RemoveAsync(_cacheKeyBuilder.Category(productCategoryId));
+                await _cacheService.RemoveByPatternAsync(_cacheKeyBuilder.CategorySearchPattern());
+
                 _logger.LogInformation(
                     LogEvents.ProductCategory.DeleteCompleted,
                     "Product category deleted successfully. ProductCategoryId: {ProductCategoryId}",
@@ -898,11 +986,11 @@ public class ProductService : ProductServicesContract
                 productCategory.Restore();
 
                 await _unitOfWorkContract.SaveAsync();
-                
-                await _cacheService.RemoveAsync("category:all"); 
-                await _cacheService.RemoveByPatternAsync("category:search:*");
-                await _cacheService.RemoveAsync($"category:{productCategoryId}");
-                
+
+                await _cacheService.RemoveAsync(_cacheKeyBuilder.CategoryList());
+                await _cacheService.RemoveAsync(_cacheKeyBuilder.Category(productCategoryId));
+                await _cacheService.RemoveByPatternAsync(_cacheKeyBuilder.CategorySearchPattern());
+
                 _logger.LogInformation(
                     LogEvents.ProductCategory.RestoreCompleted,
                     "Product category restored successfully. ProductCategoryId: {ProductCategoryId}",
@@ -949,7 +1037,7 @@ public class ProductService : ProductServicesContract
             LogEvents.ProductCategory.GetAllStarted,
             "Product categories retrieval started.");
 
-        const string cacheKey = "category:all";
+        var cacheKey = _cacheKeyBuilder.CategoryList();
 
         var cachedCategories = await _cacheService.GetAsync<ViewProductCategoryDto>(cacheKey);
 
@@ -957,7 +1045,8 @@ public class ProductService : ProductServicesContract
         {
             activity?.SetTag("cache.hit", true);
 
-            _logger.LogInformation("Product categories retrieved from cache.");
+            _logger.LogInformation("Product categories retrieved from cache.Count: {Count}",
+                cachedCategories.Items.Count);
 
             return cachedCategories;
         }
@@ -1004,23 +1093,35 @@ public class ProductService : ProductServicesContract
             LogEvents.ProductCategory.SearchStarted,
             "Product category search started.");
 
-        var cacheKey = $"category:search:{dto.Title.Trim().ToLowerInvariant()}";
-        
+        var search = dto.Title?.Trim();
+
+        if (string.IsNullOrWhiteSpace(search))
+        {
+            return new ViewProductCategoryDto
+            {
+                Items = []
+            };
+        }
+
+        var cacheKey = _cacheKeyBuilder.CategorySearch(search);
+
         var cachedCategories = await _cacheService.GetAsync<ViewProductCategoryDto>(cacheKey);
 
         if (cachedCategories is not null)
         {
             activity?.SetTag("cache.hit", true);
-            
-            _logger.LogInformation("Product category searched from cache.");
-            
+
+            _logger.LogInformation("Product category searched from cache.Count: {Count}",
+                cachedCategories.Items.Count);
+
             return cachedCategories;
         }
+
         activity?.SetTag("cache.hit", false);
-        
+
         var categories =
             await _productRepositoryContract
-                .SearchProductCategoriesWithTitle(dto.Title);
+                .SearchProductCategoriesWithTitle(search);
 
         if (categories is null)
         {
@@ -1028,12 +1129,20 @@ public class ProductService : ProductServicesContract
                 LogEvents.ProductCategory.SearchCompleted,
                 "Product category search completed with no results.");
 
-            return new ViewProductCategoryDto
+            var emptyResult = new ViewProductCategoryDto
             {
                 Items = []
             };
+
+            await _cacheService.SetAsync(
+                key: cacheKey,
+                value: emptyResult,
+                expiration: TimeSpan.FromMinutes(5)
+            );
+
+            return emptyResult;
         }
-        
+
         var result = new ViewProductCategoryDto
         {
             Items = categories
@@ -1049,7 +1158,7 @@ public class ProductService : ProductServicesContract
             value: result,
             expiration: TimeSpan.FromMinutes(10)
         );
-        
+
         activity?.SetTag("product_categories.count", result.Items.Count);
 
         _logger.LogInformation(
@@ -1069,13 +1178,15 @@ public class ProductService : ProductServicesContract
 
         activity?.SetTag("product_category.id", productCategoryId);
 
-        var cacheKey = $"category:{productCategoryId}";
+        var cacheKey = _cacheKeyBuilder.Category(productCategoryId);
         var cachedCategory = await _cacheService.GetAsync<ViewProductCategoryItemDto>(cacheKey);
 
         if (cachedCategory is not null)
         {
             activity?.SetTag("cache.hit", true);
-            _logger.LogInformation("Product category retrieved from cache successfully.");
+            _logger.LogInformation(
+                "Product category retrieved from cache successfully.ProductCategoryId: {ProductCategoryId}",
+                productCategoryId);
 
             return cachedCategory;
         }
@@ -1148,17 +1259,17 @@ public class ProductService : ProductServicesContract
         category.Edit(dto.Title);
 
         await _unitOfWorkContract.SaveAsync();
-        
-        await _cacheService.RemoveAsync("category:" + dto.Id);
-        await _cacheService.RemoveAsync("category:all");
-        await _cacheService.RemoveByPatternAsync("category:search:*");
-        
+
+        await _cacheService.RemoveAsync(_cacheKeyBuilder.CategoryList());
+        await _cacheService.RemoveAsync(_cacheKeyBuilder.Category(dto.Id));
+        await _cacheService.RemoveByPatternAsync(_cacheKeyBuilder.CategorySearchPattern());
+
         _logger.LogInformation(
             LogEvents.ProductCategory.EditCompleted,
             "Product category edited successfully. ProductCategoryId: {ProductCategoryId}",
             dto.Id);
 
-        return "دسته بندی محصول یا موفقیت تغییر کرد .";
+        return "دسته بندی محصول با موفقیت تغییر کرد .";
     }
 
     public async Task<string> CreateProductCategoryAsync(
@@ -1191,9 +1302,9 @@ public class ProductService : ProductServicesContract
         await _productRepositoryContract.AddProductCategory(category);
         await _unitOfWorkContract.SaveAsync();
 
-        await _cacheService.RemoveAsync("category:all");
-        await _cacheService.RemoveByPatternAsync("category:search:*");
-        
+        await _cacheService.RemoveAsync(_cacheKeyBuilder.CategoryList());
+        await _cacheService.RemoveByPatternAsync(_cacheKeyBuilder.CategorySearchPattern());
+
         activity?.SetTag(
             "product_category.id",
             category.Id);
@@ -1219,6 +1330,24 @@ public class ProductService : ProductServicesContract
             LogEvents.ProductBrand.GetAllStarted,
             "Product brands retrieval started.");
 
+        var cacheKey = _cacheKeyBuilder.BrandList();
+        var cachedBrands = await _cacheService.GetAsync<ViewProductBrandDto>(cacheKey);
+
+        if (cachedBrands is not null)
+        {
+            activity?.SetTag("cache.hit", true);
+
+            _logger.LogInformation(
+                LogEvents.ProductBrand.GetAllCompleted,
+                "Product brands retrieved successfully from cache. Count: {Count}",
+                cachedBrands.Items.Count
+            );
+
+            return cachedBrands;
+        }
+
+        activity?.SetTag("cache.hit", false);
+
         var brands =
             await _productRepositoryContract.GetAllBrandAsync();
 
@@ -1228,30 +1357,44 @@ public class ProductService : ProductServicesContract
                 LogEvents.ProductBrand.GetAllCompleted,
                 "Product brands retrieval completed with no results.");
 
-            return new ViewProductBrandDto
+            var emptyResult = new ViewProductBrandDto
             {
                 Items = []
             };
+
+            await _cacheService.SetAsync(
+                key: cacheKey,
+                value: emptyResult,
+                expiration: TimeSpan.FromMinutes(10)
+            );
+
+            return emptyResult;
         }
 
-        var items = brands
-            .Select(x => new ViewProductBrandItemDto
-            {
-                Title = x.Title
-            })
-            .ToList();
+        var result = new ViewProductBrandDto
+        {
+            Items = brands
+                .Select(x => new ViewProductBrandItemDto
+                {
+                    Title = x.Title
+                })
+                .ToList()
+        };
 
-        activity?.SetTag("product_brands.count", items.Count);
+        await _cacheService.SetAsync(
+            key: cacheKey,
+            value: result,
+            expiration: TimeSpan.FromMinutes(10)
+        );
+
+        activity?.SetTag("product_brands.count", result.Items.Count);
 
         _logger.LogInformation(
             LogEvents.ProductBrand.GetAllCompleted,
             "Product brands retrieved successfully. Count: {Count}",
-            items.Count);
+            result.Items.Count);
 
-        return new ViewProductBrandDto
-        {
-            Items = items
-        };
+        return result;
     }
 
     public async Task<string> CreateProductBrandAsync(
@@ -1281,6 +1424,9 @@ public class ProductService : ProductServicesContract
 
         await _productRepositoryContract.AddBrandAsync(brand);
         await _unitOfWorkContract.SaveAsync();
+
+        await _cacheService.RemoveAsync(_cacheKeyBuilder.BrandList());
+        await _cacheService.RemoveByPatternAsync(_cacheKeyBuilder.BrandSearchPattern());
 
         activity?.SetTag("product_brand.id", brand.Id);
 
@@ -1327,9 +1473,22 @@ public class ProductService : ProductServicesContract
 
             try
             {
+                var productIds = await _productRepositoryContract.GetProductIdsByBrandIdAsync(productBrandId);
+
                 productBrand.Delete();
 
                 await _unitOfWorkContract.SaveAsync();
+
+                await _cacheService.RemoveAsync(_cacheKeyBuilder.Brand(productBrandId));
+                await _cacheService.RemoveAsync(_cacheKeyBuilder.BrandList());
+                await _cacheService.RemoveByPatternAsync(_cacheKeyBuilder.BrandSearchPattern());
+
+                foreach (var productId in productIds)
+                {
+                    await _cacheService.RemoveAsync(_cacheKeyBuilder.Product(productId));
+                }
+
+                await _cacheService.RemoveByPatternAsync(_cacheKeyBuilder.ProductListPattern());
 
                 _logger.LogInformation(
                     LogEvents.ProductBrand.DeleteCompleted,
@@ -1403,9 +1562,22 @@ public class ProductService : ProductServicesContract
 
             try
             {
+                var productIds = await _productRepositoryContract.GetProductIdsByBrandIdAsync(productBrandId);
+
                 productBrand.Restore();
 
                 await _unitOfWorkContract.SaveAsync();
+
+                await _cacheService.RemoveAsync(_cacheKeyBuilder.Brand(productBrandId));
+                await _cacheService.RemoveAsync(_cacheKeyBuilder.BrandList());
+                await _cacheService.RemoveByPatternAsync(_cacheKeyBuilder.BrandSearchPattern());
+
+                foreach (var productId in productIds)
+                {
+                    await _cacheService.RemoveAsync(_cacheKeyBuilder.Product(productId));
+                }
+
+                await _cacheService.RemoveByPatternAsync(_cacheKeyBuilder.ProductListPattern());
 
                 _logger.LogInformation(
                     LogEvents.ProductBrand.RestoreCompleted,
@@ -1472,9 +1644,22 @@ public class ProductService : ProductServicesContract
                 "برند محصول یافت نشد .");
         }
 
+        var productIds = await _productRepositoryContract.GetProductIdsByBrandIdAsync(brand.Id);
+
         brand.Edit(dto.Title);
 
         await _unitOfWorkContract.SaveAsync();
+
+        await _cacheService.RemoveAsync(_cacheKeyBuilder.Brand(dto.Id));
+        await _cacheService.RemoveAsync(_cacheKeyBuilder.BrandList());
+        await _cacheService.RemoveByPatternAsync(_cacheKeyBuilder.BrandSearchPattern());
+
+        foreach (var productId in productIds)
+        {
+            await _cacheService.RemoveAsync(_cacheKeyBuilder.Product(productId));
+        }
+
+        await _cacheService.RemoveByPatternAsync(_cacheKeyBuilder.ProductListPattern());
 
         _logger.LogInformation(
             LogEvents.ProductBrand.EditCompleted,
@@ -1495,6 +1680,24 @@ public class ProductService : ProductServicesContract
             LogEvents.ProductBrand.SearchStarted,
             "Product brand search started.");
 
+        var cacheKey = _cacheKeyBuilder.BrandSearch(dto.Title);
+        var cachedBrandSearch = await _cacheService.GetAsync<ViewProductBrandDto>(cacheKey);
+
+        if (cachedBrandSearch is not null)
+        {
+            activity?.SetTag("cache.hit", true);
+
+            _logger.LogInformation(
+                LogEvents.ProductBrand.SearchCompleted,
+                "Product brand search retrieved successfully from cache. Count: {Count}",
+                cachedBrandSearch.Items.Count
+            );
+
+            return cachedBrandSearch;
+        }
+
+        activity?.SetTag("cache.hit", false);
+
         var brands =
             await _productRepositoryContract
                 .SearchProductBrandsWithTitle(dto.Title);
@@ -1505,30 +1708,43 @@ public class ProductService : ProductServicesContract
                 LogEvents.ProductBrand.SearchCompleted,
                 "Product brand search completed with no results.");
 
-            return new ViewProductBrandDto
+            var emptyResult = new ViewProductBrandDto
             {
                 Items = []
             };
+
+            await _cacheService.SetAsync(
+                key: cacheKey,
+                value: emptyResult,
+                expiration: TimeSpan.FromMinutes(10)
+            );
+
+            return emptyResult;
         }
 
-        var items = brands
-            .Select(x => new ViewProductBrandItemDto
-            {
-                Title = x.Title
-            })
-            .ToList();
+        var result = new ViewProductBrandDto
+        {
+            Items = brands
+                .Select(x => new ViewProductBrandItemDto
+                {
+                    Title = x.Title
+                })
+                .ToList()
+        };
 
-        activity?.SetTag("product_brands.count", items.Count);
+        await _cacheService.SetAsync(
+            key: cacheKey,
+            value: result,
+            expiration: TimeSpan.FromMinutes(10)
+        );
+        activity?.SetTag("product_brands.count", result.Items.Count);
 
         _logger.LogInformation(
             LogEvents.ProductBrand.SearchCompleted,
             "Product brand search completed. Count: {Count}",
-            items.Count);
+            result.Items.Count);
 
-        return new ViewProductBrandDto
-        {
-            Items = items
-        };
+        return result;
     }
 
     public async Task<ViewProductBrandItemDto> GetProductBrandById(
@@ -1538,6 +1754,22 @@ public class ProductService : ProductServicesContract
             ActivitySources.ShopApi.StartActivity(nameof(GetProductBrandById));
 
         activity?.SetTag("product_brand.id", productBrandId);
+
+        var cacheKey = _cacheKeyBuilder.Brand(productBrandId);
+        var cachedBrand = await _cacheService.GetAsync<ViewProductBrandItemDto>(cacheKey);
+
+        if (cachedBrand is not null)
+        {
+            activity?.SetTag("cache.hit", true);
+
+            _logger.LogInformation(
+                LogEvents.ProductBrand.GetByIdCompleted,
+                "Product brand retrieved successfully from cache.ProductBrandId: {ProductBrandId}",
+                productBrandId
+            );
+
+            return cachedBrand;
+        }
 
         var brand =
             await _productRepositoryContract
@@ -1559,10 +1791,18 @@ public class ProductService : ProductServicesContract
             "Product brand retrieved successfully. ProductBrandId: {ProductBrandId}",
             productBrandId);
 
-        return new ViewProductBrandItemDto
+        var result = new ViewProductBrandItemDto
         {
             Title = brand.Title
         };
+
+        await _cacheService.SetAsync(
+            key: cacheKey,
+            value: result,
+            expiration: TimeSpan.FromMinutes(10)
+        );
+
+        return result;
     }
 
     #endregion
@@ -1590,48 +1830,76 @@ public class ProductService : ProductServicesContract
             throw new NotFoundException("محصول یافت نشد");
         }
 
-        var reviews =
-            await _reviewsRepositoryContract
-                .GetAllReviewsByProductId(productId);
+        var cacheKey = _cacheKeyBuilder.ReviewList(productId);
+        var cacheReview = await _cacheService.GetAsync<ViewReviewsDto>(cacheKey);
 
-        if (reviews is null)
+        if (cacheReview is not null)
+        {
+            activity?.SetTag("cache.hit", true);
+
+            _logger.LogInformation(
+                LogEvents.Review.GetAllCompleted,
+                "Product reviews retrieved from cache. ProductId: {ProductId}, Count: {Count}",
+                productId,
+                cacheReview.Reviews.Count);
+
+            return cacheReview;
+        }
+
+        activity?.SetTag("cache.hit", false);
+
+        if (product.Reviews.Count == 0)
         {
             _logger.LogInformation(
                 LogEvents.Review.GetAllCompleted,
                 "Product reviews retrieved with no reviews. ProductId: {ProductId}",
                 productId);
-
-            return new ViewReviewsDto
+            
+            var emptyResult = new ViewReviewsDto
             {
                 Reviews = []
             };
+
+            await _cacheService.SetAsync(
+                key: cacheKey,
+                value: emptyResult,
+                expiration: TimeSpan.FromMinutes(5)
+            );
+            
+            return emptyResult;
         }
 
-        var reviewItems = product.Reviews
-            .Select(r => new ViewReviewItemsDto
-            {
-                Comment = r.Comment,
-                CreatedAt = r.CreatedAt,
-                StarsCount = r.StarsCount,
-                User = new ViewReviewItemUserDto
+        var result = new ViewReviewsDto
+        {
+            Reviews = product.Reviews
+                .Select(r => new ViewReviewItemsDto
                 {
-                    Name = r.User.FullName
-                }
-            })
-            .ToList();
+                    Comment = r.Comment,
+                    CreatedAt = r.CreatedAt,
+                    StarsCount = r.StarsCount,
+                    User = new ViewReviewItemUserDto
+                    {
+                        Name = r.User.FullName
+                    }
+                })
+                .ToList()
+        };
 
-        activity?.SetTag("reviews.count", reviewItems.Count);
+        await _cacheService.SetAsync(
+            key: cacheKey,
+            value: result,
+            expiration: TimeSpan.FromMinutes(5)
+        );
+
+        activity?.SetTag("reviews.count", product.Reviews.Count);
 
         _logger.LogInformation(
             LogEvents.Review.GetAllCompleted,
             "Product reviews retrieved successfully. ProductId: {ProductId}, Count: {Count}",
             productId,
-            reviewItems.Count);
+            product.Reviews.Count);
 
-        return new ViewReviewsDto
-        {
-            Reviews = reviewItems
-        };
+        return result;
     }
 
     public async Task<string> AddReviewForProduct(
@@ -1693,6 +1961,11 @@ public class ProductService : ProductServicesContract
         await _reviewsRepositoryContract.AddReview(review);
         await _unitOfWorkContract.SaveAsync();
 
+        await _cacheService.RemoveAsync(_cacheKeyBuilder.ReviewList(productId));
+        await _cacheService.RemoveAsync(_cacheKeyBuilder.Product(productId));
+        await _cacheService.RemoveByPatternAsync(_cacheKeyBuilder.ProductListPattern());
+        
+        
         activity?.SetTag("review.id", review.Id);
 
         _logger.LogInformation(
@@ -1761,7 +2034,10 @@ public class ProductService : ProductServicesContract
                     dto.Price);
 
                 await _unitOfWorkContract.SaveAsync();
-
+                
+                await _cacheService.RemoveAsync(_cacheKeyBuilder.Product(variant.ProductId));
+                await _cacheService.RemoveByPatternAsync(_cacheKeyBuilder.ProductListPattern());
+                
                 _logger.LogInformation(
                     LogEvents.ProductVariant.EditCompleted,
                     "Product variant edited successfully. ProductVariantId: {ProductVariantId}",

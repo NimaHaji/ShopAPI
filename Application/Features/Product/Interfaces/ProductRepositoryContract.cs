@@ -17,7 +17,8 @@ public interface ProductRepositoryContract
     Task<List<Domain.Entities.Product>> GetProductsWithDiscountByIdsAsync(List<Guid> productIds);
     Task<List<Domain.Entities.Product>> GetDiscountedProducts();
     Task<List<Domain.Entities.Product>> GetNewestProducts();
-
+    Task<List<Guid>?> GetProductIdsByBrandIdAsync(Guid productBrandId);
+    
     #endregion
 
     #region Category
