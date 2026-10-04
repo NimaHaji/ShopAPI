@@ -1,3 +1,5 @@
+using Application.Caching.Implementations;
+using Application.Caching.Interfaces;
 using Application.Features.Address.Implementations;
 using Application.Features.Address.Interfaces;
 using Application.Features.Auth.Interfaces;
@@ -49,6 +51,7 @@ public static class ApplicationServices
         services.AddScoped<AddressServiceContract, AddressService>();
         services.AddScoped<HomeServiceContract, HomeService>();
         services.AddScoped<IdempotencyServiceContract, IdempotencyService>();
+        services.AddScoped<CacheKeyBuilderContract, CacheKeyBuilder>();
         return services;
     }
 }

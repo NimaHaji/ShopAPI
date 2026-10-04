@@ -47,4 +47,9 @@ public interface ProductServicesContract
     
     #endregion
 
+    #region Variant
+
+    Task<string> EditProductVariantAsync(EditProductVariantDto dto);    
+
+    #endregion
 }

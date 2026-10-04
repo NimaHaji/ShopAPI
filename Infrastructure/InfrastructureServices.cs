@@ -1,3 +1,4 @@
+using Application.Caching.Interfaces;
 using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
@@ -28,11 +29,13 @@ using Infrastructure.Persistence.Seed;
 using Infrastructure.Security.Hashing;
 using Infrastructure.Security.Jwt;
 using Infrastructure.Security.Verification;
+using Infrastructure.Services.Caching;
 using Infrastructure.Services.Payment.Implement;
 using Infrastructure.Services.Sku;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using StackExchange.Redis;
 
 namespace Infrastructure;
 
@@ -43,6 +46,16 @@ public static class InfrastructureServices
     {
         services.AddDbContext<ShopDbContext>(options =>
             options.UseSqlServer(configuration.GetConnectionString("local")));
+
+        services.AddSingleton<IConnectionMultiplexer>(sp =>
+        {
+            var connectionString = configuration.GetConnectionString("Redis")
+                                   ?? throw new Exception("Redis connection string not found");
+
+            return ConnectionMultiplexer.Connect(connectionString);
+        });
+
+        services.AddScoped<ICacheService, RedisCacheService>();
         services.AddScoped<HttpClient>();
         services.AddHttpContextAccessor();
         services.AddHttpClient();
@@ -76,7 +89,7 @@ public static class InfrastructureServices
         services.AddScoped<CouponRepositoryContract, CouponRepository>();
         services.AddScoped<CouponUsageRepositoryContract, CouponUsageRepository>();
         services.AddScoped<AddressRepositoryContract, AddressRepository>();
-        services.AddScoped<IdempotencyRepositoryContract,IdempotencyRepository>();
+        services.AddScoped<IdempotencyRepositoryContract, IdempotencyRepository>();
         services.AddScoped<DiscountVariantRepositoryContract, DiscountVariantRepository>();
         services.AddScoped<JsonSeedReader>();
         services.AddScoped<CategorySeeder>();
@@ -89,7 +102,7 @@ public static class InfrastructureServices
         services.AddScoped<CartSeeder>();
         services.AddScoped<WishlistSeeder>();
         services.AddScoped<OrderSeeder>();
-        
+
         return services;
     }
 }
