@@ -1,0 +1,12 @@
+**/bin/
+**/obj/
+**/.vs/
+**/.idea/
+**/TestResults/
+.git/
+.gitignore
+.vscode/
+
+**/.env
+**/.env.*
+!**/.env.example
