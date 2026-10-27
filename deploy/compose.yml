@@ -1,0 +1,120 @@
+﻿
+services:
+  api:
+    image:  nimahaji/shopapi:1.1.0
+    container_name: shopapi-api
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      JwtSettings__SecretKey: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      ASPNETCORE_HTTP_PORTS: 8080
+
+      ConnectionStrings__local: "Server=sqlserver,1433;Database=ShopApi;User Id=sa;Password=${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD in .env};Encrypt=True;TrustServerCertificate=True"
+      ConnectionStrings__Redis: "redis:6379"
+
+      Otlp__Endpoint: "http://jaeger:4317"
+      Serilog__WriteTo__2__Args__uri: "http://loki:3100"
+
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+    restart: unless-stopped
+    init: true
+    networks:
+      - shopapi-network
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-CU17-ubuntu-22.04
+    container_name: shopapi-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: Developer
+      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD in .env}"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q 'SELECT 1' -b -o /dev/null"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - shopapi-network
+
+  redis:
+    image: redis:7.4.2-alpine
+    container_name: shopapi-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - shopapi-network
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.67.0
+    container_name: shopapi-jaeger
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "127.0.0.1:16686:16686"
+    restart: unless-stopped
+    networks:
+      - shopapi-network
+
+  loki:
+    image: grafana/loki:3.4.2
+    container_name: shopapi-loki
+    command: ["-config.file=/etc/loki/local-config.yaml"]
+    restart: unless-stopped
+    networks:
+      - shopapi-network
+
+  prometheus:
+    image: prom/prometheus:v3.2.1
+    container_name: shopapi-prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    restart: unless-stopped
+    networks:
+      - shopapi-network
+
+  grafana:
+    image: grafana/grafana:11.5.2
+    container_name: shopapi-grafana
+    ports:
+      - "127.0.0.1:30000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+      - loki
+      - jaeger
+    restart: unless-stopped
+    networks:
+      - shopapi-network
+
+networks:
+  shopapi-network:
+    driver: bridge
+
+volumes:
+  sqlserver_data:
+  redis_data:
+  grafana_data:
